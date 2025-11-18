@@ -34,6 +34,18 @@ yarn-error.log*
 .env
 .env.*.local
 
+# Azure Functions
+api/node_modules/
+api/dist/
+api/local.settings.json
+api/functions.log
+*.log
+
+# Database files (deployed separately)
+/database/
+/sql/
+*.sql
+
 # OS generated files
 Thumbs.db
 .DS_Store
