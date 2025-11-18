@@ -1,0 +1,14 @@
+# Azure Function App Settings
+# These will be configured in Azure Portal or via Azure CLI
+
+# Database Connection (using Managed Identity)
+SQLCONNSTR_DefaultConnection="Server=tcp:vibenow.database.windows.net,1433;Database=VibeNow-Test;Authentication=Active Directory Default;Encrypt=true;TrustServerCertificate=false;"
+
+# Azure Function specific settings
+FUNCTIONS_WORKER_RUNTIME="node"
+WEBSITE_NODE_DEFAULT_VERSION="~18"
+FUNCTIONS_EXTENSION_VERSION="~4"
+
+# CORS settings (if needed)
+WEBSITE_CORS_ALLOWED_ORIGINS="*"
+WEBSITE_CORS_SUPPORT_CREDENTIALS="false"
