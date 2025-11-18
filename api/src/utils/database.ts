@@ -1,30 +1,64 @@
 import * as sql from 'mssql';
 
-// Database configuration for Azure SQL with Managed Identity
-const config: sql.config = {
-    server: 'vibenow.database.windows.net',
-    database: 'VibeNow-Test',
-    authentication: {
-        type: 'azure-active-directory-default'
-    },
-    options: {
-        encrypt: true,
-        trustServerCertificate: false
-    },
-    connectionTimeout: 30000, // 30 seconds
-    requestTimeout: 30000, // 30 seconds  
-    pool: {
-        max: 10,
-        min: 0,
-        idleTimeoutMillis: 30000,
-        acquireTimeoutMillis: 30000
+// Database configuration for Azure SQL with Service Principal
+function getDatabaseConfig(): sql.config {
+    const server = process.env.DB_SERVER || 'vibenow.database.windows.net';
+    const database = process.env.DB_DATABASE || 'VibeNow-Test';
+    
+    // Service Principal credentials for Azure AD authentication
+    const clientId = process.env.DB_CLIENT_ID;
+    const clientSecret = process.env.DB_CLIENT_SECRET;
+    const tenantId = process.env.AZURE_TENANT_ID;
+
+    const baseConfig: sql.config = {
+        server,
+        database,
+        options: {
+            encrypt: true,
+            trustServerCertificate: false
+        },
+        connectionTimeout: 30000,
+        requestTimeout: 30000,
+        pool: {
+            max: 5,
+            min: 0,
+            idleTimeoutMillis: 30000,
+            acquireTimeoutMillis: 30000
+        }
+    };
+
+    // Use Service Principal for Azure AD authentication
+    if (clientId && clientSecret && tenantId) {
+        return {
+            ...baseConfig,
+            authentication: {
+                type: 'azure-active-directory-service-principal-secret',
+                options: {
+                    clientId,
+                    clientSecret,
+                    tenantId
+                }
+            }
+        };
+    } else {
+        // Fallback to default Azure AD authentication
+        return {
+            ...baseConfig,
+            authentication: {
+                type: 'azure-active-directory-default'
+            }
+        };
     }
-};
+}
 
 export async function getDbConnection(): Promise<sql.ConnectionPool> {
     // Create a fresh connection each time to avoid timeout issues
+    const config = getDatabaseConfig();
     const pool = new sql.ConnectionPool(config);
     console.log('Connecting to Azure SQL Database...');
+    console.log('Using server:', config.server);
+    console.log('Using database:', config.database);
+    console.log('Authentication type:', config.authentication ? 'Azure AD' : 'SQL Auth');
     await pool.connect();
     console.log('Successfully connected to Azure SQL Database');
     return pool;
