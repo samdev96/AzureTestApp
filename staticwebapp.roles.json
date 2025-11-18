@@ -2,8 +2,14 @@
   "roles": [
     {
       "role": "admin",
-      "users": [
-        "duffydev96@gmail.com"
+      "groups": [
+        "2f1df14c-db28-4f6b-a0dd-d9a2be9cc0c6"
+      ]
+    },
+    {
+      "role": "user", 
+      "groups": [
+        "583a9990-fb1d-43b6-9536-8fc84396ed92"
       ]
     }
   ]

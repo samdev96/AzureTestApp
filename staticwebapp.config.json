@@ -14,7 +14,7 @@
     },
     {
       "route": "/api/*",
-      "allowedRoles": ["user", "admin"]
+      "allowedRoles": ["authenticated"]
     },
     {
       "route": "/admin/*",
@@ -25,8 +25,7 @@
     {
       "route": "/*",
       "serve": "/index.html",
-      "statusCode": 200,
-      "allowedRoles": ["user", "admin"]
+      "statusCode": 200
     }
   ],
   "responseOverrides": {
@@ -39,10 +38,11 @@
     "identityProviders": {
       "azureActiveDirectory": {
         "registration": {
-          "openIdIssuer": "https://login.microsoftonline.com/common/v2.0",
+          "openIdIssuer": "https://login.microsoftonline.com/0b05f98f-b4a8-4c7e-8a24-fcfa2f848c3a/v2.0",
           "clientIdSettingName": "AZURE_CLIENT_ID",
           "clientSecretSettingName": "AZURE_CLIENT_SECRET"
-        }
+        },
+        "userDetailsClaim": "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"
       }
     }
   },
