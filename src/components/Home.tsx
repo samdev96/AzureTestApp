@@ -1,9 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import UserMenu from './UserMenu';
 import './Home.css';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleCreateIncident = () => {
     navigate('/create-incident');
@@ -20,8 +23,13 @@ const Home: React.FC = () => {
   return (
     <div className="home-container">
       <header className="home-header">
-        <h1>VibeNow</h1>
-        <p>Welcome to VibeNow. Create and manage incidents and service requests.</p>
+        <div className="header-content">
+          <div className="header-text">
+            <h1>VibeNow</h1>
+            <p>Welcome to VibeNow. Create and manage incidents and service requests.</p>
+          </div>
+          <UserMenu />
+        </div>
       </header>
 
       <main className="home-main">
