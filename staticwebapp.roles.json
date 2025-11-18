@@ -1,0 +1,10 @@
+{
+  "roles": [
+    {
+      "role": "admin",
+      "users": [
+        "duffydev96@gmail.com"
+      ]
+    }
+  ]
+}

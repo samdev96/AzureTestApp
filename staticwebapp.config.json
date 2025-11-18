@@ -9,16 +9,32 @@
       "rewrite": "/.auth/logout"
     },
     {
+      "route": "/api/admin/*",
+      "allowedRoles": ["admin"]
+    },
+    {
       "route": "/api/*",
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["user", "admin"]
+    },
+    {
+      "route": "/admin/*",
+      "serve": "/index.html",
+      "statusCode": 200,
+      "allowedRoles": ["admin"]
     },
     {
       "route": "/*",
       "serve": "/index.html",
       "statusCode": 200,
-      "allowedRoles": ["authenticated"]
+      "allowedRoles": ["user", "admin"]
     }
   ],
+  "responseOverrides": {
+    "401": {
+      "redirect": "/.auth/login/aad",
+      "statusCode": 302
+    }
+  },
   "auth": {
     "identityProviders": {
       "azureActiveDirectory": {

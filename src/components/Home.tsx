@@ -6,7 +6,6 @@ import './Home.css';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
 
   const handleCreateIncident = () => {
     navigate('/create-incident');

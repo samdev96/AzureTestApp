@@ -3,19 +3,19 @@ const API_BASE_URL = process.env.NODE_ENV === 'development'
   ? 'http://localhost:7071/api'  // Local Azure Functions
   : '/api';  // Production (Azure Static Web App)
 
-// Helper function to get user info for API calls
-const getUserInfo = async () => {
-  try {
-    const response = await fetch('/.auth/me');
-    if (response.ok) {
-      const authPayload = await response.json();
-      return authPayload.clientPrincipal;
-    }
-  } catch (error) {
-    console.warn('Could not get user info:', error);
-  }
-  return null;
-};
+// Helper function to get user info for API calls (for future use)
+// const getUserInfo = async () => {
+//   try {
+//     const response = await fetch('/.auth/me');
+//     if (response.ok) {
+//       const authPayload = await response.json();
+//       return authPayload.clientPrincipal;
+//     }
+//   } catch (error) {
+//     console.warn('Could not get user info:', error);
+//   }
+//   return null;
+// };
 
 // Generic API response interface
 interface ApiResponse<T> {
