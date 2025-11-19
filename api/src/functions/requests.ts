@@ -25,6 +25,23 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
     try {
         const pool = await getDbConnection();
         
+        // Get user info from Static Web Apps authentication
+        const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+        let userId = 'anonymous';
+        let userRoles: string[] = [];
+        
+        if (userPrincipalHeader) {
+            try {
+                const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
+                userId = userPrincipal.userDetails || userPrincipal.userId || 'anonymous';
+                userRoles = userPrincipal.roles || [];
+                context.log('User ID:', userId);
+                context.log('User Roles:', userRoles);
+            } catch (e) {
+                context.log('Error parsing user principal:', e);
+            }
+        }
+        
         // Get query parameters for filtering
         const status = request.query.get('status');
         const requestType = request.query.get('type');
@@ -57,6 +74,13 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
         `;
         
         const params: any = {};
+        
+        // If user is not admin, only show their own tickets
+        const isAdmin = userRoles.includes('admin');
+        if (!isAdmin) {
+            query += ` AND CreatedBy = @userId`;
+            params.userId = userId;
+        }
         
         if (status) {
             query += ` AND Status = @status`;
@@ -128,6 +152,20 @@ async function createRequest(request: HttpRequest, context: InvocationContext): 
     try {
         const body = await request.json() as any;
         
+        // Get user info from Static Web Apps authentication
+        const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+        let userId = 'anonymous';
+        
+        if (userPrincipalHeader) {
+            try {
+                const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
+                userId = userPrincipal.userDetails || userPrincipal.userId || 'anonymous';
+                context.log('Creating request for user:', userId);
+            } catch (e) {
+                context.log('Error parsing user principal:', e);
+            }
+        }
+        
         // Validate required fields
         const requiredFields = [
             'title', 'description', 'requestType', 'urgency', 'justification',
@@ -186,7 +224,7 @@ async function createRequest(request: HttpRequest, context: InvocationContext): 
         insertRequest.input('contactInfo', body.contactInfo);
         insertRequest.input('approverName', body.approver);
         insertRequest.input('statusId', statusId);
-        insertRequest.input('createdBy', body.createdBy || 'System');
+        insertRequest.input('createdBy', userId);
         
         const insertResult = await insertRequest.query(`
             INSERT INTO Requests (

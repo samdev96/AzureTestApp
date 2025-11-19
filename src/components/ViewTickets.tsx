@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ticketsAPI, Incident, ServiceRequest } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './ViewTickets.css';
 
 // Combined ticket interface for display
@@ -19,12 +20,16 @@ interface DisplayTicket {
 }
 
 const ViewTickets: React.FC = () => {
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [filterType, setFilterType] = useState<'All' | 'Incident' | 'Request'>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Check if user is admin
+  const isAdmin = user?.userRoles.includes('admin') || false;
 
   // Fetch tickets from API
   useEffect(() => {
@@ -131,6 +136,17 @@ const ViewTickets: React.FC = () => {
         <Link to="/" className="back-link">← Back to Home</Link>
         <h1>📊 View Tickets</h1>
         <p>Manage and track your incidents and service requests</p>
+        {user && (
+          <div className="user-info">
+            <small>
+              {isAdmin ? (
+                <span className="admin-badge">👑 Admin View - Showing all tickets</span>
+              ) : (
+                <span className="user-badge">👤 User View - Showing your tickets only</span>
+              )}
+            </small>
+          </div>
+        )}
       </div>
 
       <div className="tickets-content">

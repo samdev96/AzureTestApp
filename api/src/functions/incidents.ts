@@ -25,6 +25,23 @@ async function getIncidents(request: HttpRequest, context: InvocationContext): P
     try {
         const pool = await getDbConnection();
         
+        // Get user info from Static Web Apps authentication
+        const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+        let userId = 'anonymous';
+        let userRoles: string[] = [];
+        
+        if (userPrincipalHeader) {
+            try {
+                const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
+                userId = userPrincipal.userDetails || userPrincipal.userId || 'anonymous';
+                userRoles = userPrincipal.roles || [];
+                context.log('User ID:', userId);
+                context.log('User Roles:', userRoles);
+            } catch (e) {
+                context.log('Error parsing user principal:', e);
+            }
+        }
+        
         // Get query parameters for filtering
         const status = request.query.get('status');
         const priority = request.query.get('priority');
@@ -51,6 +68,13 @@ async function getIncidents(request: HttpRequest, context: InvocationContext): P
         `;
         
         const params: any = {};
+        
+        // If user is not admin, only show their own tickets
+        const isAdmin = userRoles.includes('admin');
+        if (!isAdmin) {
+            query += ` AND CreatedBy = @userId`;
+            params.userId = userId;
+        }
         
         if (status) {
             query += ` AND Status = @status`;
@@ -117,6 +141,20 @@ async function createIncident(request: HttpRequest, context: InvocationContext):
     try {
         const body = await request.json() as any;
         
+        // Get user info from Static Web Apps authentication
+        const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+        let userId = 'anonymous';
+        
+        if (userPrincipalHeader) {
+            try {
+                const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
+                userId = userPrincipal.userDetails || userPrincipal.userId || 'anonymous';
+                context.log('Creating incident for user:', userId);
+            } catch (e) {
+                context.log('Error parsing user principal:', e);
+            }
+        }
+        
         // Validate required fields
         const requiredFields = ['title', 'description', 'category', 'priority', 'affectedUser', 'contactInfo'];
         for (const field of requiredFields) {
@@ -174,7 +212,7 @@ async function createIncident(request: HttpRequest, context: InvocationContext):
         insertRequest.input('statusId', StatusID);
         insertRequest.input('affectedUser', body.affectedUser);
         insertRequest.input('contactInfo', body.contactInfo);
-        insertRequest.input('createdBy', body.createdBy || 'System');
+        insertRequest.input('createdBy', userId);
         
         const insertResult = await insertRequest.query(`
             INSERT INTO Incidents (Title, Description, CategoryID, PriorityID, StatusID, AffectedUser, ContactInfo, CreatedBy)
