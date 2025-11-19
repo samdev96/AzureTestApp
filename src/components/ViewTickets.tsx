@@ -20,7 +20,7 @@ interface DisplayTicket {
 }
 
 const ViewTickets: React.FC = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
