@@ -1,18 +1,17 @@
 import * as sql from 'mssql';
 
-// Database configuration for Azure SQL with Service Principal
+// Database configuration for Azure SQL with SQL Authentication
 function getDatabaseConfig(): sql.config {
     const server = process.env.DB_SERVER || 'vibenow.database.windows.net';
     const database = process.env.DB_DATABASE || 'VibeNow-Test';
-    
-    // Service Principal credentials for Azure AD authentication
-    const clientId = process.env.DB_CLIENT_ID;
-    const clientSecret = process.env.DB_CLIENT_SECRET;
-    const tenantId = process.env.AZURE_TENANT_ID;
+    const user = process.env.DB_USER || 'CloudSAe07ce23c';
+    const password = process.env.DB_PASSWORD;
 
-    const baseConfig: sql.config = {
+    return {
         server,
         database,
+        user,
+        password,
         options: {
             encrypt: true,
             trustServerCertificate: false
@@ -26,29 +25,6 @@ function getDatabaseConfig(): sql.config {
             acquireTimeoutMillis: 30000
         }
     };
-
-    // Use Service Principal for Azure AD authentication
-    if (clientId && clientSecret && tenantId) {
-        return {
-            ...baseConfig,
-            authentication: {
-                type: 'azure-active-directory-service-principal-secret',
-                options: {
-                    clientId,
-                    clientSecret,
-                    tenantId
-                }
-            }
-        };
-    } else {
-        // Fallback to default Azure AD authentication
-        return {
-            ...baseConfig,
-            authentication: {
-                type: 'azure-active-directory-default'
-            }
-        };
-    }
 }
 
 export async function getDbConnection(): Promise<sql.ConnectionPool> {
