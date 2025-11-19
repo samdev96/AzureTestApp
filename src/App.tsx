@@ -1,11 +1,4 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthWrapper } from './context/AuthWrapper';
-import ProtectedRoute from './components/ProtectedRoute';
-import Home from './components/Home';
-import CreateIncident from './components/CreateIncident';
-import CreateRequest from './components/CreateRequest';
-import ViewTickets from './components/ViewTickets';
 import TestPage from './components/TestPage';
 import './App.css';
 
