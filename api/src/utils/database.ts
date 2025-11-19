@@ -31,13 +31,26 @@ export async function getDbConnection(): Promise<sql.ConnectionPool> {
     // Create a fresh connection each time to avoid timeout issues
     const config = getDatabaseConfig();
     const pool = new sql.ConnectionPool(config);
-    console.log('Connecting to Azure SQL Database...');
-    console.log('Using server:', config.server);
-    console.log('Using database:', config.database);
-    console.log('Authentication type:', config.authentication ? 'Azure AD' : 'SQL Auth');
-    await pool.connect();
-    console.log('Successfully connected to Azure SQL Database');
-    return pool;
+    
+    console.log('=== Database Connection Attempt ===');
+    console.log('Server:', config.server);
+    console.log('Database:', config.database);
+    console.log('User:', config.user);
+    console.log('Password set:', !!config.password);
+    console.log('Environment check:');
+    console.log('- DB_SERVER:', process.env.DB_SERVER);
+    console.log('- DB_DATABASE:', process.env.DB_DATABASE);
+    console.log('- DB_USER:', process.env.DB_USER);
+    console.log('- DB_PASSWORD set:', !!process.env.DB_PASSWORD);
+    
+    try {
+        await pool.connect();
+        console.log('✅ Successfully connected to Azure SQL Database');
+        return pool;
+    } catch (error) {
+        console.error('❌ Database connection failed:', error);
+        throw error;
+    }
 }
 
 export async function closeDbConnection(pool?: sql.ConnectionPool): Promise<void> {
