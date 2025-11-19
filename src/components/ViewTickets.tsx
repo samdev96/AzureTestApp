@@ -20,7 +20,7 @@ interface DisplayTicket {
 }
 
 const ViewTickets: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -29,7 +29,7 @@ const ViewTickets: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Check if user is admin
-  const isAdmin = user?.userRoles.includes('admin') || false;
+  const isAdmin = user?.userRoles?.includes('admin') || false;
 
   // Fetch tickets from API
   useEffect(() => {

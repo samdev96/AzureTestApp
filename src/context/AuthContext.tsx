@@ -38,11 +38,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Fetch user information from Azure Static Web Apps
     const fetchUser = async () => {
       try {
+        console.log('🔍 Fetching authentication info from /.auth/me');
         const response = await fetch('/.auth/me');
         if (response.ok) {
           const authPayload = await response.json();
+          console.log('📋 Auth payload:', authPayload);
           const clientPrincipal = authPayload.clientPrincipal;
           if (clientPrincipal) {
+            console.log('✅ User authenticated:', clientPrincipal);
             setUser({
               userId: clientPrincipal.userId,
               userDetails: clientPrincipal.userDetails,
@@ -50,11 +53,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               identityProvider: clientPrincipal.identityProvider,
               claims: clientPrincipal.claims || []
             });
+          } else {
+            console.log('❌ No client principal found');
+            setUser(null);
           }
+        } else {
+          console.log('❌ Auth response not ok:', response.status);
+          setUser(null);
         }
       } catch (error) {
-        console.error('Error fetching user:', error);
+        console.error('❌ Error fetching user:', error);
+        setUser(null);
       } finally {
+        console.log('✅ Auth loading complete');
         setLoading(false);
       }
     };

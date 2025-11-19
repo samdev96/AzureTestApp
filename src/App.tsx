@@ -6,6 +6,7 @@ import Home from './components/Home';
 import CreateIncident from './components/CreateIncident';
 import CreateRequest from './components/CreateRequest';
 import ViewTickets from './components/ViewTickets';
+import TestPage from './components/TestPage';
 import './App.css';
 
 function App() {
@@ -13,14 +14,19 @@ function App() {
     <AuthWrapper>
       <Router>
         <div className="App">
-          <ProtectedRoute>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/create-incident" element={<CreateIncident />} />
-              <Route path="/create-request" element={<CreateRequest />} />
-              <Route path="/view-tickets" element={<ViewTickets />} />
-            </Routes>
-          </ProtectedRoute>
+          <Routes>
+            <Route path="/test" element={<TestPage />} />
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/create-incident" element={<CreateIncident />} />
+                  <Route path="/create-request" element={<CreateRequest />} />
+                  <Route path="/view-tickets" element={<ViewTickets />} />
+                </Routes>
+              </ProtectedRoute>
+            } />
+          </Routes>
         </div>
       </Router>
     </AuthWrapper>
