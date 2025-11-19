@@ -30,16 +30,25 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
         let userId = 'anonymous';
         let userRoles: string[] = [];
         
+        context.log('Raw auth header:', userPrincipalHeader);
+        
         if (userPrincipalHeader) {
             try {
-                const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
+                const decodedHeader = Buffer.from(userPrincipalHeader, 'base64').toString();
+                context.log('Decoded auth header:', decodedHeader);
+                
+                const userPrincipal = JSON.parse(decodedHeader);
                 userId = userPrincipal.userDetails || userPrincipal.userId || 'anonymous';
                 userRoles = userPrincipal.roles || [];
+                
+                context.log('Full user principal object:', JSON.stringify(userPrincipal, null, 2));
                 context.log('User ID:', userId);
                 context.log('User Roles:', userRoles);
             } catch (e) {
                 context.log('Error parsing user principal:', e);
             }
+        } else {
+            context.log('No x-ms-client-principal header found');
         }
         
         // Get query parameters for filtering

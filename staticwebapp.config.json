@@ -18,14 +18,12 @@
     },
     {
       "route": "/admin/*",
-      "serve": "/index.html",
-      "statusCode": 200,
+      "rewrite": "/index.html",
       "allowedRoles": ["admin"]
     },
     {
       "route": "/*",
-      "serve": "/index.html",
-      "statusCode": 200
+      "rewrite": "/index.html"
     }
   ],
   "responseOverrides": {
