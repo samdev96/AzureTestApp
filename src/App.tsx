@@ -11,25 +11,11 @@ import './App.css';
 
 function App() {
   return (
-    <AuthWrapper>
-      <Router>
-        <div className="App">
-          <Routes>
-            <Route path="/test" element={<TestPage />} />
-            <Route path="/*" element={
-              <ProtectedRoute>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/create-incident" element={<CreateIncident />} />
-                  <Route path="/create-request" element={<CreateRequest />} />
-                  <Route path="/view-tickets" element={<ViewTickets />} />
-                </Routes>
-              </ProtectedRoute>
-            } />
-          </Routes>
-        </div>
-      </Router>
-    </AuthWrapper>
+    <div className="App">
+      <h1>🎯 VibeNow ITSM - Loading Test</h1>
+      <p>If you can see this, React is working!</p>
+      <TestPage />
+    </div>
   );
 }
 
