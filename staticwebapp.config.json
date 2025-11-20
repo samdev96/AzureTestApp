@@ -52,7 +52,7 @@
     ".json": "application/json"
   },
   "defaultHeaders": {
-    "content-security-policy": "default-src https: 'unsafe-eval' 'unsafe-inline'; object-src 'none'"
+    "content-security-policy": "default-src 'self' https: 'unsafe-eval' 'unsafe-inline'; object-src 'none'"
   },
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",
