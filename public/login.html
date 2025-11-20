@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeNow - Login</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: Arial, sans-serif;
+        }
+        .login-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0 0 8px 0;
+        }
+        .subtitle {
+            color: #718096;
+            font-size: 16px;
+            margin: 0 0 40px 0;
+        }
+        .login-icon {
+            font-size: 48px;
+            margin: 0 0 24px 0;
+        }
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0 0 16px 0;
+        }
+        .description {
+            color: #718096;
+            font-size: 16px;
+            line-height: 1.5;
+            margin: 0 0 32px 0;
+        }
+        .login-button {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 16px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(66, 153, 225, 0.3);
+        }
+        .login-button:active {
+            transform: translateY(0);
+        }
+        .login-button-icon {
+            font-size: 18px;
+        }
+        .info-box {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: left;
+            margin-top: 32px;
+        }
+        .info-box p {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #4a5568;
+        }
+        .info-box p:last-child {
+            margin-bottom: 0;
+        }
+        .info-box p:first-child {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 12px;
+        }
+        .test-links {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        .test-link {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 16px;
+            background: #f7fafc;
+            color: #4a5568;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        .test-link:hover {
+            background: #edf2f7;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h1>VibeNow</h1>
+        <p class="subtitle">IT Service Management System</p>
+        
+        <div class="login-icon">🔐</div>
+        
+        <h2>Welcome Back</h2>
+        
+        <p class="description">
+            Please sign in with your organizational account to access the ITSM system.
+        </p>
+        
+        <a href="/.auth/login/aad" class="login-button">
+            <span class="login-button-icon">🏢</span>
+            Sign in with Azure AD
+        </a>
+        
+        <div class="info-box">
+            <p><strong>✅ Secure Authentication</strong></p>
+            <p>• Single Sign-On (SSO) enabled</p>
+            <p>• Multi-factor authentication supported</p>
+            <p>• Enterprise security standards</p>
+        </div>
+
+        <div class="test-links">
+            <p style="margin-bottom: 10px; font-size: 12px; color: #718096;">Debug Links:</p>
+            <a href="/test.html" class="test-link">Basic HTML Test</a>
+            <a href="/test" class="test-link">React Test Page</a>
+            <a href="/.auth/me" class="test-link">Auth Status</a>
+        </div>
+    </div>
+
+    <script>
+        console.log('VibeNow Login Page - HTML Version Loaded Successfully');
+        
+        // Add some interaction feedback
+        const loginButton = document.querySelector('.login-button');
+        loginButton.addEventListener('click', function() {
+            console.log('Redirecting to Azure AD login...');
+            this.innerHTML = '<span>🔄</span> Redirecting...';
+        });
+        
+        // Log current auth status for debugging
+        fetch('/.auth/me')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Current auth status:', data);
+                if (data.clientPrincipal) {
+                    console.log('User is already authenticated:', data.clientPrincipal);
+                    // If already authenticated, redirect to home
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                }
+            })
+            .catch(error => {
+                console.log('Auth status check failed:', error);
+            });
+    </script>
+</body>
+</html>
