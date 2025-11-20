@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import AuthWrapper from './context/AuthWrapper';
 import Home from './components/Home';
 import CreateIncident from './components/CreateIncident';
 import CreateRequest from './components/CreateRequest';
