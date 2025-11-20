@@ -1,13 +1,14 @@
 import React from 'react';
-import TestPage from './components/TestPage';
-import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <h1>🎯 VibeNow ITSM - Loading Test</h1>
-      <p>If you can see this, React is working!</p>
-      <TestPage />
+    <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'Arial' }}>
+      <h1 style={{ color: 'green' }}>✅ REACT IS WORKING!</h1>
+      <p style={{ fontSize: '18px' }}>This is the simplest possible React app.</p>
+      <p>If you can see this, the deployment is successful.</p>
+      <button onClick={() => alert('JavaScript is working!')}>
+        Test JavaScript
+      </button>
     </div>
   );
 }
