@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import Home from './components/Home';
+import DashboardRouter from './components/DashboardRouter';
 import CreateIncident from './components/CreateIncident';
 import CreateRequest from './components/CreateRequest';
 import ViewTickets from './components/ViewTickets';
@@ -24,7 +24,7 @@ function App() {
               path="/"
               element={
                 <ProtectedRoute>
-                  <Home />
+                  <DashboardRouter />
                 </ProtectedRoute>
               }
             />
