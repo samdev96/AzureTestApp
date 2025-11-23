@@ -124,19 +124,30 @@ async function addUser() {
         if (userExists === 0) {
             info('User not found in tenant. Sending B2B guest invitation...');
             
-            const invitationCmd = `az ad user invite --invited-user-email-address "${email}" --invited-user-display-name "${userDisplayName}" --invited-user-message-info "Welcome to VibeNow ITSM! You have been granted ${role} access." --query "{id: invitedUser.id, userPrincipalName: invitedUser.userPrincipalName, inviteRedeemUrl: inviteRedeemUrl}" --output json`;
+            const invitationBody = JSON.stringify({
+                invitedUserEmailAddress: email,
+                invitedUserDisplayName: userDisplayName,
+                inviteRedirectUrl: "https://green-smoke-0db3ad503.3.azurestaticapps.net",
+                sendInvitationMessage: true,
+                invitedUserMessageInfo: {
+                    customizedMessageBody: `Welcome to VibeNow ITSM! You have been granted ${role} access to our IT Service Management system.`
+                }
+            });
             
-            const invitationResult = await runCommand(invitationCmd, 'Sending B2B invitation');
+            const invitationCmd = `az rest --method POST --url "https://graph.microsoft.com/v1.0/invitations" --body '${invitationBody}' --headers "Content-Type=application/json"`;
+            
+            const invitationResult = await runCommand(invitationCmd, 'Sending B2B invitation via Microsoft Graph API');
             const invitation = JSON.parse(invitationResult);
             
-            userObjectId = invitation.id;
-            userPrincipalName = invitation.userPrincipalName;
+            userObjectId = invitation.invitedUser.id;
+            userPrincipalName = invitation.invitedUser.userPrincipalName;
             const redeemUrl = invitation.inviteRedeemUrl;
             
             success('B2B invitation sent successfully!');
             info(`User Object ID: ${userObjectId}`);
             info(`User Principal Name: ${userPrincipalName}`);
-            warning(`User must accept invitation at: ${redeemUrl}`);
+            warning(`Invitation email sent to: ${email}`);
+            info(`Redemption URL: ${redeemUrl}`);
         } else {
             success(`Using existing user with Object ID: ${userObjectId}`);
         }

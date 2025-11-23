@@ -89,24 +89,37 @@ fi
 if [ "$USER_EXISTS" -eq 0 ]; then
     print_status "User not found in tenant. Sending B2B guest invitation..."
     
-    INVITATION_RESULT=$(az ad user invite \
-        --invited-user-email-address "$EMAIL" \
-        --invited-user-display-name "$DISPLAY_NAME" \
-        --invited-user-message-info "Welcome to VibeNow ITSM! You have been granted $ROLE access." \
-        --query "{id: invitedUser.id, userPrincipalName: invitedUser.userPrincipalName, inviteRedeemUrl: inviteRedeemUrl}" \
-        --output json 2>/dev/null)
+    # Create invitation body for Microsoft Graph API
+    INVITATION_BODY=$(cat <<EOF
+{
+    "invitedUserEmailAddress": "$EMAIL",
+    "invitedUserDisplayName": "$DISPLAY_NAME",
+    "inviteRedirectUrl": "https://green-smoke-0db3ad503.3.azurestaticapps.net",
+    "sendInvitationMessage": true,
+    "invitedUserMessageInfo": {
+        "customizedMessageBody": "Welcome to VibeNow ITSM! You have been granted $ROLE access to our IT Service Management system."
+    }
+}
+EOF
+)
+    
+    INVITATION_RESULT=$(az rest --method POST \
+        --url "https://graph.microsoft.com/v1.0/invitations" \
+        --body "$INVITATION_BODY" \
+        --headers "Content-Type=application/json" 2>/dev/null)
     
     if [ $? -eq 0 ]; then
-        USER_OBJECT_ID=$(echo "$INVITATION_RESULT" | jq -r '.id')
-        USER_PRINCIPAL_NAME=$(echo "$INVITATION_RESULT" | jq -r '.userPrincipalName')
+        USER_OBJECT_ID=$(echo "$INVITATION_RESULT" | jq -r '.invitedUser.id')
+        USER_PRINCIPAL_NAME=$(echo "$INVITATION_RESULT" | jq -r '.invitedUser.userPrincipalName')
         REDEEM_URL=$(echo "$INVITATION_RESULT" | jq -r '.inviteRedeemUrl')
         
         print_success "B2B invitation sent successfully!"
         print_status "User Object ID: $USER_OBJECT_ID"
         print_status "User Principal Name: $USER_PRINCIPAL_NAME"
-        print_warning "User must accept invitation at: $REDEEM_URL"
+        print_warning "Invitation email sent to: $EMAIL"
+        print_status "Redemption URL: $REDEEM_URL"
     else
-        print_error "Failed to send B2B invitation"
+        print_error "Failed to send B2B invitation via Microsoft Graph API"
         exit 1
     fi
 else

@@ -1,10 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import UserMenu from './UserMenu';
 import './Home.css';
 
+interface TicketStats {
+  openIncidents: number;
+  pendingRequests: number;
+  totalTickets: number;
+}
+
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [stats, setStats] = useState<TicketStats>({
+    openIncidents: 0,
+    pendingRequests: 0,
+    totalTickets: 0
+  });
+  const [loading, setLoading] = useState(true);
 
   const handleCreateIncident = () => {
     navigate('/create-incident');
@@ -17,6 +31,53 @@ const Home: React.FC = () => {
   const handleViewTickets = () => {
     navigate('/view-tickets');
   };
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user) return;
+
+      try {
+        setLoading(true);
+
+        // Fetch incidents and requests data
+        const [incidentsResponse, requestsResponse] = await Promise.all([
+          fetch('/api/incidents'),
+          fetch('/api/requests')
+        ]);
+
+        const incidentsData = await incidentsResponse.json();
+        const requestsData = await requestsResponse.json();
+
+        if (incidentsData.success && requestsData.success) {
+          const incidents = incidentsData.data || [];
+          const requests = requestsData.data || [];
+
+          // Calculate stats based on the fetched data
+          const openIncidents = incidents.filter((incident: any) => 
+            incident.Status === 'Open' || incident.Status === 'In Progress'
+          ).length;
+
+          const pendingRequests = requests.filter((request: any) => 
+            request.Status === 'Pending Approval' || request.Status === 'Approved'
+          ).length;
+
+          const totalTickets = incidents.length + requests.length;
+
+          setStats({
+            openIncidents,
+            pendingRequests,
+            totalTickets
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching ticket stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [user]);
 
   return (
     <div className="home-container">
@@ -58,15 +119,15 @@ const Home: React.FC = () => {
           <h3>Quick Overview</h3>
           <div className="stats-grid">
             <div className="stat-item">
-              <span className="stat-number">0</span>
+              <span className="stat-number">{loading ? '...' : stats.openIncidents}</span>
               <span className="stat-label">Open Incidents</span>
             </div>
             <div className="stat-item">
-              <span className="stat-number">0</span>
+              <span className="stat-number">{loading ? '...' : stats.pendingRequests}</span>
               <span className="stat-label">Pending Requests</span>
             </div>
             <div className="stat-item">
-              <span className="stat-number">0</span>
+              <span className="stat-number">{loading ? '...' : stats.totalTickets}</span>
               <span className="stat-label">Total Tickets</span>
             </div>
           </div>
