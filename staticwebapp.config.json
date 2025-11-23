@@ -39,6 +39,12 @@
           "openIdIssuer": "https://login.microsoftonline.com/0b05f98f-b4a8-4c7e-8a24-fcfa2f848c3a/v2.0",
           "clientIdSettingName": "AAD_CLIENT_ID",
           "clientSecretSettingName": "AAD_CLIENT_SECRET"
+        },
+        "login": {
+          "loginParameters": [
+            "response_type=code",
+            "scope=openid profile email groups"
+          ]
         }
       }
     }
