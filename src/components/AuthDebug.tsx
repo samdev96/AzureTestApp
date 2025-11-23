@@ -1,0 +1,68 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+
+const AuthDebug: React.FC = () => {
+  const { user } = useAuth();
+  const [authData, setAuthData] = useState<any>(null);
+  const [apiAuthData, setApiAuthData] = useState<any>(null);
+
+  useEffect(() => {
+    // Fetch auth data from /.auth/me
+    fetch('/.auth/me')
+      .then(response => response.json())
+      .then(data => setAuthData(data))
+      .catch(error => console.error('Error fetching auth data:', error));
+
+    // Fetch auth data from API
+    fetch('/api/authTest')
+      .then(response => response.json())
+      .then(data => setApiAuthData(data))
+      .catch(error => console.error('Error fetching API auth data:', error));
+  }, []);
+
+  return (
+    <div style={{ 
+      padding: '20px', 
+      fontFamily: 'monospace', 
+      backgroundColor: '#f5f5f5', 
+      margin: '20px',
+      borderRadius: '8px',
+      overflow: 'auto'
+    }}>
+      <h2>🔍 Authentication Debug Information</h2>
+      
+      <div style={{ marginBottom: '20px' }}>
+        <h3>React Auth Context (useAuth hook):</h3>
+        <pre style={{ backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
+          {JSON.stringify(user, null, 2)}
+        </pre>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h3>Direct /.auth/me call:</h3>
+        <pre style={{ backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
+          {JSON.stringify(authData, null, 2)}
+        </pre>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h3>API Authentication Test (/api/authTest):</h3>
+        <pre style={{ backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
+          {JSON.stringify(apiAuthData, null, 2)}
+        </pre>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h3>Analysis:</h3>
+        <ul style={{ backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
+          <li><strong>Is Admin (React Context):</strong> {user?.userRoles?.includes('admin') ? '✅ YES' : '❌ NO'}</li>
+          <li><strong>User Roles (React Context):</strong> {user?.userRoles?.join(', ') || 'None'}</li>
+          <li><strong>User ID:</strong> {user?.userId || 'Not available'}</li>
+          <li><strong>Identity Provider:</strong> {user?.identityProvider || 'Not available'}</li>
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default AuthDebug;

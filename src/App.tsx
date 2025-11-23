@@ -7,6 +7,7 @@ import CreateRequest from './components/CreateRequest';
 import ViewTickets from './components/ViewTickets';
 import Login from './components/Login';
 import TestPage from './components/TestPage';
+import AuthDebug from './components/AuthDebug';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -18,6 +19,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/test" element={<TestPage />} />
+            <Route path="/debug" element={<AuthDebug />} />
             <Route
               path="/"
               element={

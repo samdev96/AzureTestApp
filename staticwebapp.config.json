@@ -13,6 +13,10 @@
       "allowedRoles": ["anonymous", "authenticated"]
     },
     {
+      "route": "/debug*",
+      "allowedRoles": ["authenticated"]
+    },
+    {
       "route": "/*",
       "allowedRoles": ["authenticated"]
     }
