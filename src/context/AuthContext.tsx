@@ -10,6 +10,7 @@ export interface StaticWebAppsUser {
     typ: string;
     val: string;
   }>;
+  isAdmin?: boolean; // Computed property for admin access
 }
 
 interface AuthContextType {
@@ -46,12 +47,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const clientPrincipal = authPayload.clientPrincipal;
           if (clientPrincipal) {
             console.log('✅ User authenticated:', clientPrincipal);
+            
+            // Define admin user IDs as fallback until role mapping works
+            const adminUserIds = [
+              '396bdeb2b00d4b619f15c3369c3fb051', // duffydev96@gmail.com
+            ];
+            
+            // Check if user is admin (either from role or user ID)
+            const isAdmin = (clientPrincipal.userRoles || []).includes('admin') ||
+                           adminUserIds.includes(clientPrincipal.userId);
+            
             setUser({
               userId: clientPrincipal.userId,
               userDetails: clientPrincipal.userDetails,
               userRoles: clientPrincipal.userRoles || ['authenticated'],
               identityProvider: clientPrincipal.identityProvider,
-              claims: clientPrincipal.claims || []
+              claims: clientPrincipal.claims || [],
+              isAdmin: isAdmin
             });
           } else {
             console.log('❌ No client principal found');

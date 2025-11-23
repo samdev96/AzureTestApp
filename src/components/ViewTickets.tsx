@@ -28,8 +28,8 @@ const ViewTickets: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Check if user is admin
-  const isAdmin = user?.userRoles?.includes('admin') || false;
+  // Check if user is admin using the computed property from AuthContext
+  const isAdmin = user?.isAdmin || false;
 
   // Fetch tickets from API
   useEffect(() => {

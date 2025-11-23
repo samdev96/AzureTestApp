@@ -41,6 +41,7 @@
           "clientSecretSettingName": "AAD_CLIENT_SECRET"
         }
       }
-    }
+    },
+    "rolesSource": "/staticwebapp.roles.json"
   }
 }

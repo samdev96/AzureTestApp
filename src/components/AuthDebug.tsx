@@ -55,7 +55,8 @@ const AuthDebug: React.FC = () => {
       <div style={{ marginBottom: '20px' }}>
         <h3>Analysis:</h3>
         <ul style={{ backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
-          <li><strong>Is Admin (React Context):</strong> {user?.userRoles?.includes('admin') ? '✅ YES' : '❌ NO'}</li>
+          <li><strong>Is Admin (React Context):</strong> {user?.isAdmin ? '✅ YES' : '❌ NO'}</li>
+          <li><strong>Has Admin Role:</strong> {user?.userRoles?.includes('admin') ? '✅ YES' : '❌ NO'}</li>
           <li><strong>User Roles (React Context):</strong> {user?.userRoles?.join(', ') || 'None'}</li>
           <li><strong>User ID:</strong> {user?.userId || 'Not available'}</li>
           <li><strong>Identity Provider:</strong> {user?.identityProvider || 'Not available'}</li>
