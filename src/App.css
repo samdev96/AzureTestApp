@@ -1,6 +1,7 @@
 .App {
   min-height: 100vh;
   background-color: #f5f7fa;
+  position: relative;
 }
 
 * {
@@ -11,4 +12,19 @@ body {
   margin: 0;
   padding: 0;
   background-color: #f5f7fa;
+}
+
+/* Version display at bottom right */
+.version-display {
+  position: fixed;
+  bottom: 10px;
+  right: 15px;
+  font-size: 11px;
+  color: #888;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  z-index: 1000;
+  backdrop-filter: blur(5px);
 }

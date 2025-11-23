@@ -53,6 +53,11 @@ function App() {
               }
             />
           </Routes>
+          
+          {/* Version display */}
+          <div className="version-display">
+            v0.2
+          </div>
         </div>
       </Router>
     </AuthProvider>
