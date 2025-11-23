@@ -79,14 +79,8 @@ async function getIncidents(request: HttpRequest, context: InvocationContext): P
         
         const params: any = {};
         
-        // Check if user is admin (either from role or user ID)
-        const adminUserIds = [
-            '396bdeb2b00d4b619f15c3369c3fb051', // duffydev96@gmail.com
-        ];
-        
-        const isAdmin = userRoles.includes('admin') || 
-                        adminUserIds.includes(userId) || 
-                        adminUserIds.includes(userPrincipal?.userId);
+        // Check if user is admin from role assignment
+        const isAdmin = userRoles.includes('admin');
         
         context.log('Admin check:', { isAdmin, userId, userRoles, userPrincipal: userPrincipal?.userId });
         

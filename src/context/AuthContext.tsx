@@ -48,14 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (clientPrincipal) {
             console.log('✅ User authenticated:', clientPrincipal);
             
-            // Define admin user IDs as fallback until role mapping works
-            const adminUserIds = [
-              '396bdeb2b00d4b619f15c3369c3fb051', // duffydev96@gmail.com
-            ];
-            
-            // Check if user is admin (either from role or user ID)
-            const isAdmin = (clientPrincipal.userRoles || []).includes('admin') ||
-                           adminUserIds.includes(clientPrincipal.userId);
+            // Check if user is admin from role assignment
+            const isAdmin = (clientPrincipal.userRoles || []).includes('admin');
             
             setUser({
               userId: clientPrincipal.userId,
