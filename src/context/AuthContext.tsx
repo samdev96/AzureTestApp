@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch user information from Azure Static Web Apps
+    // Fetch user information from Azure Static Web Apps and check database roles
     const fetchUser = async () => {
       try {
         console.log('🔍 Fetching authentication info from /.auth/me');
@@ -48,13 +48,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (clientPrincipal) {
             console.log('✅ User authenticated:', clientPrincipal);
             
-            // Check if user is admin from role assignment
-            const isAdmin = (clientPrincipal.userRoles || []).includes('admin');
+            // Check database for user roles
+            let isAdmin = false;
+            let dbRoles: string[] = [];
+            
+            try {
+              console.log('🔍 Checking database roles for user');
+              const rolesResponse = await fetch('/api/user-roles');
+              if (rolesResponse.ok) {
+                const rolesData = await rolesResponse.json();
+                console.log('📋 Database roles:', rolesData);
+                if (rolesData.success) {
+                  dbRoles = rolesData.roles || [];
+                  isAdmin = rolesData.isAdmin || false;
+                  console.log('✅ Database roles loaded:', { dbRoles, isAdmin });
+                } else {
+                  console.log('⚠️ Database roles check failed:', rolesData.error);
+                }
+              } else {
+                console.log('⚠️ Database roles request failed:', rolesResponse.status);
+              }
+            } catch (roleError) {
+              console.error('❌ Error fetching database roles:', roleError);
+            }
+            
+            // Combine Static Web Apps roles with database roles
+            const combinedRoles = [...(clientPrincipal.userRoles || ['authenticated']), ...dbRoles];
+            const uniqueRoles = Array.from(new Set(combinedRoles));
             
             setUser({
               userId: clientPrincipal.userId,
               userDetails: clientPrincipal.userDetails,
-              userRoles: clientPrincipal.userRoles || ['authenticated'],
+              userRoles: uniqueRoles,
               identityProvider: clientPrincipal.identityProvider,
               claims: clientPrincipal.claims || [],
               isAdmin: isAdmin

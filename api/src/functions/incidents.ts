@@ -79,8 +79,28 @@ async function getIncidents(request: HttpRequest, context: InvocationContext): P
         
         const params: any = {};
         
-        // Check if user is admin from role assignment
-        const isAdmin = userRoles.includes('admin');
+        // Check if user is admin from database
+        let isAdmin = false;
+        try {
+            const adminCheckRequest = pool.request();
+            adminCheckRequest.input('userEmail', userId);
+            adminCheckRequest.input('userObjectId', userPrincipal?.userId || '');
+            
+            const adminResult = await adminCheckRequest.query(`
+                SELECT COUNT(*) as AdminCount 
+                FROM UserRoles 
+                WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
+                    AND RoleName = 'admin' 
+                    AND IsActive = 1
+            `);
+            
+            isAdmin = adminResult.recordset[0].AdminCount > 0;
+            context.log('Database admin check:', { userId, isAdmin, adminCount: adminResult.recordset[0].AdminCount });
+        } catch (adminError) {
+            context.log('Error checking admin status from database:', adminError);
+            // Fallback to role-based check
+            isAdmin = userRoles.includes('admin');
+        }
         
         context.log('Admin check:', { isAdmin, userId, userRoles, userPrincipal: userPrincipal?.userId });
         

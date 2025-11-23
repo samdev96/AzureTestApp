@@ -5,6 +5,7 @@ const AuthDebug: React.FC = () => {
   const { user } = useAuth();
   const [authData, setAuthData] = useState<any>(null);
   const [apiAuthData, setApiAuthData] = useState<any>(null);
+  const [dbRolesData, setDbRolesData] = useState<any>(null);
 
   useEffect(() => {
     // Fetch auth data from /.auth/me
@@ -18,6 +19,12 @@ const AuthDebug: React.FC = () => {
       .then(response => response.json())
       .then(data => setApiAuthData(data))
       .catch(error => console.error('Error fetching API auth data:', error));
+
+    // Fetch database roles
+    fetch('/api/user-roles')
+      .then(response => response.json())
+      .then(data => setDbRolesData(data))
+      .catch(error => console.error('Error fetching database roles:', error));
   }, []);
 
   return (
@@ -53,10 +60,19 @@ const AuthDebug: React.FC = () => {
       </div>
 
       <div style={{ marginBottom: '20px' }}>
+        <h3>Database Roles Check (/api/user-roles):</h3>
+        <pre style={{ backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
+          {JSON.stringify(dbRolesData, null, 2)}
+        </pre>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
         <h3>Analysis:</h3>
         <ul style={{ backgroundColor: 'white', padding: '10px', borderRadius: '4px' }}>
           <li><strong>Is Admin (React Context):</strong> {user?.isAdmin ? '✅ YES' : '❌ NO'}</li>
-          <li><strong>Has Admin Role:</strong> {user?.userRoles?.includes('admin') ? '✅ YES' : '❌ NO'}</li>
+          <li><strong>Has Admin Role in userRoles:</strong> {user?.userRoles?.includes('admin') ? '✅ YES' : '❌ NO'}</li>
+          <li><strong>Database Admin Status:</strong> {dbRolesData?.isAdmin ? '✅ YES' : '❌ NO'}</li>
+          <li><strong>Database Roles:</strong> {dbRolesData?.roles?.join(', ') || 'None'}</li>
           <li><strong>User Roles (React Context):</strong> {user?.userRoles?.join(', ') || 'None'}</li>
           <li><strong>User ID:</strong> {user?.userId || 'Not available'}</li>
           <li><strong>Identity Provider:</strong> {user?.identityProvider || 'Not available'}</li>
