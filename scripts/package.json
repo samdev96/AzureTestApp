@@ -1,0 +1,16 @@
+{
+  "name": "vibenow-user-management",
+  "version": "1.0.0",
+  "description": "User management utilities for VibeNow ITSM",
+  "main": "add-user.js",
+  "scripts": {
+    "add-user": "node add-user.js",
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "chalk": "^4.1.2"
+  },
+  "keywords": ["azure", "itsm", "user-management"],
+  "author": "VibeNow Team",
+  "license": "MIT"
+}
