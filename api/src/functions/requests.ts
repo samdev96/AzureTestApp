@@ -29,6 +29,7 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
         const userPrincipalHeader = request.headers.get('x-ms-client-principal');
         let userId = 'anonymous';
         let userRoles: string[] = [];
+        let userPrincipal: any = null;
         
         context.log('Raw auth header:', userPrincipalHeader);
         
@@ -37,9 +38,9 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
                 const decodedHeader = Buffer.from(userPrincipalHeader, 'base64').toString();
                 context.log('Decoded auth header:', decodedHeader);
                 
-                const userPrincipal = JSON.parse(decodedHeader);
+                userPrincipal = JSON.parse(decodedHeader);
                 userId = userPrincipal.userDetails || userPrincipal.userId || 'anonymous';
-                userRoles = userPrincipal.roles || [];
+                userRoles = userPrincipal.userRoles || userPrincipal.roles || [];
                 
                 context.log('Full user principal object:', JSON.stringify(userPrincipal, null, 2));
                 context.log('User ID:', userId);
@@ -84,8 +85,18 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
         
         const params: any = {};
         
+        // Check if user is admin (either from role or user ID)
+        const adminUserIds = [
+            '396bdeb2b00d4b619f15c3369c3fb051', // duffydev96@gmail.com
+        ];
+        
+        const isAdmin = userRoles.includes('admin') || 
+                        adminUserIds.includes(userId) || 
+                        adminUserIds.includes(userPrincipal?.userId);
+        
+        context.log('Admin check:', { isAdmin, userId, userRoles, userPrincipalId: userPrincipal?.userId });
+        
         // If user is not admin, only show their own tickets
-        const isAdmin = userRoles.includes('admin');
         if (!isAdmin) {
             query += ` AND CreatedBy = @userId`;
             params.userId = userId;
