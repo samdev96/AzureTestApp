@@ -4,11 +4,12 @@
   top: 0;
   width: 250px;
   height: 100vh;
-  background: #2c3e50;
+  background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
   color: white;
   transition: width 0.3s ease;
   z-index: 1000;
   overflow: hidden;
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar.collapsed {

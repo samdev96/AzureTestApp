@@ -1,12 +1,12 @@
 .tickets-table-container {
-  padding: 20px;
+  padding: 32px 24px;
 }
 
 .table-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 15px;
 }
@@ -14,7 +14,8 @@
 .table-header h2 {
   margin: 0;
   color: #2c3e50;
-  font-size: 22px;
+  font-size: 1.4rem;
+  font-weight: 600;
 }
 
 .filters {
@@ -24,29 +25,31 @@
 }
 
 .filter-select {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+  padding: 10px 16px;
+  border: 2px solid #f0f0f0;
+  border-radius: 8px;
   background: white;
   font-size: 14px;
   color: #2c3e50;
   cursor: pointer;
-  transition: border-color 0.2s ease;
+  transition: all 0.3s ease;
+  font-weight: 500;
 }
 
 .filter-select:focus {
   outline: none;
   border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
 .filter-select:hover {
-  border-color: #bdc3c7;
+  border-color: #3498db;
 }
 
 .table-wrapper {
   overflow-x: auto;
-  border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  border: 2px solid #f0f0f0;
 }
 
 .tickets-table {
@@ -58,16 +61,17 @@
 
 .tickets-table th {
   background-color: #f8f9fa;
-  padding: 12px 15px;
+  padding: 16px 20px;
   text-align: left;
   font-weight: 600;
   color: #2c3e50;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid #e9ecef;
   white-space: nowrap;
+  font-size: 0.9rem;
 }
 
 .tickets-table td {
-  padding: 12px 15px;
+  padding: 16px 20px;
   border-bottom: 1px solid #f0f0f0;
   vertical-align: middle;
 }

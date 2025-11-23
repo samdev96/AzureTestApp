@@ -32,18 +32,33 @@ const TicketsTable: React.FC = () => {
         ]);
 
         if (incidentsResponse.ok && requestsResponse.ok) {
-          const incidents = await incidentsResponse.json();
-          const requests = await requestsResponse.json();
+          const incidentsData = await incidentsResponse.json();
+          const requestsData = await requestsResponse.json();
+
+          const incidents = incidentsData.success ? incidentsData.data : [];
+          const requests = requestsData.success ? requestsData.data : [];
 
           // Combine and format tickets
           const allTickets: Ticket[] = [
             ...incidents.map((incident: any) => ({
-              ...incident,
-              type: 'Incident' as const
+              id: incident.IncidentID,
+              title: incident.Title,
+              type: 'Incident' as const,
+              status: incident.Status,
+              priority: incident.Priority,
+              created_by: incident.CreatedBy,
+              created_at: incident.CreatedDate,
+              description: incident.Description
             })),
             ...requests.map((request: any) => ({
-              ...request,
-              type: 'Request' as const
+              id: request.RequestID,
+              title: request.Title,
+              type: 'Request' as const,
+              status: request.Status,
+              priority: request.Priority,
+              created_by: request.CreatedBy,
+              created_at: request.CreatedDate,
+              description: request.Description
             }))
           ];
 

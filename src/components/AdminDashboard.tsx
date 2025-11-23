@@ -32,14 +32,17 @@ const AdminDashboard: React.FC = () => {
         ]);
 
         if (incidentsResponse.ok && requestsResponse.ok) {
-          const incidents = await incidentsResponse.json();
-          const requests = await requestsResponse.json();
+          const incidentsData = await incidentsResponse.json();
+          const requestsData = await requestsResponse.json();
+
+          const incidents = incidentsData.success ? incidentsData.data : [];
+          const requests = requestsData.success ? requestsData.data : [];
 
           setStats({
             totalIncidents: incidents.length,
             totalRequests: requests.length,
-            openIncidents: incidents.filter((i: any) => i.status === 'Open').length,
-            openRequests: requests.filter((r: any) => r.status === 'Open').length,
+            openIncidents: incidents.filter((i: any) => i.Status === 'Open').length,
+            openRequests: requests.filter((r: any) => r.Status === 'Open').length,
             loading: false
           });
         } else {
