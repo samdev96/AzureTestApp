@@ -161,31 +161,31 @@
 }
 
 /* Medium screens (tablets, small laptops) - force collapsed but visible */
-@media (max-width: 1024px) {
+@media (max-width: 1024px) and (min-width: 769px) {
   .sidebar {
     width: 60px !important;
-    transform: translateX(0);
+    transform: translateX(0) !important;
   }
   
   .sidebar .sidebar-title {
-    opacity: 0;
+    opacity: 0 !important;
   }
   
   .sidebar .nav-text {
-    opacity: 0;
+    opacity: 0 !important;
   }
   
   .sidebar .nav-item {
-    padding: 15px;
-    justify-content: center;
+    padding: 15px !important;
+    justify-content: center !important;
   }
   
   .sidebar .nav-icon {
-    margin-right: 0;
+    margin-right: 0 !important;
   }
 }
 
-/* Mobile screens */
+/* Mobile screens - hide completely */
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);

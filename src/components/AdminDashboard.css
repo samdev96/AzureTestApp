@@ -133,16 +133,16 @@
 }
 
 /* Medium screens (tablets, small laptops) */
-@media (max-width: 1024px) {
+@media (max-width: 1024px) and (min-width: 769px) {
   .admin-content {
-    margin-left: 60px;
+    margin-left: 60px !important;
     padding: 15px;
-    max-width: calc(100vw - 60px);
+    max-width: calc(100vw - 60px) !important;
   }
   
   .admin-content.sidebar-collapsed {
-    margin-left: 60px;
-    max-width: calc(100vw - 60px);
+    margin-left: 60px !important;
+    max-width: calc(100vw - 60px) !important;
   }
 }
 
