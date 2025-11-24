@@ -41,8 +41,8 @@ const AdminDashboard: React.FC = () => {
           setStats({
             totalIncidents: incidents.length,
             totalRequests: requests.length,
-            openIncidents: incidents.filter((i: any) => i.Status === 'Open').length,
-            openRequests: requests.filter((r: any) => r.Status === 'Open').length,
+            openIncidents: incidents.filter((i: any) => i.Status === 'Open' || i.Status === 'In Progress').length,
+            openRequests: requests.filter((r: any) => r.Status === 'Pending Approval' || r.Status === 'Approved' || r.Status === 'In Progress').length,
             loading: false
           });
         } else {

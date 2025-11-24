@@ -19,7 +19,7 @@ const TicketsTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({
     type: 'all',
-    status: 'Open',
+    status: 'Open', // Show all open tickets (smart filter for both incidents and requests)
     priority: 'all'
   });
 
@@ -55,7 +55,7 @@ const TicketsTable: React.FC = () => {
               title: request.Title,
               type: 'Request' as const,
               status: request.Status,
-              priority: request.Priority,
+              priority: request.Urgency, // Requests use Urgency field instead of Priority
               created_by: request.CreatedBy,
               created_at: request.CreatedDate,
               description: request.Description
@@ -81,7 +81,20 @@ const TicketsTable: React.FC = () => {
 
   const filteredTickets = tickets.filter(ticket => {
     if (filter.type !== 'all' && ticket.type.toLowerCase() !== filter.type) return false;
-    if (filter.status !== 'all' && ticket.status !== filter.status) return false;
+    
+    // Handle special "Open" filter that shows all active/open tickets regardless of type
+    if (filter.status === 'Open') {
+      if (ticket.type === 'Incident') {
+        // For incidents, show Open and In Progress
+        if (ticket.status !== 'Open' && ticket.status !== 'In Progress') return false;
+      } else if (ticket.type === 'Request') {
+        // For requests, show Pending Approval, Approved, and In Progress
+        if (ticket.status !== 'Pending Approval' && ticket.status !== 'Approved' && ticket.status !== 'In Progress') return false;
+      }
+    } else if (filter.status !== 'all' && ticket.status !== filter.status) {
+      return false;
+    }
+    
     if (filter.priority !== 'all' && ticket.priority !== filter.priority) return false;
     return true;
   });
@@ -146,10 +159,14 @@ const TicketsTable: React.FC = () => {
             className="filter-select"
           >
             <option value="all">All Statuses</option>
-            <option value="Open">Open</option>
+            <option value="Open">Open (All Active)</option>
             <option value="In Progress">In Progress</option>
+            <option value="Pending Approval">Pending Approval</option>
+            <option value="Approved">Approved</option>
             <option value="Resolved">Resolved</option>
+            <option value="Completed">Completed</option>
             <option value="Closed">Closed</option>
+            <option value="Rejected">Rejected</option>
           </select>
 
           <select 
