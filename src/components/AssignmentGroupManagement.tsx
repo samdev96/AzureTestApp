@@ -68,7 +68,7 @@ const AssignmentGroupManagement: React.FC = () => {
   const handleRemoveUser = async (userEmail: string) => {
     if (!selectedGroup) return;
 
-    if (!confirm(`Are you sure you want to remove ${userEmail} from ${selectedGroup.GroupName}?`)) {
+    if (!window.confirm(`Are you sure you want to remove ${userEmail} from ${selectedGroup.GroupName}?`)) {
       return;
     }
 
