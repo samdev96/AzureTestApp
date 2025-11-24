@@ -350,9 +350,10 @@ async function updateIncident(request: HttpRequest, context: InvocationContext):
         dbRequest.input('AffectedUser', updatedTicket.affected_user || '');
         dbRequest.input('ContactInfo', updatedTicket.contact_info || '');
         dbRequest.input('AssignedTo', updatedTicket.assigned_to || null);
+        dbRequest.input('ResolutionNotes', updatedTicket.resolution_notes || null);
         dbRequest.input('ModifiedBy', userId);
 
-        const updateQuery = `
+        let updateQuery = `
             UPDATE Incidents 
             SET 
                 Title = @Title,
@@ -365,8 +366,14 @@ async function updateIncident(request: HttpRequest, context: InvocationContext):
                 AssignedTo = @AssignedTo,
                 ModifiedBy = @ModifiedBy,
                 ModifiedDate = GETUTCDATE()
-            WHERE IncidentID = @IncidentID
         `;
+        
+        // Add ResolutionNotes and ResolvedDate if status is Resolved
+        if (updatedTicket.status === 'Resolved') {
+            updateQuery += `, ResolutionNotes = @ResolutionNotes, ResolvedDate = GETUTCDATE()`;
+        }
+        
+        updateQuery += ` WHERE IncidentID = @IncidentID`;
 
         await dbRequest.query(updateQuery);
 

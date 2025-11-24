@@ -17,12 +17,15 @@ interface Ticket {
   affected_user?: string;
   contact_info?: string;
   assigned_to?: string;
+  resolution_notes?: string;
   // Request specific fields
   request_type?: string;
   business_justification?: string;
   requester_name?: string;
   department?: string;
   approver_name?: string;
+  completion_notes?: string;
+  rejection_notes?: string;
 }
 
 const TicketsTable: React.FC = () => {

@@ -370,9 +370,11 @@ async function updateRequest(request: HttpRequest, context: InvocationContext): 
         dbRequest.input('Department', updatedTicket.department || '');
         dbRequest.input('ApproverName', updatedTicket.approver_name || '');
         dbRequest.input('AssignedTo', updatedTicket.assigned_to || null);
+        dbRequest.input('CompletionNotes', updatedTicket.completion_notes || null);
+        dbRequest.input('RejectionNotes', updatedTicket.rejection_notes || null);
         dbRequest.input('ModifiedBy', userId);
 
-        const updateQuery = `
+        let updateQuery = `
             UPDATE Requests 
             SET 
                 Title = @Title,
@@ -387,8 +389,16 @@ async function updateRequest(request: HttpRequest, context: InvocationContext): 
                 AssignedTo = @AssignedTo,
                 ModifiedBy = @ModifiedBy,
                 ModifiedDate = GETUTCDATE()
-            WHERE RequestID = @RequestID
         `;
+        
+        // Add specific notes and dates based on status
+        if (updatedTicket.status === 'Completed') {
+            updateQuery += `, CompletionNotes = @CompletionNotes, CompletedDate = GETUTCDATE()`;
+        } else if (updatedTicket.status === 'Rejected') {
+            updateQuery += `, CompletionNotes = @RejectionNotes`; // Store rejection notes in completion notes field
+        }
+        
+        updateQuery += ` WHERE RequestID = @RequestID`;
 
         await dbRequest.query(updateQuery);
 

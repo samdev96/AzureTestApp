@@ -15,12 +15,15 @@ interface Ticket {
   affected_user?: string;
   contact_info?: string;
   assigned_to?: string;
+  resolution_notes?: string;
   // Request specific fields
   request_type?: string;
   business_justification?: string;
   requester_name?: string;
   department?: string;
   approver_name?: string;
+  completion_notes?: string;
+  rejection_notes?: string;
 }
 
 interface TicketEditModalProps {
@@ -34,20 +37,54 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
   const [editedTicket, setEditedTicket] = useState<Ticket | null>(null);
   const [loading, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resolutionNotes, setResolutionNotes] = useState('');
+  const [completionNotes, setCompletionNotes] = useState('');
+  const [rejectionNotes, setRejectionNotes] = useState('');
 
   useEffect(() => {
     if (ticket) {
       setEditedTicket({ ...ticket });
+      // Reset notes when opening a new ticket
+      setResolutionNotes('');
+      setCompletionNotes('');
+      setRejectionNotes('');
     }
   }, [ticket]);
 
   const handleSave = async () => {
     if (!editedTicket) return;
 
+    // Validate required notes for specific status changes
+    if (editedTicket.type === 'Incident' && editedTicket.status === 'Resolved' && !resolutionNotes.trim()) {
+      setError('Resolution Notes are required when marking an incident as Resolved');
+      return;
+    }
+    if (editedTicket.type === 'Request' && editedTicket.status === 'Completed' && !completionNotes.trim()) {
+      setError('Completion Notes are required when marking a request as Completed');
+      return;
+    }
+    if (editedTicket.type === 'Request' && editedTicket.status === 'Rejected' && !rejectionNotes.trim()) {
+      setError('Rejection Notes are required when marking a request as Rejected');
+      return;
+    }
+
     try {
       setSaving(true);
       setError(null);
-      await onSave(editedTicket);
+      
+      // Add the appropriate notes to the ticket before saving
+      const ticketToSave = { ...editedTicket };
+      if (editedTicket.type === 'Incident' && editedTicket.status === 'Resolved') {
+        ticketToSave.resolution_notes = resolutionNotes;
+      }
+      if (editedTicket.type === 'Request' && editedTicket.status === 'Completed') {
+        ticketToSave.completion_notes = completionNotes;
+      }
+      if (editedTicket.type === 'Request' && editedTicket.status === 'Rejected') {
+        ticketToSave.rejection_notes = rejectionNotes;
+      }
+      
+      await onSave(ticketToSave);
       onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to save changes');
@@ -205,6 +242,22 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
                     placeholder="Email or phone number"
                   />
                 </div>
+                
+                {/* Resolution Notes - Required when status is Resolved */}
+                {editedTicket.status === 'Resolved' && (
+                  <div className="form-group required-field">
+                    <label htmlFor="resolution_notes">Resolution Notes *</label>
+                    <textarea
+                      id="resolution_notes"
+                      value={resolutionNotes}
+                      onChange={(e) => setResolutionNotes(e.target.value)}
+                      className="form-textarea"
+                      rows={4}
+                      placeholder="Please describe how this incident was resolved..."
+                      required
+                    />
+                  </div>
+                )}
               </>
             )}
 
@@ -270,6 +323,38 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
                     rows={3}
                   />
                 </div>
+                
+                {/* Completion Notes - Required when status is Completed */}
+                {editedTicket.status === 'Completed' && (
+                  <div className="form-group required-field">
+                    <label htmlFor="completion_notes">Completion Notes *</label>
+                    <textarea
+                      id="completion_notes"
+                      value={completionNotes}
+                      onChange={(e) => setCompletionNotes(e.target.value)}
+                      className="form-textarea"
+                      rows={4}
+                      placeholder="Please describe how this request was completed..."
+                      required
+                    />
+                  </div>
+                )}
+                
+                {/* Rejection Notes - Required when status is Rejected */}
+                {editedTicket.status === 'Rejected' && (
+                  <div className="form-group required-field">
+                    <label htmlFor="rejection_notes">Rejection Notes *</label>
+                    <textarea
+                      id="rejection_notes"
+                      value={rejectionNotes}
+                      onChange={(e) => setRejectionNotes(e.target.value)}
+                      className="form-textarea"
+                      rows={4}
+                      placeholder="Please explain why this request was rejected..."
+                      required
+                    />
+                  </div>
+                )}
               </>
             )}
           </form>

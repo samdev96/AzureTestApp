@@ -208,6 +208,29 @@
   }
 }
 
+.required-field {
+  border-left: 4px solid #ff6b6b;
+  padding-left: 16px;
+  background: rgba(255, 107, 107, 0.05);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.required-field label {
+  color: #c0392b !important;
+  font-weight: 600;
+}
+
+.required-field .form-textarea {
+  border-color: #ff6b6b;
+}
+
+.required-field .form-textarea:focus {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
 @media (max-width: 480px) {
   .modal-header h2 {
     font-size: 1.2rem;
@@ -217,5 +240,10 @@
   .form-select,
   .form-textarea {
     padding: 10px 12px;
+  }
+  
+  .required-field {
+    padding: 12px;
+    margin: 12px 0;
   }
 }
