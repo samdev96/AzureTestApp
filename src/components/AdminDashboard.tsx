@@ -30,12 +30,14 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     const handleResize = () => {
       const screenWidth = window.innerWidth;
-      if (screenWidth <= 1024) {
-        // Medium and smaller screens - force collapsed
+      if (screenWidth <= 1024 && screenWidth > 768) {
+        // Medium screens - force collapsed but don't interfere with CSS
         setSidebarCollapsed(true);
+      } else if (screenWidth > 1024) {
+        // Large screens - allow user preference, but start expanded
+        setSidebarCollapsed(false);
       }
-      // Large screens (>1024) - allow user preference
-      // Mobile screens (<=768) - handled by CSS hiding
+      // Mobile screens (<=768) - handled by CSS hiding, keep JS state for when they resize back
     };
 
     // Set initial state
