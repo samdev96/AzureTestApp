@@ -85,7 +85,7 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
       
       loadAssignmentGroups();
     }
-  }, [isOpen]);
+  }, [isOpen, fallbackGroups]);
 
   const handleSave = async () => {
     if (!editedTicket) return;

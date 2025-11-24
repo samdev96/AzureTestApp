@@ -75,7 +75,7 @@ const CreateRequest: React.FC = () => {
     };
 
     loadAssignmentGroups();
-  }, []);
+  }, [fallbackGroups]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
