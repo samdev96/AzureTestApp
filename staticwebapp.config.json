@@ -1,18 +1,6 @@
 {
   "routes": [
     {
-      "route": "/api/*",
-      "allowedRoles": ["authenticated"]
-    },
-    {
-      "route": "/login*",
-      "allowedRoles": ["anonymous", "authenticated"]
-    },
-    {
-      "route": "/test*",
-      "allowedRoles": ["anonymous", "authenticated"]
-    },
-    {
       "route": "/api/auth-test*",
       "allowedRoles": ["anonymous", "authenticated"]
     },
@@ -23,6 +11,14 @@
     {
       "route": "/api/*",
       "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/login*",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
+      "route": "/test*",
+      "allowedRoles": ["anonymous", "authenticated"]
     },
     {
       "route": "/*",
