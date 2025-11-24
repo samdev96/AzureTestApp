@@ -55,17 +55,29 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
     }
   }, [ticket]);
 
+  // Fallback assignment groups in case API fails
+  const fallbackGroups: AssignmentGroup[] = [
+    { AssignmentGroupID: 1, GroupName: 'Development', Description: 'Software development and application support team', IsActive: true, CreatedDate: '', CreatedBy: 'system' },
+    { AssignmentGroupID: 2, GroupName: 'Infrastructure', Description: 'IT infrastructure, servers, and network support team', IsActive: true, CreatedDate: '', CreatedBy: 'system' },
+    { AssignmentGroupID: 3, GroupName: 'Service Desk', Description: 'First-line support and general IT assistance team', IsActive: true, CreatedDate: '', CreatedBy: 'system' },
+    { AssignmentGroupID: 4, GroupName: 'Security', Description: 'Information security and compliance team', IsActive: true, CreatedDate: '', CreatedBy: 'system' }
+  ];
+
   // Load assignment groups when modal opens
   useEffect(() => {
     if (isOpen) {
       const loadAssignmentGroups = async () => {
         try {
           const response = await assignmentGroupsAPI.getAll();
-          if (response.success && response.data) {
+          if (response.success && response.data && response.data.length > 0) {
             setAssignmentGroups(response.data);
+          } else {
+            console.warn('API response unsuccessful, using fallback groups:', response.error);
+            setAssignmentGroups(fallbackGroups);
           }
         } catch (error) {
-          console.error('Error loading assignment groups:', error);
+          console.error('Error loading assignment groups, using fallback:', error);
+          setAssignmentGroups(fallbackGroups);
         } finally {
           setLoadingGroups(false);
         }

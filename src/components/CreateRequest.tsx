@@ -36,19 +36,39 @@ const CreateRequest: React.FC = () => {
   const [submitError, setSubmitError] = useState<string>('');
   const [assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(true);
+  const [groupsError, setGroupsError] = useState<string>('');
+
+  // Fallback assignment groups in case API fails
+  const fallbackGroups: AssignmentGroup[] = [
+    { AssignmentGroupID: 1, GroupName: 'Development', Description: 'Software development and application support team', IsActive: true, CreatedDate: '', CreatedBy: 'system' },
+    { AssignmentGroupID: 2, GroupName: 'Infrastructure', Description: 'IT infrastructure, servers, and network support team', IsActive: true, CreatedDate: '', CreatedBy: 'system' },
+    { AssignmentGroupID: 3, GroupName: 'Service Desk', Description: 'First-line support and general IT assistance team', IsActive: true, CreatedDate: '', CreatedBy: 'system' },
+    { AssignmentGroupID: 4, GroupName: 'Security', Description: 'Information security and compliance team', IsActive: true, CreatedDate: '', CreatedBy: 'system' }
+  ];
 
   // Load assignment groups on component mount
   useEffect(() => {
     const loadAssignmentGroups = async () => {
       try {
+        console.log('Loading assignment groups from API...');
         const response = await assignmentGroupsAPI.getAll();
+        console.log('Assignment groups response:', response);
+        
         if (response.success && response.data && response.data.length > 0) {
           setAssignmentGroups(response.data);
-          // Set default assignment group if available
           setFormData(prev => ({ ...prev, assignmentGroup: response.data![0].GroupName }));
+          setGroupsError('');
+        } else {
+          console.warn('API response unsuccessful, using fallback groups:', response.error);
+          setAssignmentGroups(fallbackGroups);
+          setFormData(prev => ({ ...prev, assignmentGroup: fallbackGroups[0].GroupName }));
+          setGroupsError('Using offline assignment groups');
         }
       } catch (error) {
-        console.error('Error loading assignment groups:', error);
+        console.error('Error loading assignment groups, using fallback:', error);
+        setAssignmentGroups(fallbackGroups);
+        setFormData(prev => ({ ...prev, assignmentGroup: fallbackGroups[0].GroupName }));
+        setGroupsError('Using offline assignment groups');
       } finally {
         setLoadingGroups(false);
       }
@@ -247,6 +267,7 @@ const CreateRequest: React.FC = () => {
                 )}
               </select>
               {errors.assignmentGroup && <span className="error-message">{errors.assignmentGroup}</span>}
+              {groupsError && <span className="info-message" style={{color: '#f39c12', fontSize: '0.9rem'}}>{groupsError}</span>}
             </div>
           </div>
 
