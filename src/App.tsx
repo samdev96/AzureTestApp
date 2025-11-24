@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import DashboardRouter from './components/DashboardRouter';
@@ -9,9 +9,12 @@ import Login from './components/Login';
 import TestPage from './components/TestPage';
 import AuthDebug from './components/AuthDebug';
 import ProtectedRoute from './components/ProtectedRoute';
+import Settings from './components/Settings';
 import './App.css';
 
 function App() {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   return (
     <AuthProvider>
       <Router>
@@ -54,9 +57,24 @@ function App() {
             />
           </Routes>
           
+          {/* Settings button */}
+          <button 
+            className="settings-button" 
+            onClick={() => setIsSettingsOpen(true)}
+            aria-label="Open settings"
+          >
+            ⚙️
+          </button>
+
+          {/* Settings panel */}
+          <Settings 
+            isOpen={isSettingsOpen} 
+            onClose={() => setIsSettingsOpen(false)} 
+          />
+          
           {/* Version display */}
           <div className="version-display">
-            v0.2
+            v0.3
           </div>
         </div>
       </Router>
