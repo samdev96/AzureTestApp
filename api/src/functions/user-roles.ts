@@ -164,7 +164,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                 
                 try {
                     usersResult = await usersRequest.query(`
-                        SELECT DISTINCT 
+                        SELECT 
                             COALESCE(ur.UserEmail, '') as UserEmail,
                             COALESCE(ur.UserObjectID, '') as UserObjectID,
                             COALESCE(ur.RoleName, 'user') as RoleName,
