@@ -25,13 +25,23 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
         // Check if we're in development mode (no auth headers)
         const isDevelopment = !userPrincipalHeader && request.url.includes('localhost');
         
+        // Log all headers for debugging
+        context.log('Request headers:', Object.fromEntries(request.headers.entries()));
+        context.log('User principal header present:', !!userPrincipalHeader);
+        context.log('Is development mode:', isDevelopment);
+        
         if (userPrincipalHeader) {
             try {
                 const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
                 currentUserEmail = userPrincipal.userDetails || '';
                 currentUserObjectId = userPrincipal.userId || '';
                 
-                context.log('Request from user:', { currentUserEmail, currentUserObjectId });
+                context.log('Parsed user principal:', { 
+                    userDetails: userPrincipal.userDetails, 
+                    userId: userPrincipal.userId,
+                    currentUserEmail, 
+                    currentUserObjectId 
+                });
             } catch (e) {
                 context.log('Error parsing user principal:', e);
                 return {
@@ -42,7 +52,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     },
                     body: JSON.stringify({
                         success: false,
-                        error: 'Invalid authentication'
+                        error: 'Invalid authentication - failed to parse user principal'
                     })
                 };
             }
@@ -52,6 +62,8 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
             currentUserObjectId = 'test-admin-id';
             context.log('Development mode: using test admin user');
         } else {
+            // In production without auth headers, this might be an unauthenticated request
+            context.log('No authentication header found in production');
             return {
                 status: 401,
                 headers: {
@@ -60,7 +72,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                 },
                 body: JSON.stringify({
                     success: false,
-                    error: 'Authentication required'
+                    error: 'Authentication required - please log in to access this feature'
                 })
             };
         }
@@ -113,6 +125,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                 }
 
                 // Get all users with their roles
+                context.log('Attempting to query UserRoles table for all users');
                 const usersRequest = pool.request();
                 let usersResult;
                 
@@ -129,8 +142,15 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         WHERE ur.IsActive = 1
                         ORDER BY ur.UserEmail, ur.AssignedDate DESC
                     `);
+                    
+                    context.log('Database query successful, found', usersResult.recordset.length, 'users');
                 } catch (dbError) {
-                    context.log('Database query error:', dbError);
+                    context.log('Database query error:', {
+                        message: dbError.message,
+                        code: dbError.code,
+                        severity: dbError.severity,
+                        state: dbError.state
+                    });
                     
                     // If UserRoles table doesn't exist and we're in development, return sample data
                     if (isDevelopment && dbError.message?.includes('Invalid object name')) {
@@ -166,7 +186,23 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         };
                     }
                     
-                    throw dbError;
+                    // Return a more detailed error for debugging
+                    return {
+                        status: 500,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        body: JSON.stringify({
+                            success: false,
+                            error: `Database error: ${dbError.message}`,
+                            details: isDevelopment ? {
+                                code: dbError.code,
+                                severity: dbError.severity,
+                                state: dbError.state
+                            } : undefined
+                        })
+                    };
                 }
 
                 // Group users and get their primary role (most recent)

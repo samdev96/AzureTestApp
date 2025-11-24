@@ -13,7 +13,15 @@
       "allowedRoles": ["anonymous", "authenticated"]
     },
     {
-      "route": "/debug*",
+      "route": "/api/auth-test*",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
+    {
+      "route": "/api/user-roles*",
+      "allowedRoles": ["authenticated"]
+    },
+    {
+      "route": "/api/*",
       "allowedRoles": ["authenticated"]
     },
     {
