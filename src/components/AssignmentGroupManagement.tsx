@@ -2,12 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { assignmentGroupsAPI, AssignmentGroup } from '../services/api';
 import './AssignmentGroupManagement.css';
 
-interface User {
-  email: string;
-  objectId: string;
-  roleName: string;
-}
-
 const AssignmentGroupManagement: React.FC = () => {
   const [assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,6 +10,7 @@ const AssignmentGroupManagement: React.FC = () => {
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [assigningMember, setAssigningMember] = useState(false);
   const [removingMember, setRemovingMember] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadAssignmentGroups();
@@ -43,15 +38,23 @@ const AssignmentGroupManagement: React.FC = () => {
   const handleAssignUser = async () => {
     if (!selectedGroup || !newMemberEmail.trim()) return;
 
+    if (!isValidEmail(newMemberEmail.trim())) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
     try {
       setAssigningMember(true);
-      setError(null);
+      clearMessages();
       
-      const response = await assignmentGroupsAPI.assignUser(selectedGroup.AssignmentGroupID, newMemberEmail);
+      const response = await assignmentGroupsAPI.assignUser(selectedGroup.AssignmentGroupID, newMemberEmail.trim());
       
       if (response.success) {
         setNewMemberEmail('');
+        setSuccessMessage(`Successfully added ${newMemberEmail.trim()} to ${selectedGroup.GroupName}`);
         await loadAssignmentGroups(); // Reload to get updated members
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setError(response.error || 'Failed to assign user to group');
       }
@@ -65,14 +68,21 @@ const AssignmentGroupManagement: React.FC = () => {
   const handleRemoveUser = async (userEmail: string) => {
     if (!selectedGroup) return;
 
+    if (!confirm(`Are you sure you want to remove ${userEmail} from ${selectedGroup.GroupName}?`)) {
+      return;
+    }
+
     try {
       setRemovingMember(userEmail);
-      setError(null);
+      clearMessages();
       
       const response = await assignmentGroupsAPI.removeUser(selectedGroup.AssignmentGroupID, userEmail);
       
       if (response.success) {
+        setSuccessMessage(`Successfully removed ${userEmail} from ${selectedGroup.GroupName}`);
         await loadAssignmentGroups(); // Reload to get updated members
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(null), 3000);
       } else {
         setError(response.error || 'Failed to remove user from group');
       }
@@ -89,6 +99,16 @@ const AssignmentGroupManagement: React.FC = () => {
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const clearMessages = () => {
+    setError(null);
+    setSuccessMessage(null);
   };
 
   if (loading) {
@@ -114,9 +134,28 @@ const AssignmentGroupManagement: React.FC = () => {
         </div>
       )}
 
+      {successMessage && (
+        <div className="success-banner">
+          <span className="success-icon">✅</span>
+          <span>{successMessage}</span>
+        </div>
+      )}
+
       <div className="management-layout">
         <div className="groups-sidebar">
-          <h3>Assignment Groups</h3>
+          <h3>Assignment Groups ({assignmentGroups.length})</h3>
+          <div className="groups-stats">
+            <div className="stat-item">
+              <span className="stat-label">Total Groups:</span>
+              <span className="stat-value">{assignmentGroups.length}</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">Total Members:</span>
+              <span className="stat-value">
+                {assignmentGroups.reduce((sum, group) => sum + (group.Members?.length || 0), 0)}
+              </span>
+            </div>
+          </div>
           <div className="groups-list">
             {assignmentGroups.map(group => (
               <div
@@ -128,6 +167,9 @@ const AssignmentGroupManagement: React.FC = () => {
                 <div className="group-description">{group.Description}</div>
                 <div className="member-count">
                   {group.Members?.length || 0} member{(group.Members?.length || 0) !== 1 ? 's' : ''}
+                  {(group.Members?.length || 0) > 0 && (
+                    <span className="member-indicator">👥</span>
+                  )}
                 </div>
               </div>
             ))}
@@ -150,7 +192,9 @@ const AssignmentGroupManagement: React.FC = () => {
                     placeholder="Enter admin user email"
                     value={newMemberEmail}
                     onChange={(e) => setNewMemberEmail(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && !assigningMember && newMemberEmail.trim() && handleAssignUser()}
                     className="member-email-input"
+                    disabled={assigningMember}
                   />
                   <button
                     onClick={handleAssignUser}

@@ -31,7 +31,22 @@
   color: #c0392b;
 }
 
-.error-icon {
+.success-banner {
+  background-color: #eef;
+  border: 1px solid #ccf;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #27ae60;
+  background: linear-gradient(135deg, #d5f4e6 0%, #c8f7c5 100%);
+  border-color: #a3e9a4;
+}
+
+.error-icon,
+.success-icon {
   font-size: 1.2rem;
 }
 
@@ -60,6 +75,37 @@
   margin-bottom: 1rem;
   color: #2c3e50;
   font-size: 1.2rem;
+}
+
+.groups-stats {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #e1e5e9;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.stat-item:not(:last-child) {
+  border-bottom: 1px solid #f1f1f1;
+  margin-bottom: 0.5rem;
+}
+
+.stat-label {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.stat-value {
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 1.1rem;
 }
 
 .groups-list {
@@ -105,6 +151,13 @@
   font-size: 0.8rem;
   font-weight: 500;
   opacity: 0.7;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.member-indicator {
+  font-size: 0.9rem;
 }
 
 .group-details {
