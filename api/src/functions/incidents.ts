@@ -71,6 +71,7 @@ async function getIncidents(request: HttpRequest, context: InvocationContext): P
                 AffectedUser,
                 ContactInfo,
                 AssignedTo,
+                AssignmentGroup,
                 CreatedBy,
                 CreatedDate,
                 ModifiedDate,
@@ -192,7 +193,7 @@ async function createIncident(request: HttpRequest, context: InvocationContext):
         }
         
         // Validate required fields
-        const requiredFields = ['title', 'description', 'category', 'priority', 'affectedUser', 'contactInfo'];
+        const requiredFields = ['title', 'description', 'category', 'priority', 'affectedUser', 'contactInfo', 'assignmentGroup'];
         for (const field of requiredFields) {
             if (!body[field]) {
                 return {
@@ -211,19 +212,21 @@ async function createIncident(request: HttpRequest, context: InvocationContext):
         
         const pool = await getDbConnection();
         
-        // Get category and priority IDs
+        // Get category, priority, and assignment group IDs
         const lookupRequest = pool.request();
         lookupRequest.input('categoryName', body.category);
         lookupRequest.input('priorityName', body.priority);
+        lookupRequest.input('assignmentGroupName', body.assignmentGroup);
         
         const lookupResult = await lookupRequest.query(`
             SELECT 
                 (SELECT CategoryID FROM Categories WHERE CategoryName = @categoryName AND CategoryType = 'Incident') as CategoryID,
                 (SELECT PriorityID FROM Priorities WHERE PriorityName = @priorityName) as PriorityID,
-                (SELECT StatusID FROM Statuses WHERE StatusName = 'Open' AND StatusType = 'Incident') as StatusID
+                (SELECT StatusID FROM Statuses WHERE StatusName = 'Open' AND StatusType = 'Incident') as StatusID,
+                (SELECT AssignmentGroupID FROM AssignmentGroups WHERE GroupName = @assignmentGroupName AND IsActive = 1) as AssignmentGroupID
         `);
         
-        if (!lookupResult.recordset[0].CategoryID || !lookupResult.recordset[0].PriorityID) {
+        if (!lookupResult.recordset[0].CategoryID || !lookupResult.recordset[0].PriorityID || !lookupResult.recordset[0].AssignmentGroupID) {
             return {
                 status: 400,
                 headers: {
@@ -232,12 +235,12 @@ async function createIncident(request: HttpRequest, context: InvocationContext):
                 },
                 body: JSON.stringify({
                     success: false,
-                    error: 'Invalid category or priority'
+                    error: 'Invalid category, priority, or assignment group'
                 })
             };
         }
         
-        const { CategoryID, PriorityID, StatusID } = lookupResult.recordset[0];
+        const { CategoryID, PriorityID, StatusID, AssignmentGroupID } = lookupResult.recordset[0];
         
         // Insert the incident
         const insertRequest = pool.request();
@@ -246,14 +249,15 @@ async function createIncident(request: HttpRequest, context: InvocationContext):
         insertRequest.input('categoryId', CategoryID);
         insertRequest.input('priorityId', PriorityID);
         insertRequest.input('statusId', StatusID);
+        insertRequest.input('assignmentGroupId', AssignmentGroupID);
         insertRequest.input('affectedUser', body.affectedUser);
         insertRequest.input('contactInfo', body.contactInfo);
         insertRequest.input('createdBy', userId);
         
         const insertResult = await insertRequest.query(`
-            INSERT INTO Incidents (Title, Description, CategoryID, PriorityID, StatusID, AffectedUser, ContactInfo, CreatedBy)
+            INSERT INTO Incidents (Title, Description, CategoryID, PriorityID, StatusID, AssignmentGroupID, AffectedUser, ContactInfo, CreatedBy)
             OUTPUT INSERTED.IncidentID, INSERTED.IncidentNumber
-            VALUES (@title, @description, @categoryId, @priorityId, @statusId, @affectedUser, @contactInfo, @createdBy)
+            VALUES (@title, @description, @categoryId, @priorityId, @statusId, @assignmentGroupId, @affectedUser, @contactInfo, @createdBy)
         `);
         
         const newIncident = insertResult.recordset[0];
@@ -347,6 +351,7 @@ async function updateIncident(request: HttpRequest, context: InvocationContext):
         dbRequest.input('Category', updatedTicket.category);
         dbRequest.input('Priority', updatedTicket.priority);
         dbRequest.input('Status', updatedTicket.status);
+        dbRequest.input('AssignmentGroup', updatedTicket.assignment_group || updatedTicket.assignmentGroup);
         dbRequest.input('AffectedUser', updatedTicket.affected_user || '');
         dbRequest.input('ContactInfo', updatedTicket.contact_info || '');
         dbRequest.input('AssignedTo', updatedTicket.assigned_to || null);
@@ -361,6 +366,7 @@ async function updateIncident(request: HttpRequest, context: InvocationContext):
                 CategoryID = (SELECT CategoryID FROM Categories WHERE CategoryName = @Category AND CategoryType = 'Incident'),
                 PriorityID = (SELECT PriorityID FROM Priorities WHERE PriorityName = @Priority),
                 StatusID = (SELECT StatusID FROM Statuses WHERE StatusName = @Status AND StatusType = 'Incident'),
+                AssignmentGroupID = (SELECT AssignmentGroupID FROM AssignmentGroups WHERE GroupName = @AssignmentGroup AND IsActive = 1),
                 AffectedUser = @AffectedUser,
                 ContactInfo = @ContactInfo,
                 AssignedTo = @AssignedTo,

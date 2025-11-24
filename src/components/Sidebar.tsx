@@ -26,6 +26,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             <span className="nav-icon">🏠</span>
             {!collapsed && <span className="nav-text">Home</span>}
           </li>
+          <li className="nav-item">
+            <span className="nav-icon">👥</span>
+            {!collapsed && <span className="nav-text">Assignment Groups</span>}
+          </li>
         </ul>
       </nav>
     </div>

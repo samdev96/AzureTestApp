@@ -38,6 +38,7 @@ export interface Incident {
   AffectedUser: string;
   ContactInfo: string;
   AssignedTo?: string;
+  AssignmentGroup?: string;
   CreatedBy: string;
   CreatedDate: string;
   ModifiedDate?: string;
@@ -51,6 +52,7 @@ export interface CreateIncidentData {
   priority: string;
   affectedUser: string;
   contactInfo: string;
+  assignmentGroup: string;
   createdBy?: string;
 }
 
@@ -69,6 +71,7 @@ export interface ServiceRequest {
   ApproverName: string;
   Status: string;
   AssignedTo?: string;
+  AssignmentGroup?: string;
   CreatedBy: string;
   CreatedDate: string;
   ModifiedDate?: string;
@@ -87,7 +90,28 @@ export interface CreateRequestData {
   department: string;
   contactInfo: string;
   approver: string;
+  assignmentGroup: string;
   createdBy?: string;
+}
+
+// Assignment Group interfaces
+export interface AssignmentGroup {
+  AssignmentGroupID: number;
+  GroupName: string;
+  Description: string;
+  IsActive: boolean;
+  CreatedDate: string;
+  CreatedBy: string;
+  Members?: AssignmentGroupMember[];
+}
+
+export interface AssignmentGroupMember {
+  AssignmentGroupMemberID: number;
+  UserEmail: string;
+  UserObjectID: string;
+  AssignedDate: string;
+  AssignedBy: string;
+  IsActive: boolean;
 }
 
 // Generic fetch function with error handling
@@ -174,6 +198,39 @@ export const requestsAPI = {
     return apiRequest<ServiceRequest>('/requests', {
       method: 'POST',
       body: JSON.stringify(requestData),
+    });
+  },
+};
+
+// Assignment Groups API
+export const assignmentGroupsAPI = {
+  // Get all assignment groups
+  getAll: async (includeMembers: boolean = false): Promise<ApiResponse<AssignmentGroup[]>> => {
+    const params = new URLSearchParams();
+    if (includeMembers) params.append('includeMembers', 'true');
+    
+    const queryString = params.toString();
+    const endpoint = `/assignment-groups${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest<AssignmentGroup[]>(endpoint);
+  },
+
+  // Assign a user to an assignment group (admin only)
+  assignUser: async (assignmentGroupId: number, userEmail: string): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/assignment-groups', {
+      method: 'POST',
+      body: JSON.stringify({ assignmentGroupId, userEmail }),
+    });
+  },
+
+  // Remove a user from an assignment group (admin only)
+  removeUser: async (assignmentGroupId: number, userEmail: string): Promise<ApiResponse<any>> => {
+    const params = new URLSearchParams();
+    params.append('assignmentGroupId', assignmentGroupId.toString());
+    params.append('userEmail', userEmail);
+    
+    return apiRequest<any>(`/assignment-groups?${params.toString()}`, {
+      method: 'DELETE',
     });
   },
 };

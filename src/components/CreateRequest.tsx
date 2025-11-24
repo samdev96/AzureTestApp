@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { requestsAPI, CreateRequestData } from '../services/api';
+import { requestsAPI, CreateRequestData, assignmentGroupsAPI, AssignmentGroup } from '../services/api';
 import './Forms.css';
 
 interface RequestFormData {
@@ -13,6 +13,7 @@ interface RequestFormData {
   department: string;
   contactInfo: string;
   approver: string;
+  assignmentGroup: string;
 }
 
 const CreateRequest: React.FC = () => {
@@ -26,12 +27,35 @@ const CreateRequest: React.FC = () => {
     requester: '',
     department: '',
     contactInfo: '',
-    approver: ''
+    approver: '',
+    assignmentGroup: ''
   });
 
   const [errors, setErrors] = useState<Partial<RequestFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
+  const [assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(true);
+
+  // Load assignment groups on component mount
+  useEffect(() => {
+    const loadAssignmentGroups = async () => {
+      try {
+        const response = await assignmentGroupsAPI.getAll();
+        if (response.success && response.data && response.data.length > 0) {
+          setAssignmentGroups(response.data);
+          // Set default assignment group if available
+          setFormData(prev => ({ ...prev, assignmentGroup: response.data![0].GroupName }));
+        }
+      } catch (error) {
+        console.error('Error loading assignment groups:', error);
+      } finally {
+        setLoadingGroups(false);
+      }
+    };
+
+    loadAssignmentGroups();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -72,6 +96,9 @@ const CreateRequest: React.FC = () => {
     if (!formData.approver.trim()) {
       newErrors.approver = 'Approver is required';
     }
+    if (!formData.assignmentGroup.trim()) {
+      newErrors.assignmentGroup = 'Assignment group is required';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -98,6 +125,7 @@ const CreateRequest: React.FC = () => {
         department: formData.department,
         contactInfo: formData.contactInfo,
         approver: formData.approver,
+        assignmentGroup: formData.assignmentGroup,
         createdBy: 'User' // You can update this with actual user info later
       };
 
@@ -116,7 +144,8 @@ const CreateRequest: React.FC = () => {
           requester: '',
           department: '',
           contactInfo: '',
-          approver: ''
+          approver: '',
+          assignmentGroup: assignmentGroups.length > 0 ? assignmentGroups[0].GroupName : ''
         });
         
         // Navigate to view tickets page after a delay
@@ -191,6 +220,33 @@ const CreateRequest: React.FC = () => {
                 <option value="Medium">Medium - Standard timeline</option>
                 <option value="High">High - Urgent need</option>
               </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="assignmentGroup">Assignment Group *</label>
+              <select
+                id="assignmentGroup"
+                name="assignmentGroup"
+                value={formData.assignmentGroup}
+                onChange={handleInputChange}
+                className={errors.assignmentGroup ? 'error' : ''}
+                disabled={loadingGroups}
+              >
+                {loadingGroups ? (
+                  <option value="">Loading assignment groups...</option>
+                ) : assignmentGroups.length === 0 ? (
+                  <option value="">No assignment groups available</option>
+                ) : (
+                  assignmentGroups.map(group => (
+                    <option key={group.AssignmentGroupID} value={group.GroupName}>
+                      {group.GroupName} - {group.Description}
+                    </option>
+                  ))
+                )}
+              </select>
+              {errors.assignmentGroup && <span className="error-message">{errors.assignmentGroup}</span>}
             </div>
           </div>
 

@@ -12,6 +12,7 @@ interface Ticket {
   created_by: string;
   created_at: string;
   description?: string;
+  assignment_group?: string;
   // Incident specific fields
   category?: string;
   affected_user?: string;
@@ -69,7 +70,8 @@ const TicketsTable: React.FC = () => {
               category: incident.Category,
               affected_user: incident.AffectedUser,
               contact_info: incident.ContactInfo,
-              assigned_to: incident.AssignedTo
+              assigned_to: incident.AssignedTo,
+              assignment_group: incident.AssignmentGroup
             })),
             ...requests.map((request: any) => ({
               id: request.RequestID,
@@ -85,7 +87,8 @@ const TicketsTable: React.FC = () => {
               requester_name: request.RequesterName,
               department: request.Department,
               approver_name: request.ApproverName,
-              assigned_to: request.AssignedTo
+              assigned_to: request.AssignedTo,
+              assignment_group: request.AssignmentGroup
             }))
           ];
 
@@ -209,7 +212,8 @@ const TicketsTable: React.FC = () => {
                 category: incident.Category,
                 affected_user: incident.AffectedUser,
                 contact_info: incident.ContactInfo,
-                assigned_to: incident.AssignedTo
+                assigned_to: incident.AssignedTo,
+                assignment_group: incident.AssignmentGroup
               })),
               ...requests.map((request: any) => ({
                 id: request.RequestID,
@@ -225,7 +229,8 @@ const TicketsTable: React.FC = () => {
                 requester_name: request.RequesterName,
                 department: request.Department,
                 approver_name: request.ApproverName,
-                assigned_to: request.AssignedTo
+                assigned_to: request.AssignedTo,
+                assignment_group: request.AssignmentGroup
               }))
             ];
 
@@ -307,6 +312,7 @@ const TicketsTable: React.FC = () => {
               <th>ID</th>
               <th>Type</th>
               <th>Title</th>
+              <th>Assignment Group</th>
               <th>Status</th>
               <th>Priority</th>
               <th>Created By</th>
@@ -316,7 +322,7 @@ const TicketsTable: React.FC = () => {
           <tbody>
             {filteredTickets.length === 0 ? (
               <tr>
-                <td colSpan={7} className="no-tickets">
+                <td colSpan={8} className="no-tickets">
                   No tickets found matching the current filters.
                 </td>
               </tr>
@@ -333,6 +339,9 @@ const TicketsTable: React.FC = () => {
                   </td>
                   <td className="ticket-title" title={ticket.description}>
                     {ticket.title}
+                  </td>
+                  <td className="assignment-group">
+                    {ticket.assignment_group || 'Not Assigned'}
                   </td>
                   <td>
                     <span className={`status-badge ${getStatusClass(ticket.status)}`}>

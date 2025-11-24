@@ -75,6 +75,7 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
                 ApproverName,
                 Status,
                 AssignedTo,
+                AssignmentGroup,
                 CreatedBy,
                 CreatedDate,
                 ModifiedDate,
@@ -205,7 +206,7 @@ async function createRequest(request: HttpRequest, context: InvocationContext): 
         // Validate required fields
         const requiredFields = [
             'title', 'description', 'requestType', 'urgency', 'justification',
-            'requester', 'department', 'contactInfo', 'approver'
+            'requester', 'department', 'contactInfo', 'approver', 'assignmentGroup'
         ];
         
         for (const field of requiredFields) {
@@ -226,27 +227,31 @@ async function createRequest(request: HttpRequest, context: InvocationContext): 
         
         const pool = await getDbConnection();
         
-        // Get default status for new requests (Pending Approval)
-        const statusRequest = pool.request();
-        const statusResult = await statusRequest.query(`
-            SELECT StatusID FROM Statuses WHERE StatusName = 'Pending Approval' AND StatusType = 'Request'
+        // Get default status and assignment group ID for new requests
+        const lookupRequest = pool.request();
+        lookupRequest.input('assignmentGroupName', body.assignmentGroup);
+        
+        const lookupResult = await lookupRequest.query(`
+            SELECT 
+                (SELECT StatusID FROM Statuses WHERE StatusName = 'Pending Approval' AND StatusType = 'Request') as StatusID,
+                (SELECT AssignmentGroupID FROM AssignmentGroups WHERE GroupName = @assignmentGroupName AND IsActive = 1) as AssignmentGroupID
         `);
         
-        if (!statusResult.recordset[0]) {
+        if (!lookupResult.recordset[0].StatusID || !lookupResult.recordset[0].AssignmentGroupID) {
             return {
-                status: 500,
+                status: 400,
                 headers: {
                     'Content-Type': 'application/json',
                     'Access-Control-Allow-Origin': '*'
                 },
                 body: JSON.stringify({
                     success: false,
-                    error: 'Default status not found'
+                    error: 'Invalid assignment group or default status not found'
                 })
             };
         }
         
-        const statusId = statusResult.recordset[0].StatusID;
+        const { StatusID: statusId, AssignmentGroupID: assignmentGroupId } = lookupResult.recordset[0];
         
         // Insert the request
         const insertRequest = pool.request();
@@ -260,17 +265,18 @@ async function createRequest(request: HttpRequest, context: InvocationContext): 
         insertRequest.input('contactInfo', body.contactInfo);
         insertRequest.input('approverName', body.approver);
         insertRequest.input('statusId', statusId);
+        insertRequest.input('assignmentGroupId', assignmentGroupId);
         insertRequest.input('createdBy', userId);
         
         const insertResult = await insertRequest.query(`
             INSERT INTO Requests (
                 Title, Description, RequestType, Urgency, BusinessJustification, 
-                RequesterName, Department, ContactInfo, ApproverName, StatusID, CreatedBy
+                RequesterName, Department, ContactInfo, ApproverName, StatusID, AssignmentGroupID, CreatedBy
             )
             OUTPUT INSERTED.RequestID, INSERTED.RequestNumber
             VALUES (
                 @title, @description, @requestType, @urgency, @businessJustification,
-                @requesterName, @department, @contactInfo, @approverName, @statusId, @createdBy
+                @requesterName, @department, @contactInfo, @approverName, @statusId, @assignmentGroupId, @createdBy
             )
         `);
         
@@ -365,6 +371,7 @@ async function updateRequest(request: HttpRequest, context: InvocationContext): 
         dbRequest.input('RequestType', updatedTicket.request_type || 'Other');
         dbRequest.input('Urgency', updatedTicket.priority); // Frontend uses 'priority' but DB uses 'Urgency' for requests
         dbRequest.input('Status', updatedTicket.status);
+        dbRequest.input('AssignmentGroup', updatedTicket.assignment_group || updatedTicket.assignmentGroup);
         dbRequest.input('BusinessJustification', updatedTicket.business_justification || '');
         dbRequest.input('RequesterName', updatedTicket.requester_name || '');
         dbRequest.input('Department', updatedTicket.department || '');
@@ -382,6 +389,7 @@ async function updateRequest(request: HttpRequest, context: InvocationContext): 
                 RequestType = @RequestType,
                 Urgency = @Urgency,
                 StatusID = (SELECT StatusID FROM Statuses WHERE StatusName = @Status AND StatusType = 'Request'),
+                AssignmentGroupID = (SELECT AssignmentGroupID FROM AssignmentGroups WHERE GroupName = @AssignmentGroup AND IsActive = 1),
                 BusinessJustification = @BusinessJustification,
                 RequesterName = @RequesterName,
                 Department = @Department,

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { assignmentGroupsAPI, AssignmentGroup } from '../services/api';
 import './TicketEditModal.css';
 
 interface Ticket {
@@ -10,6 +11,7 @@ interface Ticket {
   created_by: string;
   created_at: string;
   description?: string;
+  assignment_group?: string;
   // Incident specific fields
   category?: string;
   affected_user?: string;
@@ -40,6 +42,8 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [completionNotes, setCompletionNotes] = useState('');
   const [rejectionNotes, setRejectionNotes] = useState('');
+  const [assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>([]);
+  const [loadingGroups, setLoadingGroups] = useState(true);
 
   useEffect(() => {
     if (ticket) {
@@ -50,6 +54,26 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
       setRejectionNotes('');
     }
   }, [ticket]);
+
+  // Load assignment groups when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      const loadAssignmentGroups = async () => {
+        try {
+          const response = await assignmentGroupsAPI.getAll();
+          if (response.success && response.data) {
+            setAssignmentGroups(response.data);
+          }
+        } catch (error) {
+          console.error('Error loading assignment groups:', error);
+        } finally {
+          setLoadingGroups(false);
+        }
+      };
+      
+      loadAssignmentGroups();
+    }
+  }, [isOpen]);
 
   const handleSave = async () => {
     if (!editedTicket) return;
@@ -187,6 +211,24 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
                   placeholder="Enter assignee email"
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="assignment_group">Assignment Group</label>
+              <select
+                id="assignment_group"
+                value={editedTicket.assignment_group || ''}
+                onChange={(e) => handleFieldChange('assignment_group', e.target.value)}
+                className="form-select"
+                disabled={loadingGroups}
+              >
+                <option value="">Select Assignment Group</option>
+                {assignmentGroups.map(group => (
+                  <option key={group.AssignmentGroupID} value={group.GroupName}>
+                    {group.GroupName} - {group.Description}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">
