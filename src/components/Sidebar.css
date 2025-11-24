@@ -160,53 +160,69 @@
   content: 'User Management';
 }
 
-/* Medium screens: force collapsed but visible */
-@media (max-width: 1024px) and (min-width: 769px) {
+/* Medium screens: force collapsed */
+@media (max-width: 1024px) {
   .sidebar {
     width: 60px;
-    transform: translateX(0) !important;
   }
-  
-  .sidebar-title {
+
+  .sidebar-title,
+  .sidebar.collapsed .sidebar-title {
+    opacity: 0;
     display: none;
   }
-  
-  .nav-text {
+
+  .sidebar .nav-text,
+  .sidebar.collapsed .nav-text {
+    opacity: 0;
     display: none;
   }
-  
-  .nav-item {
-    padding: 15px;
+
+  .sidebar .nav-item,
+  .sidebar.collapsed .nav-item {
     justify-content: center;
+    padding: 15px;
   }
-  
-  .nav-icon {
+
+  .sidebar .nav-icon,
+  .sidebar.collapsed .nav-icon {
     margin-right: 0;
+  }
+
+  .sidebar-toggle {
+    display: none; /* Hide toggle on medium screens as it's always collapsed */
   }
 }
 
-/* Mobile screens: hide completely */
+/* Mobile screens: hide completely off-canvas */
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
+    width: 250px; /* Full width when it slides out */
     transition: transform 0.3s ease;
-    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.15);
   }
-  
+
   .sidebar.open {
     transform: translateX(0);
   }
-  
-  .sidebar.collapsed {
-    transform: translateX(-100%);
+
+  /* When open on mobile, it should look like the default full sidebar */
+  .sidebar.open .sidebar-title,
+  .sidebar.open .nav-text {
+    opacity: 1;
+    display: inline-block;
   }
-  
-  .nav-item {
-    margin: 6px 8px;
-    padding: 14px 16px;
+
+  .sidebar.open .nav-item {
+    justify-content: flex-start;
+    padding: 16px 20px;
   }
-  
-  .sidebar-header {
-    padding: 20px 16px;
+
+  .sidebar.open .nav-icon {
+    margin-right: 15px;
+  }
+
+  .sidebar-toggle {
+    display: block; /* Show toggle again for mobile slide-out */
   }
 }

@@ -24,9 +24,15 @@ const AdminDashboard: React.FC = () => {
     loading: true
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<'home' | 'assignment-groups' | 'user-management'>('home');
 
-
+  const handlePageChange = (page: 'home' | 'assignment-groups' | 'user-management') => {
+    setCurrentPage(page);
+    if (window.innerWidth <= 768) {
+      setMobileSidebarOpen(false); // Close mobile sidebar on navigation
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -63,16 +69,30 @@ const AdminDashboard: React.FC = () => {
     fetchStats();
   }, [user]);
 
+  const pageTitles = {
+    home: 'Dashboard',
+    'assignment-groups': 'Assignment Groups',
+    'user-management': 'User Management'
+  };
+
   return (
     <div className="admin-dashboard">
       <Sidebar 
         collapsed={sidebarCollapsed} 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         currentPage={currentPage}
-        onPageChange={setCurrentPage}
+        onPageChange={handlePageChange}
+        isMobileOpen={isMobileSidebarOpen}
       />
       
       <div className={`admin-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+        <div className="mobile-header">
+          <button className="hamburger-menu" onClick={() => setMobileSidebarOpen(true)}>
+            &#9776;
+          </button>
+          <h1 className="mobile-header-title">{pageTitles[currentPage]}</h1>
+        </div>
+
         {currentPage === 'home' ? (
           <>
             <div className="admin-header">

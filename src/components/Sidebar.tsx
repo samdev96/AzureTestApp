@@ -6,11 +6,20 @@ interface SidebarProps {
   onToggle: () => void;
   currentPage: 'home' | 'assignment-groups' | 'user-management';
   onPageChange: (page: 'home' | 'assignment-groups' | 'user-management') => void;
+  isMobileOpen: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange, isMobileOpen }) => {
+  
+  const getSidebarClass = () => {
+    let classes = 'sidebar';
+    if (collapsed) classes += ' collapsed';
+    if (isMobileOpen) classes += ' open';
+    return classes;
+  };
+
   return (
-    <div className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <div className={getSidebarClass()}>
       <div className="sidebar-header">
         <button 
           className="sidebar-toggle" 
@@ -19,7 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
         >
           {collapsed ? '☰' : '✕'}
         </button>
-        {!collapsed && <span className="sidebar-title">Admin Panel</span>}
+        <span className="sidebar-title">Admin Panel</span>
       </div>
       
       <nav className="sidebar-nav">
@@ -29,21 +38,21 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
             onClick={() => onPageChange('home')}
           >
             <span className="nav-icon">🏠</span>
-            {!collapsed && <span className="nav-text">Home</span>}
+            <span className="nav-text">Home</span>
           </li>
           <li 
             className={`nav-item ${currentPage === 'assignment-groups' ? 'active' : ''}`}
             onClick={() => onPageChange('assignment-groups')}
           >
             <span className="nav-icon">👥</span>
-            {!collapsed && <span className="nav-text">Assignment Groups</span>}
+            <span className="nav-text">Assignment Groups</span>
           </li>
           <li 
             className={`nav-item ${currentPage === 'user-management' ? 'active' : ''}`}
             onClick={() => onPageChange('user-management')}
           >
             <span className="nav-icon">🔐</span>
-            {!collapsed && <span className="nav-text">User Management</span>}
+            <span className="nav-text">User Management</span>
           </li>
         </ul>
       </nav>
