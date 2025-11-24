@@ -26,26 +26,7 @@ const AdminDashboard: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentPage, setCurrentPage] = useState<'home' | 'assignment-groups' | 'user-management'>('home');
 
-  // Handle responsive sidebar behavior
-  useEffect(() => {
-    const handleResize = () => {
-      const screenWidth = window.innerWidth;
-      if (screenWidth <= 1024 && screenWidth > 768) {
-        // Medium screens - force collapsed but don't interfere with CSS
-        setSidebarCollapsed(true);
-      } else if (screenWidth > 1024) {
-        // Large screens - allow user preference, but start expanded
-        setSidebarCollapsed(false);
-      }
-      // Mobile screens (<=768) - handled by CSS hiding, keep JS state for when they resize back
-    };
 
-    // Set initial state
-    handleResize();
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   useEffect(() => {
     const fetchStats = async () => {

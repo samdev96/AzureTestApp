@@ -160,31 +160,6 @@
   content: 'User Management';
 }
 
-/* Medium screens - force collapsed */
-@media (max-width: 1024px) and (min-width: 769px) {
-  .sidebar {
-    width: 60px;
-  }
-  
-  .sidebar-title {
-    display: none;
-  }
-  
-  .nav-text {
-    display: none;
-  }
-  
-  .nav-item {
-    padding: 15px;
-    justify-content: center;
-  }
-  
-  .nav-icon {
-    margin-right: 0;
-  }
-}
-
-/* Mobile screens - hide completely */
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
