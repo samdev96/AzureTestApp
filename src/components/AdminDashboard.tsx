@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
 import TicketsTable from './TicketsTable';
+import AssignmentGroupManagement from './AssignmentGroupManagement';
 import './AdminDashboard.css';
 
 interface TicketStats {
@@ -22,6 +23,7 @@ const AdminDashboard: React.FC = () => {
     loading: true
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [currentPage, setCurrentPage] = useState<'home' | 'assignment-groups'>('home');
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -62,48 +64,56 @@ const AdminDashboard: React.FC = () => {
     <div className="admin-dashboard">
       <Sidebar 
         collapsed={sidebarCollapsed} 
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} 
+        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
       />
       
       <div className={`admin-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-        <div className="admin-header">
-          <h1>VibeNow ITSM Dashboard</h1>
-          <p className="welcome-text">Welcome back, {user?.userDetails?.split('@')[0]}</p>
-        </div>
+        {currentPage === 'home' ? (
+          <>
+            <div className="admin-header">
+              <h1>VibeNow ITSM Dashboard</h1>
+              <p className="welcome-text">Welcome back, {user?.userDetails?.split('@')[0]}</p>
+            </div>
 
-        <div className="quick-overview-section">
-          <h2>Quick Overview</h2>
-          <div className="stats-grid">
-            <div className="stat-card incidents">
-              <h3>Total Incidents</h3>
-              <div className="stat-number">
-                {stats.loading ? '...' : stats.totalIncidents}
+            <div className="quick-overview-section">
+              <h2>Quick Overview</h2>
+              <div className="stats-grid">
+                <div className="stat-card incidents">
+                  <h3>Total Incidents</h3>
+                  <div className="stat-number">
+                    {stats.loading ? '...' : stats.totalIncidents}
+                  </div>
+                </div>
+                <div className="stat-card requests">
+                  <h3>Total Requests</h3>
+                  <div className="stat-number">
+                    {stats.loading ? '...' : stats.totalRequests}
+                  </div>
+                </div>
+                <div className="stat-card open-incidents">
+                  <h3>Open Incidents</h3>
+                  <div className="stat-number">
+                    {stats.loading ? '...' : stats.openIncidents}
+                  </div>
+                </div>
+                <div className="stat-card open-requests">
+                  <h3>Open Requests</h3>
+                  <div className="stat-number">
+                    {stats.loading ? '...' : stats.openRequests}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="stat-card requests">
-              <h3>Total Requests</h3>
-              <div className="stat-number">
-                {stats.loading ? '...' : stats.totalRequests}
-              </div>
-            </div>
-            <div className="stat-card open-incidents">
-              <h3>Open Incidents</h3>
-              <div className="stat-number">
-                {stats.loading ? '...' : stats.openIncidents}
-              </div>
-            </div>
-            <div className="stat-card open-requests">
-              <h3>Open Requests</h3>
-              <div className="stat-number">
-                {stats.loading ? '...' : stats.openRequests}
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="tickets-section">
-          <TicketsTable />
-        </div>
+            <div className="tickets-section">
+              <TicketsTable />
+            </div>
+          </>
+        ) : (
+          <AssignmentGroupManagement />
+        )}
       </div>
     </div>
   );

@@ -132,7 +132,6 @@
 }
 
 .sidebar.collapsed .nav-item:hover::after {
-  content: 'Home';
   position: absolute;
   left: 100%;
   top: 50%;
@@ -147,6 +146,14 @@
   font-size: 14px;
   font-weight: 500;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.sidebar.collapsed .nav-item:nth-child(1):hover::after {
+  content: 'Home';
+}
+
+.sidebar.collapsed .nav-item:nth-child(2):hover::after {
+  content: 'Assignment Groups';
 }
 
 @media (max-width: 768px) {
