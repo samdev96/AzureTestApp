@@ -187,11 +187,7 @@
   color: #2c3e50;
 }
 
-.object-id {
-  font-size: 0.8rem;
-  color: #7f8c8d;
-  font-family: 'Monaco', 'Menlo', monospace;
-}
+/* Object ID removed for cleaner UI */
 
 .role-badge {
   padding: 0.4rem 0.8rem;
@@ -327,7 +323,7 @@
     padding: 1rem;
   }
 
-  .summary-cards {
+  .user-stats {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
@@ -349,9 +345,7 @@
     gap: 0.2rem;
   }
 
-  .object-id {
-    font-size: 0.7rem;
-  }
+  /* Object ID hidden for cleaner UI */
 
   .role-actions {
     flex-direction: column;

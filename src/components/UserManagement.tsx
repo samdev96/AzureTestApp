@@ -164,8 +164,7 @@ const UserManagement: React.FC = () => {
                   <tr key={user.userEmail}>
                     <td className="user-info">
                       <div className="user-details">
-                        <span className="email">{user.userEmail}</span>
-                        <span className="object-id">{user.userObjectId}</span>
+                        <span className="email">{user.userEmail.split('&')[0]}</span>
                       </div>
                     </td>
                     <td>
@@ -185,7 +184,7 @@ const UserManagement: React.FC = () => {
                           <button
                             onClick={() => updateUserRole(user.userEmail, 'admin')}
                             disabled={updatingUser === user.userEmail}
-                            className="action-button promote"
+                            className="btn btn-promote"
                           >
                             {updatingUser === user.userEmail ? 'Promoting...' : 'Make Admin'}
                           </button>
@@ -193,7 +192,7 @@ const UserManagement: React.FC = () => {
                           <button
                             onClick={() => updateUserRole(user.userEmail, 'user')}
                             disabled={updatingUser === user.userEmail}
-                            className="action-button demote"
+                            className="btn btn-demote"
                           >
                             {updatingUser === user.userEmail ? 'Demoting...' : 'Make User'}
                           </button>
