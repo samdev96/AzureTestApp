@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
 import TicketsTable from './TicketsTable';
 import AssignmentGroupManagement from './AssignmentGroupManagement';
+import UserManagement from './UserManagement';
 import './AdminDashboard.css';
 
 interface TicketStats {
@@ -23,7 +24,7 @@ const AdminDashboard: React.FC = () => {
     loading: true
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'home' | 'assignment-groups'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'assignment-groups' | 'user-management'>('home');
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -111,8 +112,10 @@ const AdminDashboard: React.FC = () => {
               <TicketsTable />
             </div>
           </>
-        ) : (
+        ) : currentPage === 'assignment-groups' ? (
           <AssignmentGroupManagement />
+        ) : (
+          <UserManagement />
         )}
       </div>
     </div>

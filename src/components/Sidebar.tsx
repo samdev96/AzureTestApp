@@ -4,8 +4,8 @@ import './Sidebar.css';
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
-  currentPage: 'home' | 'assignment-groups';
-  onPageChange: (page: 'home' | 'assignment-groups') => void;
+  currentPage: 'home' | 'assignment-groups' | 'user-management';
+  onPageChange: (page: 'home' | 'assignment-groups' | 'user-management') => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange }) => {
@@ -37,6 +37,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
           >
             <span className="nav-icon">👥</span>
             {!collapsed && <span className="nav-text">Assignment Groups</span>}
+          </li>
+          <li 
+            className={`nav-item ${currentPage === 'user-management' ? 'active' : ''}`}
+            onClick={() => onPageChange('user-management')}
+          >
+            <span className="nav-icon">🔐</span>
+            {!collapsed && <span className="nav-text">User Management</span>}
           </li>
         </ul>
       </nav>

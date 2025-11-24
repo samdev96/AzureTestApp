@@ -114,6 +114,16 @@ export interface AssignmentGroupMember {
   IsActive: boolean;
 }
 
+// User Management interfaces
+export interface User {
+  userEmail: string;
+  userObjectId: string;
+  role: 'user' | 'admin';
+  isAdmin: boolean;
+  assignedDate: string;
+  assignedBy: string;
+}
+
 // Generic fetch function with error handling
 async function apiRequest<T>(
   endpoint: string, 
@@ -232,6 +242,36 @@ export const assignmentGroupsAPI = {
     return apiRequest<any>(`/assignment-groups?${params.toString()}`, {
       method: 'DELETE',
     });
+  },
+};
+
+// User Management API
+export const userManagementAPI = {
+  // Get all users (admin only)
+  getAll: async (): Promise<ApiResponse<User[]>> => {
+    return apiRequest<User[]>('/user-roles?all=true');
+  },
+
+  // Update user role (admin only)
+  updateRole: async (targetUserEmail: string, newRole: 'user' | 'admin'): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/user-roles', {
+      method: 'PUT',
+      body: JSON.stringify({ targetUserEmail, newRole }),
+    });
+  },
+};
+
+// User roles API for checking current user permissions
+export const userRolesAPI = {
+  // Get current user's roles and permissions
+  getCurrent: async (): Promise<ApiResponse<{
+    userEmail: string;
+    userObjectId: string;
+    roles: string[];
+    isAdmin: boolean;
+    roleDetails: any[];
+  }>> => {
+    return apiRequest('/user-roles');
   },
 };
 

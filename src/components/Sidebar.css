@@ -156,6 +156,10 @@
   content: 'Assignment Groups';
 }
 
+.sidebar.collapsed .nav-item:nth-child(3):hover::after {
+  content: 'User Management';
+}
+
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);

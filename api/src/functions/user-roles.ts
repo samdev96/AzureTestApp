@@ -4,19 +4,31 @@ import { getDbConnection, handleDbError } from "../utils/database";
 export async function userRoles(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     context.log(`HTTP trigger function processed a ${request.method} request for user-roles.`);
 
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+        return {
+            status: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            }
+        };
+    }
+
     try {
         // Get user info from Static Web Apps authentication
         const userPrincipalHeader = request.headers.get('x-ms-client-principal');
-        let userEmail = '';
-        let userObjectId = '';
+        let currentUserEmail = '';
+        let currentUserObjectId = '';
         
         if (userPrincipalHeader) {
             try {
                 const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
-                userEmail = userPrincipal.userDetails || '';
-                userObjectId = userPrincipal.userId || '';
+                currentUserEmail = userPrincipal.userDetails || '';
+                currentUserObjectId = userPrincipal.userId || '';
                 
-                context.log('Checking roles for user:', { userEmail, userObjectId });
+                context.log('Request from user:', { currentUserEmail, currentUserObjectId });
             } catch (e) {
                 context.log('Error parsing user principal:', e);
                 return {
@@ -46,45 +58,237 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
         }
 
         const pool = await getDbConnection();
-        
-        // Query user roles from database
-        const rolesRequest = pool.request();
-        rolesRequest.input('userEmail', userEmail);
-        rolesRequest.input('userObjectId', userObjectId);
-        
-        const rolesResult = await rolesRequest.query(`
-            SELECT RoleName, AssignedDate, AssignedBy 
-            FROM UserRoles 
-            WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                AND IsActive = 1
-            ORDER BY AssignedDate DESC
-        `);
-        
-        const roles = rolesResult.recordset.map(row => row.RoleName);
-        const isAdmin = roles.includes('admin');
-        
-        context.log('User roles found:', { userEmail, roles, isAdmin });
-        
-        return {
-            status: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
-            },
-            body: JSON.stringify({
-                success: true,
-                userEmail,
-                userObjectId,
-                roles,
-                isAdmin,
-                roleDetails: rolesResult.recordset
-            })
-        };
+
+        if (request.method === 'GET') {
+            // Check if this is a request for all users or current user
+            const url = new URL(request.url);
+            const getAllUsers = url.searchParams.get('all') === 'true';
+
+            if (getAllUsers) {
+                // Verify current user is admin
+                const adminCheckRequest = pool.request();
+                adminCheckRequest.input('userEmail', currentUserEmail);
+                adminCheckRequest.input('userObjectId', currentUserObjectId);
+                
+                const adminResult = await adminCheckRequest.query(`
+                    SELECT RoleName 
+                    FROM UserRoles 
+                    WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
+                        AND RoleName = 'admin' 
+                        AND IsActive = 1
+                `);
+                
+                if (adminResult.recordset.length === 0) {
+                    return {
+                        status: 403,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        body: JSON.stringify({
+                            success: false,
+                            error: 'Admin access required'
+                        })
+                    };
+                }
+
+                // Get all users with their roles
+                const usersRequest = pool.request();
+                const usersResult = await usersRequest.query(`
+                    SELECT DISTINCT 
+                        COALESCE(ur.UserEmail, '') as UserEmail,
+                        COALESCE(ur.UserObjectID, '') as UserObjectID,
+                        COALESCE(ur.RoleName, 'user') as RoleName,
+                        ur.AssignedDate,
+                        ur.AssignedBy,
+                        CASE WHEN ur.RoleName = 'admin' THEN 1 ELSE 0 END as IsAdmin
+                    FROM UserRoles ur
+                    WHERE ur.IsActive = 1
+                    ORDER BY ur.UserEmail, ur.AssignedDate DESC
+                `);
+
+                // Group users and get their primary role (most recent)
+                const userMap = new Map();
+                usersResult.recordset.forEach(row => {
+                    const key = row.UserEmail || row.UserObjectID;
+                    if (!userMap.has(key) || row.AssignedDate > userMap.get(key).AssignedDate) {
+                        userMap.set(key, {
+                            userEmail: row.UserEmail,
+                            userObjectId: row.UserObjectID,
+                            role: row.RoleName || 'user',
+                            isAdmin: row.IsAdmin === 1,
+                            assignedDate: row.AssignedDate,
+                            assignedBy: row.AssignedBy
+                        });
+                    }
+                });
+
+                const users = Array.from(userMap.values());
+                
+                return {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: true,
+                        data: users,
+                        total: users.length
+                    })
+                };
+            } else {
+                // Get current user's roles (existing functionality)
+                const rolesRequest = pool.request();
+                rolesRequest.input('userEmail', currentUserEmail);
+                rolesRequest.input('userObjectId', currentUserObjectId);
+                
+                const rolesResult = await rolesRequest.query(`
+                    SELECT RoleName, AssignedDate, AssignedBy 
+                    FROM UserRoles 
+                    WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
+                        AND IsActive = 1
+                    ORDER BY AssignedDate DESC
+                `);
+                
+                const roles = rolesResult.recordset.map(row => row.RoleName);
+                const isAdmin = roles.includes('admin');
+                
+                context.log('User roles found:', { currentUserEmail, roles, isAdmin });
+                
+                return {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: true,
+                        userEmail: currentUserEmail,
+                        userObjectId: currentUserObjectId,
+                        roles,
+                        isAdmin,
+                        roleDetails: rolesResult.recordset
+                    })
+                };
+            }
+        } else if (request.method === 'PUT') {
+            // Update user role - admin only
+            const adminCheckRequest = pool.request();
+            adminCheckRequest.input('userEmail', currentUserEmail);
+            adminCheckRequest.input('userObjectId', currentUserObjectId);
+            
+            const adminResult = await adminCheckRequest.query(`
+                SELECT RoleName 
+                FROM UserRoles 
+                WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
+                    AND RoleName = 'admin' 
+                    AND IsActive = 1
+            `);
+            
+            if (adminResult.recordset.length === 0) {
+                return {
+                    status: 403,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'Admin access required'
+                    })
+                };
+            }
+
+            // Parse request body
+            const requestText = await request.text();
+            const { targetUserEmail, newRole } = JSON.parse(requestText);
+
+            if (!targetUserEmail || !newRole) {
+                return {
+                    status: 400,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'targetUserEmail and newRole are required'
+                    })
+                };
+            }
+
+            // Validate role
+            if (!['user', 'admin'].includes(newRole)) {
+                return {
+                    status: 400,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'Role must be either "user" or "admin"'
+                    })
+                };
+            }
+
+            // Deactivate existing roles for the target user
+            const deactivateRequest = pool.request();
+            deactivateRequest.input('targetUserEmail', targetUserEmail);
+            
+            await deactivateRequest.query(`
+                UPDATE UserRoles 
+                SET IsActive = 0 
+                WHERE UserEmail = @targetUserEmail AND IsActive = 1
+            `);
+
+            // Insert new role
+            const insertRequest = pool.request();
+            insertRequest.input('targetUserEmail', targetUserEmail);
+            insertRequest.input('newRole', newRole);
+            insertRequest.input('assignedBy', currentUserEmail);
+            
+            await insertRequest.query(`
+                INSERT INTO UserRoles (UserEmail, RoleName, AssignedDate, AssignedBy, IsActive)
+                VALUES (@targetUserEmail, @newRole, GETDATE(), @assignedBy, 1)
+            `);
+
+            context.log('User role updated:', { targetUserEmail, newRole, assignedBy: currentUserEmail });
+
+            return {
+                status: 200,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: true,
+                    message: `User role updated to ${newRole}`,
+                    data: {
+                        targetUserEmail,
+                        newRole,
+                        assignedBy: currentUserEmail,
+                        assignedDate: new Date().toISOString()
+                    }
+                })
+            };
+        } else {
+            return {
+                status: 405,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: false,
+                    error: 'Method not allowed'
+                })
+            };
+        }
         
     } catch (error) {
-        context.log('Error checking user roles:', error);
+        context.log('Error in user-roles:', error);
         const errorInfo = handleDbError(error);
         
         return {
@@ -103,7 +307,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
 
 // Register the function
 app.http('user-roles', {
-    methods: ['GET', 'OPTIONS'],
+    methods: ['GET', 'PUT', 'OPTIONS'],
     route: 'user-roles',
     authLevel: 'anonymous',
     handler: userRoles
