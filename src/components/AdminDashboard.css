@@ -135,14 +135,14 @@
 /* Medium screens (tablets, small laptops) */
 @media (max-width: 1024px) {
   .admin-content {
-    margin-left: 0;
+    margin-left: 60px;
     padding: 15px;
-    max-width: 100vw;
+    max-width: calc(100vw - 60px);
   }
   
   .admin-content.sidebar-collapsed {
-    margin-left: 0;
-    max-width: 100vw;
+    margin-left: 60px;
+    max-width: calc(100vw - 60px);
   }
 }
 

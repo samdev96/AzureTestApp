@@ -160,20 +160,28 @@
   content: 'User Management';
 }
 
-/* Medium screens (tablets, small laptops) - hide sidebar */
+/* Medium screens (tablets, small laptops) - force collapsed but visible */
 @media (max-width: 1024px) {
   .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.3s ease;
-    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.15);
-  }
-  
-  .sidebar.open {
+    width: 60px !important;
     transform: translateX(0);
   }
   
-  .sidebar.collapsed {
-    transform: translateX(-100%);
+  .sidebar .sidebar-title {
+    opacity: 0;
+  }
+  
+  .sidebar .nav-text {
+    opacity: 0;
+  }
+  
+  .sidebar .nav-item {
+    padding: 15px;
+    justify-content: center;
+  }
+  
+  .sidebar .nav-icon {
+    margin-right: 0;
   }
 }
 

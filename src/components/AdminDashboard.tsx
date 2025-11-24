@@ -26,6 +26,22 @@ const AdminDashboard: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [currentPage, setCurrentPage] = useState<'home' | 'assignment-groups' | 'user-management'>('home');
 
+  // Handle responsive sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      const isMediumScreen = window.innerWidth <= 1024;
+      if (isMediumScreen) {
+        setSidebarCollapsed(true);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
