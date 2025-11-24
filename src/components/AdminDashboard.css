@@ -133,7 +133,7 @@
 }
 
 /* Medium screens (tablets, small laptops) */
-@media (max-width: 1024px) and (min-width: 769px) {
+@media (max-width: 1024px) {
   .admin-content {
     margin-left: 60px !important;
     padding: 15px;
