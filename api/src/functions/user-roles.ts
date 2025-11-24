@@ -86,10 +86,21 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
 
             if (getAllUsers) {
                 // Verify current user is admin
+                context.log('Checking admin access for getAllUsers request:', {
+                    currentUserEmail,
+                    currentUserObjectId,
+                    isDevelopment
+                });
+                
                 if (!isDevelopment) {
                     const adminCheckRequest = pool.request();
                     adminCheckRequest.input('userEmail', currentUserEmail);
                     adminCheckRequest.input('userObjectId', currentUserObjectId);
+                    
+                    context.log('Admin check SQL parameters:', {
+                        userEmail: currentUserEmail,
+                        userObjectId: currentUserObjectId
+                    });
                     
                     try {
                         const adminResult = await adminCheckRequest.query(`
@@ -100,6 +111,11 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                                 AND IsActive = 1
                         `);
                         
+                        context.log('Admin check result:', {
+                            recordCount: adminResult.recordset.length,
+                            records: adminResult.recordset
+                        });
+                        
                         if (adminResult.recordset.length === 0) {
                             return {
                                 status: 403,
@@ -109,16 +125,33 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                                 },
                                 body: JSON.stringify({
                                     success: false,
-                                    error: 'Admin access required'
+                                    error: 'Admin access required - no admin role found for user',
+                                    debug: isDevelopment ? {
+                                        userEmail: currentUserEmail,
+                                        userObjectId: currentUserObjectId
+                                    } : undefined
                                 })
                             };
                         }
                     } catch (dbError) {
-                        context.log('Admin check error:', dbError);
-                        // In development, if table doesn't exist, assume admin access
-                        if (!dbError.message?.includes('Invalid object name')) {
-                            throw dbError;
-                        }
+                        context.log('Admin check error:', {
+                            message: dbError.message,
+                            code: dbError.code,
+                            severity: dbError.severity
+                        });
+                        
+                        return {
+                            status: 500,
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            body: JSON.stringify({
+                                success: false,
+                                error: 'Database error during admin check',
+                                details: isDevelopment ? dbError.message : undefined
+                            })
+                        };
                     }
                 } else {
                     context.log('Development mode: skipping admin check');
