@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { assignmentGroupsAPI, AssignmentGroup } from '../services/api';
 import './TicketEditModal.css';
 
@@ -56,12 +56,12 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
   }, [ticket]);
 
   // Fallback assignment groups in case API fails
-  const fallbackGroups: AssignmentGroup[] = [
+  const fallbackGroups: AssignmentGroup[] = useMemo(() => [
     { AssignmentGroupID: 1, GroupName: 'Development', Description: 'Software development and application support team', IsActive: true, CreatedDate: '', CreatedBy: 'system' },
     { AssignmentGroupID: 2, GroupName: 'Infrastructure', Description: 'IT infrastructure, servers, and network support team', IsActive: true, CreatedDate: '', CreatedBy: 'system' },
     { AssignmentGroupID: 3, GroupName: 'Service Desk', Description: 'First-line support and general IT assistance team', IsActive: true, CreatedDate: '', CreatedBy: 'system' },
     { AssignmentGroupID: 4, GroupName: 'Security', Description: 'Information security and compliance team', IsActive: true, CreatedDate: '', CreatedBy: 'system' }
-  ];
+  ], []);
 
   // Load assignment groups when modal opens
   useEffect(() => {
