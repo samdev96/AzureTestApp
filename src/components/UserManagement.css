@@ -363,6 +363,21 @@
 }
 
 /* Responsive design */
+/* Medium screens (tablets, small laptops) */
+@media (max-width: 1024px) {
+  .user-management {
+    padding: 1.5rem;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .user-stats {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 20px;
+  }
+}
+
+/* Mobile screens */
 @media (max-width: 768px) {
   .user-management {
     padding: 1rem;
