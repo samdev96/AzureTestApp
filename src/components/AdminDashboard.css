@@ -132,6 +132,21 @@
   overflow: hidden;
 }
 
+/* Medium screens: account for 60px sidebar */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .admin-content {
+    margin-left: 60px;
+    padding: 15px;
+    max-width: calc(100vw - 60px);
+  }
+  
+  .admin-content.sidebar-collapsed {
+    margin-left: 60px;
+    max-width: calc(100vw - 60px);
+  }
+}
+
+/* Mobile screens: full width */
 @media (max-width: 768px) {
   .admin-content {
     margin-left: 0;
