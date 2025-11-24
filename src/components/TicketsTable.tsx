@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import TicketEditModal from './TicketEditModal';
 import './TicketsTable.css';
 
 interface Ticket {
@@ -11,12 +12,25 @@ interface Ticket {
   created_by: string;
   created_at: string;
   description?: string;
+  // Incident specific fields
+  category?: string;
+  affected_user?: string;
+  contact_info?: string;
+  assigned_to?: string;
+  // Request specific fields
+  request_type?: string;
+  business_justification?: string;
+  requester_name?: string;
+  department?: string;
+  approver_name?: string;
 }
 
 const TicketsTable: React.FC = () => {
   const { user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [filter, setFilter] = useState({
     type: 'all',
     status: 'Open', // Show all open tickets (smart filter for both incidents and requests)
@@ -48,7 +62,11 @@ const TicketsTable: React.FC = () => {
               priority: incident.Priority,
               created_by: incident.CreatedBy,
               created_at: incident.CreatedDate,
-              description: incident.Description
+              description: incident.Description,
+              category: incident.Category,
+              affected_user: incident.AffectedUser,
+              contact_info: incident.ContactInfo,
+              assigned_to: incident.AssignedTo
             })),
             ...requests.map((request: any) => ({
               id: request.RequestID,
@@ -58,7 +76,13 @@ const TicketsTable: React.FC = () => {
               priority: request.Urgency, // Requests use Urgency field instead of Priority
               created_by: request.CreatedBy,
               created_at: request.CreatedDate,
-              description: request.Description
+              description: request.Description,
+              request_type: request.RequestType,
+              business_justification: request.BusinessJustification,
+              requester_name: request.RequesterName,
+              department: request.Department,
+              approver_name: request.ApproverName,
+              assigned_to: request.AssignedTo
             }))
           ];
 
@@ -125,6 +149,97 @@ const TicketsTable: React.FC = () => {
       case 'resolved': return 'status-resolved';
       case 'closed': return 'status-closed';
       default: return '';
+    }
+  };
+
+  const handleTicketClick = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedTicket(null);
+  };
+
+  const handleTicketSave = async (updatedTicket: Ticket) => {
+    try {
+      const endpoint = updatedTicket.type === 'Incident' ? '/api/incidents' : '/api/requests';
+      const response = await fetch(`${endpoint}/${updatedTicket.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedTicket)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update ticket');
+      }
+
+      // Refresh the tickets list
+      const fetchTickets = async () => {
+        try {
+          const [incidentsResponse, requestsResponse] = await Promise.all([
+            fetch('/api/incidents'),
+            fetch('/api/requests')
+          ]);
+
+          if (incidentsResponse.ok && requestsResponse.ok) {
+            const incidentsData = await incidentsResponse.json();
+            const requestsData = await requestsResponse.json();
+
+            const incidents = incidentsData.success ? incidentsData.data : [];
+            const requests = requestsData.success ? requestsData.data : [];
+
+            // Combine and format tickets
+            const allTickets: Ticket[] = [
+              ...incidents.map((incident: any) => ({
+                id: incident.IncidentID,
+                title: incident.Title,
+                type: 'Incident' as const,
+                status: incident.Status,
+                priority: incident.Priority,
+                created_by: incident.CreatedBy,
+                created_at: incident.CreatedDate,
+                description: incident.Description,
+                category: incident.Category,
+                affected_user: incident.AffectedUser,
+                contact_info: incident.ContactInfo,
+                assigned_to: incident.AssignedTo
+              })),
+              ...requests.map((request: any) => ({
+                id: request.RequestID,
+                title: request.Title,
+                type: 'Request' as const,
+                status: request.Status,
+                priority: request.Urgency,
+                created_by: request.CreatedBy,
+                created_at: request.CreatedDate,
+                description: request.Description,
+                request_type: request.RequestType,
+                business_justification: request.BusinessJustification,
+                requester_name: request.RequesterName,
+                department: request.Department,
+                approver_name: request.ApproverName,
+                assigned_to: request.AssignedTo
+              }))
+            ];
+
+            // Sort by creation date (newest first)
+            allTickets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            
+            setTickets(allTickets);
+          }
+        } catch (error) {
+          console.error('Error refreshing tickets:', error);
+        }
+      };
+
+      await fetchTickets();
+    } catch (error) {
+      console.error('Error saving ticket:', error);
+      throw error;
     }
   };
 
@@ -204,7 +319,11 @@ const TicketsTable: React.FC = () => {
               </tr>
             ) : (
               filteredTickets.map(ticket => (
-                <tr key={`${ticket.type}-${ticket.id}`} className="ticket-row">
+                <tr 
+                  key={`${ticket.type}-${ticket.id}`} 
+                  className="ticket-row clickable-row"
+                  onClick={() => handleTicketClick(ticket)}
+                >
                   <td className="ticket-id">#{ticket.id}</td>
                   <td className={`ticket-type type-${ticket.type.toLowerCase()}`}>
                     {ticket.type}
@@ -230,6 +349,13 @@ const TicketsTable: React.FC = () => {
           </tbody>
         </table>
       </div>
+      
+      <TicketEditModal
+        ticket={selectedTicket}
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onSave={handleTicketSave}
+      />
     </div>
   );
 };

@@ -8,6 +8,8 @@ export async function incidents(request: HttpRequest, context: InvocationContext
         return await getIncidents(request, context);
     } else if (request.method === 'POST') {
         return await createIncident(request, context);
+    } else if (request.method === 'PUT') {
+        return await updateIncident(request, context);
     } else {
         return {
             status: 405,
@@ -297,10 +299,113 @@ async function createIncident(request: HttpRequest, context: InvocationContext):
     }
 }
 
+async function updateIncident(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    context.log('HTTP trigger function processed a request for PUT incident.');
+
+    try {
+        const pool = await getDbConnection();
+        
+        // Get user info from Static Web Apps authentication
+        const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+        let userId = 'anonymous';
+        
+        if (userPrincipalHeader) {
+            try {
+                const decodedHeader = Buffer.from(userPrincipalHeader, 'base64').toString();
+                const userPrincipal = JSON.parse(decodedHeader);
+                userId = userPrincipal.userDetails || userPrincipal.userId || 'anonymous';
+            } catch (e) {
+                context.log('Error parsing user principal:', e);
+            }
+        }
+
+        // Get the incident ID from the URL
+        const incidentId = request.params?.id;
+        if (!incidentId) {
+            return {
+                status: 400,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: false,
+                    error: 'Incident ID is required'
+                })
+            };
+        }
+
+        // Parse the request body
+        const requestBody = await request.text();
+        const updatedTicket = JSON.parse(requestBody);
+
+        // Map frontend field names to database field names
+        const dbRequest = pool.request();
+        dbRequest.input('IncidentID', incidentId);
+        dbRequest.input('Title', updatedTicket.title);
+        dbRequest.input('Description', updatedTicket.description);
+        dbRequest.input('Category', updatedTicket.category);
+        dbRequest.input('Priority', updatedTicket.priority);
+        dbRequest.input('Status', updatedTicket.status);
+        dbRequest.input('AffectedUser', updatedTicket.affected_user || '');
+        dbRequest.input('ContactInfo', updatedTicket.contact_info || '');
+        dbRequest.input('AssignedTo', updatedTicket.assigned_to || null);
+        dbRequest.input('ModifiedBy', userId);
+
+        const updateQuery = `
+            UPDATE Incidents 
+            SET 
+                Title = @Title,
+                Description = @Description,
+                CategoryID = (SELECT CategoryID FROM Categories WHERE CategoryName = @Category AND CategoryType = 'Incident'),
+                PriorityID = (SELECT PriorityID FROM Priorities WHERE PriorityName = @Priority),
+                StatusID = (SELECT StatusID FROM Statuses WHERE StatusName = @Status AND StatusType = 'Incident'),
+                AffectedUser = @AffectedUser,
+                ContactInfo = @ContactInfo,
+                AssignedTo = @AssignedTo,
+                ModifiedBy = @ModifiedBy,
+                ModifiedDate = GETUTCDATE()
+            WHERE IncidentID = @IncidentID
+        `;
+
+        await dbRequest.query(updateQuery);
+
+        return {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            },
+            body: JSON.stringify({
+                success: true,
+                message: 'Incident updated successfully'
+            })
+        };
+        
+    } catch (error) {
+        context.log('Error updating incident:', error);
+        const errorInfo = handleDbError(error);
+        
+        return {
+            status: errorInfo.status,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                success: false,
+                error: errorInfo.message
+            })
+        };
+    }
+}
+
 // Register the function
 app.http('incidents', {
-    methods: ['GET', 'POST', 'OPTIONS'],
-    route: 'incidents',
+    methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+    route: 'incidents/{id?}',
     authLevel: 'anonymous',
     handler: incidents
 });

@@ -8,6 +8,8 @@ export async function requests(request: HttpRequest, context: InvocationContext)
         return await getRequests(request, context);
     } else if (request.method === 'POST') {
         return await createRequest(request, context);
+    } else if (request.method === 'PUT') {
+        return await updateRequest(request, context);
     } else {
         return {
             status: 405,
@@ -315,10 +317,117 @@ async function createRequest(request: HttpRequest, context: InvocationContext): 
     }
 }
 
+async function updateRequest(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    context.log('HTTP trigger function processed a request for PUT request.');
+
+    try {
+        const pool = await getDbConnection();
+        
+        // Get user info from Static Web Apps authentication
+        const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+        let userId = 'anonymous';
+        
+        if (userPrincipalHeader) {
+            try {
+                const decodedHeader = Buffer.from(userPrincipalHeader, 'base64').toString();
+                const userPrincipal = JSON.parse(decodedHeader);
+                userId = userPrincipal.userDetails || userPrincipal.userId || 'anonymous';
+            } catch (e) {
+                context.log('Error parsing user principal:', e);
+            }
+        }
+
+        // Get the request ID from the URL
+        const requestId = request.params?.id;
+        if (!requestId) {
+            return {
+                status: 400,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: false,
+                    error: 'Request ID is required'
+                })
+            };
+        }
+
+        // Parse the request body
+        const requestBody = await request.text();
+        const updatedTicket = JSON.parse(requestBody);
+
+        // Map frontend field names to database field names
+        const dbRequest = pool.request();
+        dbRequest.input('RequestID', requestId);
+        dbRequest.input('Title', updatedTicket.title);
+        dbRequest.input('Description', updatedTicket.description);
+        dbRequest.input('RequestType', updatedTicket.request_type || 'Other');
+        dbRequest.input('Urgency', updatedTicket.priority); // Frontend uses 'priority' but DB uses 'Urgency' for requests
+        dbRequest.input('Status', updatedTicket.status);
+        dbRequest.input('BusinessJustification', updatedTicket.business_justification || '');
+        dbRequest.input('RequesterName', updatedTicket.requester_name || '');
+        dbRequest.input('Department', updatedTicket.department || '');
+        dbRequest.input('ApproverName', updatedTicket.approver_name || '');
+        dbRequest.input('AssignedTo', updatedTicket.assigned_to || null);
+        dbRequest.input('ModifiedBy', userId);
+
+        const updateQuery = `
+            UPDATE Requests 
+            SET 
+                Title = @Title,
+                Description = @Description,
+                RequestType = @RequestType,
+                Urgency = @Urgency,
+                StatusID = (SELECT StatusID FROM Statuses WHERE StatusName = @Status AND StatusType = 'Request'),
+                BusinessJustification = @BusinessJustification,
+                RequesterName = @RequesterName,
+                Department = @Department,
+                ApproverName = @ApproverName,
+                AssignedTo = @AssignedTo,
+                ModifiedBy = @ModifiedBy,
+                ModifiedDate = GETUTCDATE()
+            WHERE RequestID = @RequestID
+        `;
+
+        await dbRequest.query(updateQuery);
+
+        return {
+            status: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            },
+            body: JSON.stringify({
+                success: true,
+                message: 'Request updated successfully'
+            })
+        };
+        
+    } catch (error) {
+        context.log('Error updating request:', error);
+        const errorInfo = handleDbError(error);
+        
+        return {
+            status: errorInfo.status,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                success: false,
+                error: errorInfo.message
+            })
+        };
+    }
+}
+
 // Register the function
 app.http('requests', {
-    methods: ['GET', 'POST', 'OPTIONS'],
-    route: 'requests',
+    methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+    route: 'requests/{id?}',
     authLevel: 'anonymous',
     handler: requests
 });

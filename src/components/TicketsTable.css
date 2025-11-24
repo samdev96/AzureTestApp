@@ -80,6 +80,17 @@
   background-color: #f8f9fa;
 }
 
+.clickable-row {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clickable-row:hover {
+  background-color: #e8f4fd !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.1);
+}
+
 .ticket-id {
   font-weight: 600;
   color: #7f8c8d;
