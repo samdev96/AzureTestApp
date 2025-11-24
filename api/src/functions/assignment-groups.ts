@@ -44,14 +44,14 @@ export async function assignmentGroups(request: HttpRequest, context: Invocation
             default:
                 return {
                     status: 405,
-                    jsonBody: { error: 'Method not allowed' }
+                    body: JSON.stringify({ success: false, error: 'Method not allowed' })
                 };
         }
     } catch (error) {
         context.error('Database connection error:', error);
         return {
             status: 500,
-            jsonBody: { error: 'Database connection failed' }
+            body: JSON.stringify({ success: false, error: 'Database connection failed' })
         };
     }
 }
@@ -115,7 +115,17 @@ async function getAssignmentGroups(pool: ConnectionPool, request: HttpRequest): 
             
             return {
                 status: 200,
-                jsonBody: Array.from(groupsMap.values())
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type'
+                },
+                body: JSON.stringify({
+                    success: true,
+                    data: Array.from(groupsMap.values()),
+                    total: Array.from(groupsMap.values()).length
+                })
             };
         } else {
             // Get just the assignment groups
@@ -130,14 +140,33 @@ async function getAssignmentGroups(pool: ConnectionPool, request: HttpRequest): 
             
             return {
                 status: 200,
-                jsonBody: result.recordset as AssignmentGroup[]
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type'
+                },
+                body: JSON.stringify({
+                    success: true,
+                    data: result.recordset as AssignmentGroup[],
+                    total: result.recordset.length
+                })
             };
         }
     } catch (error) {
         console.error('Error getting assignment groups:', error);
         return {
             status: 500,
-            jsonBody: { error: 'Failed to get assignment groups' }
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            },
+            body: JSON.stringify({
+                success: false,
+                error: 'Failed to get assignment groups'
+            })
         };
     }
 }
@@ -151,7 +180,7 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
         if (!userPrincipalName || !userObjectId) {
             return {
                 status: 401,
-                jsonBody: { error: 'User authentication required' }
+                body: JSON.stringify({ success: false, error: 'User authentication required' })
             };
         }
 
@@ -228,14 +257,32 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
 
         return {
             status: 201,
-            jsonBody: { message: 'User successfully assigned to Assignment Group' }
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            },
+            body: JSON.stringify({
+                success: true,
+                message: 'User successfully assigned to Assignment Group'
+            })
         };
 
     } catch (error) {
         context.error('Error assigning user to group:', error);
         return {
             status: 500,
-            jsonBody: { error: 'Failed to assign user to Assignment Group' }
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            },
+            body: JSON.stringify({
+                success: false,
+                error: 'Failed to assign user to Assignment Group'
+            })
         };
     }
 }
@@ -317,14 +364,23 @@ async function removeUserFromGroup(pool: ConnectionPool, request: HttpRequest, c
 
         return {
             status: 200,
-            jsonBody: { message: 'User successfully removed from Assignment Group' }
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            },
+            body: JSON.stringify({
+                success: true,
+                message: 'User successfully removed from Assignment Group'
+            })
         };
 
     } catch (error) {
         context.error('Error removing user from group:', error);
         return {
             status: 500,
-            jsonBody: { error: 'Failed to remove user from Assignment Group' }
+            body: JSON.stringify({ success: false, error: 'Failed to remove user from Assignment Group' })
         };
     }
 }
