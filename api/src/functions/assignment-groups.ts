@@ -265,7 +265,7 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
             };
         }
         
-        if (adminCheck.recordset[0].RoleName !== 'Admin') {
+        if ((adminCheck.recordset[0].RoleName || '').toLowerCase() !== 'admin') {
             return {
                 status: 403,
                 headers: {
