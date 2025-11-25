@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ticketsAPI, Incident, ServiceRequest } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import TicketEditModal from './TicketEditModal';
 import './TicketsTable.css';
 
 // Combined ticket interface for display
@@ -18,6 +19,31 @@ interface DisplayTicket {
   rawData: Incident | ServiceRequest;
 }
 
+// Modal-compatible ticket interface
+interface ModalTicket {
+  id: number;
+  title: string;
+  type: 'Incident' | 'Request';
+  status: string;
+  priority: string;
+  created_by: string;
+  created_at: string;
+  description?: string;
+  assignment_group?: string;
+  category?: string;
+  affected_user?: string;
+  contact_info?: string;
+  assigned_to?: string;
+  resolution_notes?: string;
+  request_type?: string;
+  business_justification?: string;
+  requester_name?: string;
+  department?: string;
+  approver_name?: string;
+  completion_notes?: string;
+  rejection_notes?: string;
+}
+
 const MyTickets: React.FC = () => {
   const { user } = useAuth();
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
@@ -25,6 +51,8 @@ const MyTickets: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [filterType, setFilterType] = useState<'All' | 'Incident' | 'Request'>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
+  const [selectedTicket, setSelectedTicket] = useState<ModalTicket | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Fetch tickets from API
   const fetchTickets = useCallback(async () => {
@@ -133,6 +161,81 @@ const MyTickets: React.FC = () => {
     return ticket.priority || ticket.urgency || 'Medium';
   };
 
+  const convertToModalTicket = (ticket: DisplayTicket): ModalTicket => {
+    const rawData = ticket.rawData;
+    if (ticket.type === 'Incident') {
+      const incident = rawData as Incident;
+      return {
+        id: incident.IncidentID,
+        title: incident.Title,
+        type: 'Incident',
+        status: incident.Status,
+        priority: incident.Priority,
+        created_by: incident.CreatedBy,
+        created_at: incident.CreatedDate,
+        description: incident.Description,
+        assignment_group: incident.AssignmentGroup,
+        category: incident.Category,
+        affected_user: incident.AffectedUser,
+        contact_info: incident.ContactInfo,
+        assigned_to: incident.AssignedTo,
+      };
+    } else {
+      const request = rawData as ServiceRequest;
+      return {
+        id: request.RequestID,
+        title: request.Title,
+        type: 'Request',
+        status: request.Status,
+        priority: request.Urgency,
+        created_by: request.CreatedBy,
+        created_at: request.CreatedDate,
+        description: request.Description,
+        assignment_group: request.AssignmentGroup,
+        request_type: request.RequestType,
+        business_justification: request.BusinessJustification,
+        requester_name: request.RequesterName,
+        department: request.Department,
+        approver_name: request.ApproverName,
+        assigned_to: request.AssignedTo,
+      };
+    }
+  };
+
+  const handleTicketClick = (ticket: DisplayTicket) => {
+    setSelectedTicket(convertToModalTicket(ticket));
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedTicket(null);
+  };
+
+  const handleTicketSave = async (updatedTicket: ModalTicket) => {
+    try {
+      const endpoint = updatedTicket.type === 'Incident' ? '/api/incidents' : '/api/requests';
+      const response = await fetch(`${endpoint}/${updatedTicket.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatedTicket)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update ticket');
+      }
+
+      // Refresh the tickets list
+      await fetchTickets();
+      handleModalClose();
+    } catch (error) {
+      console.error('Error saving ticket:', error);
+      throw error;
+    }
+  };
+
   return (
     <div className="tickets-table-container">
       <div className="table-header">
@@ -203,7 +306,11 @@ const MyTickets: React.FC = () => {
                 </tr>
               ) : (
                 filteredTickets.map(ticket => (
-                  <tr key={ticket.id} className="ticket-row">
+                  <tr 
+                    key={ticket.id} 
+                    className="ticket-row clickable-row"
+                    onClick={() => handleTicketClick(ticket)}
+                  >
                     <td className="ticket-id">{ticket.number}</td>
                     <td className={`ticket-type type-${ticket.type.toLowerCase()}`}>
                       {ticket.type}
@@ -230,6 +337,13 @@ const MyTickets: React.FC = () => {
           </table>
         )}
       </div>
+
+      <TicketEditModal
+        ticket={selectedTicket}
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onSave={handleTicketSave}
+      />
     </div>
   );
 };
