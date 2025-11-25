@@ -128,29 +128,6 @@ const MyTickets: React.FC = () => {
       default: return '';
     }
   };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Open': return 'status-open';
-      case 'In Progress': return 'status-progress';
-      case 'Resolved': return 'status-resolved';
-      case 'Closed': return 'status-closed';
-      case 'Pending Approval': return 'status-pending';
-      case 'Approved': return 'status-approved';
-      default: return 'status-default';
-    }
-  };
-
-  const getPriorityColor = (ticket: DisplayTicket) => {
-    const priority = ticket.priority || ticket.urgency || 'Medium';
-    switch (priority) {
-      case 'Critical': return 'priority-critical';
-      case 'High': return 'priority-high';
-      case 'Medium': return 'priority-medium';
-      case 'Low': return 'priority-low';
-      default: return 'priority-default';
-    }
-  };
   
   const getPriorityLabel = (ticket: DisplayTicket) => {
     return ticket.priority || ticket.urgency || 'Medium';
