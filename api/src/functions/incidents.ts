@@ -222,7 +222,7 @@ async function createIncident(request: HttpRequest, context: InvocationContext):
             SELECT 
                 (SELECT CategoryID FROM Categories WHERE CategoryName = @categoryName AND CategoryType = 'Incident') as CategoryID,
                 (SELECT PriorityID FROM Priorities WHERE PriorityName = @priorityName) as PriorityID,
-                (SELECT StatusID FROM Statuses WHERE StatusName = 'Open' AND StatusType = 'Incident') as StatusID,
+                (SELECT StatusID FROM Statuses WHERE StatusName = 'Open') as StatusID,
                 (SELECT AssignmentGroupID FROM AssignmentGroups WHERE GroupName = @assignmentGroupName AND IsActive = 1) as AssignmentGroupID
         `);
         
@@ -365,7 +365,7 @@ async function updateIncident(request: HttpRequest, context: InvocationContext):
                 Description = @Description,
                 CategoryID = (SELECT CategoryID FROM Categories WHERE CategoryName = @Category AND CategoryType = 'Incident'),
                 PriorityID = (SELECT PriorityID FROM Priorities WHERE PriorityName = @Priority),
-                StatusID = (SELECT StatusID FROM Statuses WHERE StatusName = @Status AND StatusType = 'Incident'),
+                StatusID = (SELECT StatusID FROM Statuses WHERE StatusName = @Status),
                 AssignmentGroupID = (SELECT AssignmentGroupID FROM AssignmentGroups WHERE GroupName = @AssignmentGroup AND IsActive = 1),
                 AffectedUser = @AffectedUser,
                 ContactInfo = @ContactInfo,

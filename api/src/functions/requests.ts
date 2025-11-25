@@ -384,7 +384,7 @@ async function updateRequest(request: HttpRequest, context: InvocationContext): 
         // Validate that the status exists
         const statusCheck = await pool.request()
             .input('Status', updatedTicket.status)
-            .query(`SELECT StatusID FROM Statuses WHERE StatusName = @Status AND StatusType = 'Request'`);
+            .query(`SELECT StatusID FROM Statuses WHERE StatusName = @Status`);
         
         if (statusCheck.recordset.length === 0) {
             return {
@@ -429,7 +429,7 @@ async function updateRequest(request: HttpRequest, context: InvocationContext): 
                 Description = @Description,
                 RequestType = @RequestType,
                 Urgency = @Urgency,
-                StatusID = (SELECT StatusID FROM Statuses WHERE StatusName = @Status AND StatusType = 'Request'),
+                StatusID = (SELECT StatusID FROM Statuses WHERE StatusName = @Status),
                 AssignmentGroupID = (SELECT AssignmentGroupID FROM AssignmentGroups WHERE GroupName = @AssignmentGroup AND IsActive = 1),
                 BusinessJustification = @BusinessJustification,
                 RequesterName = @RequesterName,
