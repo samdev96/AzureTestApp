@@ -224,7 +224,13 @@ const MyTickets: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update ticket');
+        const errorData = await response.json().catch(() => ({ error: 'Failed to update ticket' }));
+        throw new Error(errorData.error || `Failed to update ticket (Status: ${response.status})`);
+      }
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update ticket');
       }
 
       // Refresh the tickets list
