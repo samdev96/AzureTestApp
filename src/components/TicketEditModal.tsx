@@ -109,11 +109,11 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
         setAvailableUsers(userEmails);
       } else {
         // If no members but there's a current assignee, show them
-        setAvailableUsers(editedTicket.assigned_to ? [editedTicket.assigned_to] : []);
+        setAvailableUsers(editedTicket?.assigned_to ? [editedTicket.assigned_to] : []);
       }
     } else {
       // If no assignment group but there's a current assignee, show them
-      setAvailableUsers(editedTicket.assigned_to ? [editedTicket.assigned_to] : []);
+      setAvailableUsers(editedTicket?.assigned_to ? [editedTicket.assigned_to] : []);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editedTicket?.assignment_group, assignmentGroups]);
