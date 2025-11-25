@@ -162,29 +162,27 @@
 
 /* --- Admin Section Styling --- */
 .nav-section-toggle {
-  width: auto;
-  min-width: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: #fff;
-  border: none;
-  text-align: left;
-  padding: 16px 20px;
-  font-weight: 500;
-  font-size: 1rem;
-  border-radius: 16px;
-  margin: 8px 12px;
-  box-shadow: 0 4px 12px rgba(102,126,234,0.08);
-  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 15px;
-  transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+  padding: 16px 20px;
+  margin: 8px 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  border: none;
+  width: calc(100% - 24px);
+  text-align: left;
+  font-weight: 500;
+  font-size: 1rem;
 }
 .nav-section-toggle:hover,
 .nav-section-toggle:focus {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transform: translateX(4px);
   outline: none;
 }
 .nav-section-toggle .nav-icon {
@@ -200,13 +198,13 @@
   font-weight: 500;
   white-space: nowrap;
   opacity: 1;
-  transition: opacity 0.2s ease, color 0.3s ease;
+  transition: opacity 0.2s ease;
 }
 .nav-section-toggle .nav-arrow {
   margin-left: auto;
   color: #fff;
   font-size: 18px;
-  transition: color 0.3s ease;
+  transition: transform 0.3s ease;
 }
 .nav-section {
   margin-bottom: 8px;
