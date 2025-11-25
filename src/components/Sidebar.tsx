@@ -38,10 +38,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
             <button
               className="nav-section-toggle"
               onClick={() => setAdminOpen((open) => !open)}
-              style={{ width: '100%', background: 'none', border: 'none', textAlign: 'left', padding: '8px 0', fontWeight: 600, fontSize: '1rem', cursor: 'pointer' }}
             >
-              <span style={{ marginRight: 8 }}>Admin</span>
-              <span>{adminOpen ? '▼' : '▶'}</span>
+              <span className="nav-icon" style={{ marginRight: 8 }}>🛡️</span>
+              <span className="nav-text">Admin</span>
+              <span style={{ marginLeft: 'auto' }}>{adminOpen ? '▼' : '▶'}</span>
             </button>
             {adminOpen && (
               <ul className="nav-sublist">
