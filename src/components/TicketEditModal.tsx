@@ -44,6 +44,7 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
   const [rejectionNotes, setRejectionNotes] = useState('');
   const [assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>([]);
   const [loadingGroups, setLoadingGroups] = useState(true);
+  const [availableUsers, setAvailableUsers] = useState<string[]>([]);
 
   useEffect(() => {
     if (ticket) {
@@ -68,7 +69,8 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
     if (isOpen) {
       const loadAssignmentGroups = async () => {
         try {
-          const response = await assignmentGroupsAPI.getAll();
+          // Load groups with members so we can populate the assignee dropdown
+          const response = await assignmentGroupsAPI.getAll(true);
           if (response.success && response.data && response.data.length > 0) {
             setAssignmentGroups(response.data);
           } else {
@@ -86,6 +88,36 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
       loadAssignmentGroups();
     }
   }, [isOpen, fallbackGroups]);
+
+  // Update available users when assignment group changes
+  useEffect(() => {
+    if (editedTicket?.assignment_group) {
+      const selectedGroup = assignmentGroups.find(
+        group => group.GroupName === editedTicket.assignment_group
+      );
+      
+      if (selectedGroup && selectedGroup.Members) {
+        const userEmails = selectedGroup.Members
+          .filter(member => member.IsActive)
+          .map(member => member.UserEmail);
+        setAvailableUsers(userEmails);
+        
+        // If current assigned_to is not in the new list, clear it
+        if (editedTicket.assigned_to && !userEmails.includes(editedTicket.assigned_to)) {
+          setEditedTicket(prev => prev ? { ...prev, assigned_to: '' } : null);
+        }
+      } else {
+        setAvailableUsers([]);
+        // Clear assigned_to if no users available
+        if (editedTicket.assigned_to) {
+          setEditedTicket(prev => prev ? { ...prev, assigned_to: '' } : null);
+        }
+      }
+    } else {
+      setAvailableUsers([]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editedTicket?.assignment_group, assignmentGroups]);
 
   const handleSave = async () => {
     if (!editedTicket) return;
@@ -213,34 +245,52 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
                 </select>
               </div>
               <div className="form-group">
-                <label htmlFor="assigned_to">Assigned To</label>
-                <input
-                  id="assigned_to"
-                  type="text"
-                  value={editedTicket.assigned_to || ''}
-                  onChange={(e) => handleFieldChange('assigned_to', e.target.value)}
-                  className="form-input"
-                  placeholder="Enter assignee email"
-                />
+                <label htmlFor="assignment_group">Assignment Group</label>
+                <select
+                  id="assignment_group"
+                  value={editedTicket.assignment_group || ''}
+                  onChange={(e) => handleFieldChange('assignment_group', e.target.value)}
+                  className="form-select"
+                  disabled={loadingGroups}
+                >
+                  <option value="">Select Assignment Group</option>
+                  {assignmentGroups.map(group => (
+                    <option key={group.AssignmentGroupID} value={group.GroupName}>
+                      {group.GroupName} - {group.Description}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="assignment_group">Assignment Group</label>
-              <select
-                id="assignment_group"
-                value={editedTicket.assignment_group || ''}
-                onChange={(e) => handleFieldChange('assignment_group', e.target.value)}
-                className="form-select"
-                disabled={loadingGroups}
-              >
-                <option value="">Select Assignment Group</option>
-                {assignmentGroups.map(group => (
-                  <option key={group.AssignmentGroupID} value={group.GroupName}>
-                    {group.GroupName} - {group.Description}
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="assigned_to">Assigned To</label>
+                <select
+                  id="assigned_to"
+                  value={editedTicket.assigned_to || ''}
+                  onChange={(e) => handleFieldChange('assigned_to', e.target.value)}
+                  className="form-select"
+                  disabled={!editedTicket.assignment_group || availableUsers.length === 0}
+                >
+                  <option value="">
+                    {!editedTicket.assignment_group 
+                      ? 'Select Assignment Group first'
+                      : availableUsers.length === 0
+                      ? 'No users in selected group'
+                      : 'Select user'
+                    }
                   </option>
-                ))}
-              </select>
+                  {availableUsers.map(userEmail => (
+                    <option key={userEmail} value={userEmail}>
+                      {userEmail}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                {/* Empty space to maintain layout */}
+              </div>
             </div>
 
             <div className="form-group">
