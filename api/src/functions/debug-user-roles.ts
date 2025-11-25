@@ -27,7 +27,7 @@ export async function debugUserRoles(request: HttpRequest, context: InvocationCo
         const result = await pool.request()
             .input('email', email)
             .query(`
-                SELECT UserEmail, RoleName, IsActive, CreatedAt, UpdatedAt
+                SELECT UserEmail, RoleName, IsActive
                 FROM UserRoles 
                 WHERE UserEmail = @email
             `);
