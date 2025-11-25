@@ -38,10 +38,15 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
             <button
               className="nav-section-toggle"
               onClick={() => setAdminOpen((open) => !open)}
+              aria-expanded={adminOpen}
             >
-              <span className="nav-icon" style={{ marginRight: 8 }}>🛡️</span>
+              <span className="nav-icon" role="img" aria-label="Admin">
+                🛡️
+              </span>
               <span className="nav-text">Admin</span>
-              <span style={{ marginLeft: 'auto' }}>{adminOpen ? '▼' : '▶'}</span>
+              <span className="nav-arrow">
+                {adminOpen ? '▲' : '▼'}
+              </span>
             </button>
             {adminOpen && (
               <ul className="nav-sublist">
