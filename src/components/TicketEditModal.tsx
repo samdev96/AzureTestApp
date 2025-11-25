@@ -100,21 +100,20 @@ const TicketEditModal: React.FC<TicketEditModalProps> = ({ ticket, isOpen, onClo
         const userEmails = selectedGroup.Members
           .filter(member => member.IsActive)
           .map(member => member.UserEmail);
-        setAvailableUsers(userEmails);
         
-        // If current assigned_to is not in the new list, clear it
+        // Include the current assignee if they exist, even if not in the group
         if (editedTicket.assigned_to && !userEmails.includes(editedTicket.assigned_to)) {
-          setEditedTicket(prev => prev ? { ...prev, assigned_to: '' } : null);
+          userEmails.unshift(editedTicket.assigned_to); // Add to beginning of list
         }
+        
+        setAvailableUsers(userEmails);
       } else {
-        setAvailableUsers([]);
-        // Clear assigned_to if no users available
-        if (editedTicket.assigned_to) {
-          setEditedTicket(prev => prev ? { ...prev, assigned_to: '' } : null);
-        }
+        // If no members but there's a current assignee, show them
+        setAvailableUsers(editedTicket.assigned_to ? [editedTicket.assigned_to] : []);
       }
     } else {
-      setAvailableUsers([]);
+      // If no assignment group but there's a current assignee, show them
+      setAvailableUsers(editedTicket.assigned_to ? [editedTicket.assigned_to] : []);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editedTicket?.assignment_group, assignmentGroups]);
