@@ -160,6 +160,65 @@
   content: 'User Management';
 }
 
+/* --- Admin Section Styling --- */
+.nav-section-toggle {
+  width: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border: none;
+  text-align: left;
+  padding: 14px 20px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  border-radius: 12px;
+  margin: 8px 0 4px 0;
+  box-shadow: 0 2px 8px rgba(102,126,234,0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+.nav-section-toggle:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  color: #fff;
+}
+.nav-section {
+  margin-bottom: 8px;
+}
+.nav-sublist {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+.nav-sublist .nav-item {
+  padding: 16px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 12px;
+  font-size: 1rem;
+  color: #2c3e50;
+  background: none;
+  margin: 8px 12px;
+  transition: background 0.2s, color 0.2s;
+}
+.nav-sublist .nav-item.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+.nav-sublist .nav-item.active .nav-icon,
+.nav-sublist .nav-item.active .nav-text {
+  color: #fff;
+}
+.nav-sublist .nav-item:hover {
+  background: #f8f9fa;
+  color: #667eea;
+}
+/* --- End Admin Section Styling --- */
+
 /* Medium screens: force collapsed */
 @media (max-width: 1024px) {
   .sidebar {
