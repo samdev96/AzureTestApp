@@ -178,8 +178,15 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
         let currentUserEmail = '';
         let currentUserObjectId = '';
         
+        // Log all headers for debugging
+        context.log('=== ASSIGNMENT GROUP DEBUG ===');
+        context.log('All request headers:', Object.fromEntries(request.headers.entries()));
+        context.log('User principal header present:', !!userPrincipalHeader);
+        context.log('Request URL:', request.url);
+        
         // Check if we're in development mode (no auth headers)
         const isDevelopment = !userPrincipalHeader && request.url.includes('localhost');
+        context.log('Is development mode:', isDevelopment);
         
         if (userPrincipalHeader) {
             try {
@@ -189,7 +196,9 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
                 
                 context.log('Parsed user principal:', { 
                     userDetails: userPrincipal.userDetails, 
-                    userId: userPrincipal.userId 
+                    userId: userPrincipal.userId,
+                    currentUserEmail,
+                    currentUserObjectId
                 });
             } catch (e) {
                 context.log('Error parsing user principal:', e);
@@ -226,16 +235,23 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
             };
         }
 
+        context.log('Checking admin access for user:', currentUserEmail);
+        
         // Check if the requesting user is an admin
         const adminCheck = await pool.request()
             .input('userEmail', currentUserEmail)
             .query(`
-                SELECT RoleName 
+                SELECT UserEmail, RoleName, IsActive 
                 FROM UserRoles 
                 WHERE UserEmail = @userEmail AND IsActive = 1
             `);
 
-        if (adminCheck.recordset.length === 0 || adminCheck.recordset[0].RoleName !== 'Admin') {
+        context.log('Admin check result:', {
+            recordCount: adminCheck.recordset.length,
+            records: adminCheck.recordset
+        });
+
+        if (adminCheck.recordset.length === 0) {
             return {
                 status: 403,
                 headers: {
@@ -244,7 +260,21 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
                 },
                 body: JSON.stringify({ 
                     success: false, 
-                    error: 'Admin access required' 
+                    error: `User ${currentUserEmail} not found in UserRoles table` 
+                })
+            };
+        }
+        
+        if (adminCheck.recordset[0].RoleName !== 'Admin') {
+            return {
+                status: 403,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ 
+                    success: false, 
+                    error: `Admin access required. Current role: ${adminCheck.recordset[0].RoleName}` 
                 })
             };
         }
