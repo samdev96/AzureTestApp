@@ -173,20 +173,62 @@ async function getAssignmentGroups(pool: ConnectionPool, request: HttpRequest): 
 
 async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     try {
-        // Get user info from headers
-        const userPrincipalName = request.headers.get('x-ms-client-principal-name');
-        const userObjectId = request.headers.get('x-ms-client-principal-id');
-
-        if (!userPrincipalName || !userObjectId) {
+        // Get user info from Static Web Apps authentication
+        const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+        let currentUserEmail = '';
+        let currentUserObjectId = '';
+        
+        // Check if we're in development mode (no auth headers)
+        const isDevelopment = !userPrincipalHeader && request.url.includes('localhost');
+        
+        if (userPrincipalHeader) {
+            try {
+                const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
+                currentUserEmail = userPrincipal.userDetails || '';
+                currentUserObjectId = userPrincipal.userId || '';
+                
+                context.log('Parsed user principal:', { 
+                    userDetails: userPrincipal.userDetails, 
+                    userId: userPrincipal.userId 
+                });
+            } catch (e) {
+                context.log('Error parsing user principal:', e);
+                return {
+                    status: 401,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'Invalid authentication - failed to parse user principal'
+                    })
+                };
+            }
+        } else if (isDevelopment) {
+            // Use test credentials for local development
+            currentUserEmail = 'admin@test.com';
+            currentUserObjectId = 'test-admin-id';
+            context.log('Development mode: using test admin user');
+        } else {
+            // In production without auth headers
+            context.log('No authentication header found in production');
             return {
                 status: 401,
-                body: JSON.stringify({ success: false, error: 'User authentication required' })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: false,
+                    error: 'Authentication required - please log in to access this feature'
+                })
             };
         }
 
         // Check if the requesting user is an admin
         const adminCheck = await pool.request()
-            .input('userEmail', userPrincipalName)
+            .input('userEmail', currentUserEmail)
             .query(`
                 SELECT RoleName 
                 FROM UserRoles 
@@ -196,7 +238,14 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
         if (adminCheck.recordset.length === 0 || adminCheck.recordset[0].RoleName !== 'Admin') {
             return {
                 status: 403,
-                jsonBody: { error: 'Admin access required' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ 
+                    success: false, 
+                    error: 'Admin access required' 
+                })
             };
         }
 
@@ -222,7 +271,14 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
         if (userRoleCheck.recordset.length === 0) {
             return {
                 status: 400,
-                jsonBody: { error: 'User must be an Admin to be assigned to an Assignment Group' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ 
+                    success: false,
+                    error: 'User must be an Admin to be assigned to an Assignment Group' 
+                })
             };
         }
 
@@ -241,7 +297,14 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
         if (existingAssignment.recordset.length > 0) {
             return {
                 status: 409,
-                jsonBody: { error: 'User is already assigned to this Assignment Group' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ 
+                    success: false,
+                    error: 'User is already assigned to this Assignment Group' 
+                })
             };
         }
 
@@ -249,7 +312,7 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
         await pool.request()
             .input('assignmentGroupId', assignmentGroupId)
             .input('userRoleId', userRoleId)
-            .input('assignedBy', userPrincipalName)
+            .input('assignedBy', currentUserEmail)
             .query(`
                 INSERT INTO AssignmentGroupMembers (AssignmentGroupID, UserRoleID, AssignedBy)
                 VALUES (@assignmentGroupId, @userRoleId, @assignedBy)
@@ -259,29 +322,24 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
             status: 201,
             headers: {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
+                'Access-Control-Allow-Origin': '*'
             },
             body: JSON.stringify({
                 success: true,
                 message: 'User successfully assigned to Assignment Group'
             })
         };
-
-    } catch (error) {
+    } catch (error: any) {
         context.error('Error assigning user to group:', error);
         return {
             status: 500,
             headers: {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type'
+                'Access-Control-Allow-Origin': '*'
             },
             body: JSON.stringify({
                 success: false,
-                error: 'Failed to assign user to Assignment Group'
+                error: error.message || 'Failed to assign user to group'
             })
         };
     }
@@ -289,20 +347,53 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
 
 async function removeUserFromGroup(pool: ConnectionPool, request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
     try {
-        // Get user info from headers
-        const userPrincipalName = request.headers.get('x-ms-client-principal-name');
-        const userObjectId = request.headers.get('x-ms-client-principal-id');
-
-        if (!userPrincipalName || !userObjectId) {
+        // Get user info from Static Web Apps authentication
+        const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+        let currentUserEmail = '';
+        let currentUserObjectId = '';
+        
+        // Check if we're in development mode (no auth headers)
+        const isDevelopment = !userPrincipalHeader && request.url.includes('localhost');
+        
+        if (userPrincipalHeader) {
+            try {
+                const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
+                currentUserEmail = userPrincipal.userDetails || '';
+                currentUserObjectId = userPrincipal.userId || '';
+            } catch (e) {
+                context.log('Error parsing user principal:', e);
+                return {
+                    status: 401,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'Invalid authentication'
+                    })
+                };
+            }
+        } else if (isDevelopment) {
+            currentUserEmail = 'admin@test.com';
+            currentUserObjectId = 'test-admin-id';
+        } else {
             return {
                 status: 401,
-                jsonBody: { error: 'User authentication required' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: false,
+                    error: 'Authentication required'
+                })
             };
         }
 
         // Check if the requesting user is an admin
         const adminCheck = await pool.request()
-            .input('userEmail', userPrincipalName)
+            .input('userEmail', currentUserEmail)
             .query(`
                 SELECT RoleName 
                 FROM UserRoles 
@@ -312,7 +403,14 @@ async function removeUserFromGroup(pool: ConnectionPool, request: HttpRequest, c
         if (adminCheck.recordset.length === 0 || adminCheck.recordset[0].RoleName !== 'Admin') {
             return {
                 status: 403,
-                jsonBody: { error: 'Admin access required' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ 
+                    success: false,
+                    error: 'Admin access required' 
+                })
             };
         }
 
@@ -323,7 +421,14 @@ async function removeUserFromGroup(pool: ConnectionPool, request: HttpRequest, c
         if (!assignmentGroupId || !userEmail) {
             return {
                 status: 400,
-                jsonBody: { error: 'Assignment Group ID and User Email are required' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ 
+                    success: false,
+                    error: 'Assignment Group ID and User Email are required' 
+                })
             };
         }
 
@@ -339,7 +444,14 @@ async function removeUserFromGroup(pool: ConnectionPool, request: HttpRequest, c
         if (userRoleCheck.recordset.length === 0) {
             return {
                 status: 404,
-                jsonBody: { error: 'User not found' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ 
+                    success: false,
+                    error: 'User not found' 
+                })
             };
         }
 
@@ -358,7 +470,14 @@ async function removeUserFromGroup(pool: ConnectionPool, request: HttpRequest, c
         if (result.rowsAffected[0] === 0) {
             return {
                 status: 404,
-                jsonBody: { error: 'Assignment Group membership not found' }
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ 
+                    success: false,
+                    error: 'Assignment Group membership not found' 
+                })
             };
         }
 
