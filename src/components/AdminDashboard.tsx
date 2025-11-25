@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
 import TicketsTable from './TicketsTable';
+import MyTickets from './MyTickets';
 import AssignmentGroupManagement from './AssignmentGroupManagement';
 import UserManagement from './UserManagement';
 import './AdminDashboard.css';
@@ -25,9 +26,9 @@ const AdminDashboard: React.FC = () => {
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'home' | 'assignment-groups' | 'user-management'>('home');
+  const [currentPage, setCurrentPage] = useState<'home' | 'my-tickets' | 'assignment-groups' | 'user-management'>('home');
 
-  const handlePageChange = (page: 'home' | 'assignment-groups' | 'user-management') => {
+  const handlePageChange = (page: 'home' | 'my-tickets' | 'assignment-groups' | 'user-management') => {
     setCurrentPage(page);
     if (window.innerWidth <= 768) {
       setMobileSidebarOpen(false); // Close mobile sidebar on navigation
@@ -71,6 +72,7 @@ const AdminDashboard: React.FC = () => {
 
   const pageTitles = {
     home: 'Dashboard',
+    'my-tickets': 'My Tickets',
     'assignment-groups': 'Assignment Groups',
     'user-management': 'User Management'
   };
@@ -134,6 +136,8 @@ const AdminDashboard: React.FC = () => {
               <TicketsTable />
             </div>
           </>
+        ) : currentPage === 'my-tickets' ? (
+          <MyTickets />
         ) : currentPage === 'assignment-groups' ? (
           <AssignmentGroupManagement />
         ) : (

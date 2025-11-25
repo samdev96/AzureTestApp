@@ -4,8 +4,8 @@ import './Sidebar.css';
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
-  currentPage: 'home' | 'assignment-groups' | 'user-management';
-  onPageChange: (page: 'home' | 'assignment-groups' | 'user-management') => void;
+  currentPage: 'home' | 'my-tickets' | 'assignment-groups' | 'user-management';
+  onPageChange: (page: 'home' | 'my-tickets' | 'assignment-groups' | 'user-management') => void;
   isMobileOpen: boolean;
 }
 
@@ -33,6 +33,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
           >
             <span className="nav-icon">🏠</span>
             <span className="nav-text">Home</span>
+          </li>
+          <li
+            className={`nav-item ${currentPage === 'my-tickets' ? 'active' : ''}`}
+            onClick={() => onPageChange('my-tickets')}
+          >
+            <span className="nav-icon">🎫</span>
+            <span className="nav-text">My Tickets</span>
           </li>
           <li className="nav-section">
             <button
