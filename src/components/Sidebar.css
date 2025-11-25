@@ -170,41 +170,58 @@
   transition: all 0.3s ease;
   position: relative;
   border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: none;
+  color: #2c3e50;
   border: none;
   width: calc(100% - 24px);
   text-align: left;
   font-weight: 500;
   font-size: 1rem;
 }
-.nav-section-toggle:hover,
-.nav-section-toggle:focus {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+.nav-section-toggle:hover {
+  background-color: #f8f9fa;
   transform: translateX(4px);
+}
+.nav-section-toggle:focus {
   outline: none;
 }
+.nav-section-toggle.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+.nav-section-toggle.active:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
 .nav-section-toggle .nav-icon {
-  color: #fff;
+  color: #7f8c8d;
   font-size: 18px;
   margin-right: 15px;
   min-width: 20px;
   text-align: center;
   transition: color 0.3s ease;
 }
-.nav-section-toggle .nav-text {
+.nav-section-toggle.active .nav-icon {
   color: #fff;
+}
+.nav-section-toggle .nav-text {
+  color: #2c3e50;
   font-weight: 500;
   white-space: nowrap;
   opacity: 1;
   transition: opacity 0.2s ease;
 }
+.nav-section-toggle.active .nav-text {
+  color: #fff;
+}
 .nav-section-toggle .nav-arrow {
   margin-left: auto;
-  color: #fff;
+  color: #7f8c8d;
   font-size: 18px;
   transition: transform 0.3s ease;
+}
+.nav-section-toggle.active .nav-arrow {
+  color: #fff;
 }
 .nav-section {
   margin-bottom: 8px;

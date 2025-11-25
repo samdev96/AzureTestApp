@@ -43,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
           </li>
           <li className="nav-section">
             <button
-              className="nav-section-toggle"
+              className={`nav-section-toggle ${(currentPage === 'assignment-groups' || currentPage === 'user-management') ? 'active' : ''}`}
               onClick={() => setAdminOpen((open) => !open)}
               aria-expanded={adminOpen}
             >
