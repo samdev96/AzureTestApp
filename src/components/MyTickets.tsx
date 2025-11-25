@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { ticketsAPI, Incident, ServiceRequest } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -29,11 +29,7 @@ const MyTickets: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch tickets from API
-  useEffect(() => {
-    fetchTickets();
-  }, [user]);
-
-  const fetchTickets = async () => {
+  const fetchTickets = useCallback(async () => {
     setLoading(true);
     setError('');
     
@@ -90,7 +86,11 @@ const MyTickets: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [fetchTickets]);
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesType = filterType === 'All' || ticket.type === filterType;
