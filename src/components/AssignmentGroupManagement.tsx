@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { assignmentGroupsAPI, AssignmentGroup } from '../services/api';
+import { assignmentGroupsAPI, AssignmentGroup, userManagementAPI, User } from '../services/api';
 import './AssignmentGroupManagement.css';
 
 const AssignmentGroupManagement: React.FC = () => {
@@ -11,10 +11,47 @@ const AssignmentGroupManagement: React.FC = () => {
   const [assigningMember, setAssigningMember] = useState(false);
   const [removingMember, setRemovingMember] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(true);
 
   useEffect(() => {
     loadAssignmentGroups();
+    loadAllUsers();
   }, []);
+
+  useEffect(() => {
+    // Filter users based on search input
+    if (newMemberEmail.trim() === '') {
+      setFilteredUsers([]);
+      setShowDropdown(false);
+    } else {
+      const searchTerm = newMemberEmail.toLowerCase();
+      const filtered = allUsers.filter(user => 
+        user.userEmail.toLowerCase().includes(searchTerm) &&
+        user.isAdmin && // Only show admin users
+        !selectedGroup?.Members?.some(member => member.UserEmail === user.userEmail) // Exclude already assigned users
+      );
+      setFilteredUsers(filtered);
+      setShowDropdown(filtered.length > 0);
+    }
+  }, [newMemberEmail, allUsers, selectedGroup]);
+
+  const loadAllUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const response = await userManagementAPI.getAll();
+      
+      if (response.success && response.data) {
+        setAllUsers(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const loadAssignmentGroups = async () => {
     try {
@@ -51,6 +88,7 @@ const AssignmentGroupManagement: React.FC = () => {
       
       if (response.success) {
         setNewMemberEmail('');
+        setShowDropdown(false);
         setSuccessMessage(`Successfully added ${newMemberEmail.trim()} to ${selectedGroup.GroupName}`);
         await loadAssignmentGroups(); // Reload to get updated members
         // Clear success message after 3 seconds
@@ -63,6 +101,11 @@ const AssignmentGroupManagement: React.FC = () => {
     } finally {
       setAssigningMember(false);
     }
+  };
+
+  const handleSelectUser = (userEmail: string) => {
+    setNewMemberEmail(userEmail);
+    setShowDropdown(false);
   };
 
   const handleRemoveUser = async (userEmail: string) => {
@@ -187,18 +230,41 @@ const AssignmentGroupManagement: React.FC = () => {
               <div className="add-member-section">
                 <h4>Add Admin User</h4>
                 <div className="add-member-form">
-                  <input
-                    type="email"
-                    placeholder="Enter admin user email"
-                    value={newMemberEmail}
-                    onChange={(e) => setNewMemberEmail(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !assigningMember && newMemberEmail.trim() && handleAssignUser()}
-                    className="member-email-input"
-                    disabled={assigningMember}
-                  />
+                  <div className="search-dropdown-container">
+                    <input
+                      type="email"
+                      placeholder="Search for admin user by email..."
+                      value={newMemberEmail}
+                      onChange={(e) => setNewMemberEmail(e.target.value)}
+                      onFocus={() => newMemberEmail.trim() && filteredUsers.length > 0 && setShowDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                      onKeyPress={(e) => e.key === 'Enter' && !assigningMember && newMemberEmail.trim() && handleAssignUser()}
+                      className="member-email-input"
+                      disabled={assigningMember || loadingUsers}
+                    />
+                    {showDropdown && filteredUsers.length > 0 && (
+                      <div className="user-dropdown">
+                        {filteredUsers.slice(0, 10).map(user => (
+                          <div
+                            key={user.userEmail}
+                            className="user-dropdown-item"
+                            onClick={() => handleSelectUser(user.userEmail)}
+                          >
+                            <div className="user-email">{user.userEmail}</div>
+                            <div className="user-role-badge">Admin</div>
+                          </div>
+                        ))}
+                        {filteredUsers.length > 10 && (
+                          <div className="dropdown-footer">
+                            Showing 10 of {filteredUsers.length} results. Keep typing to narrow down...
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={handleAssignUser}
-                    disabled={assigningMember || !newMemberEmail.trim()}
+                    disabled={assigningMember || !newMemberEmail.trim() || loadingUsers}
                     className="btn btn-primary"
                   >
                     {assigningMember ? 'Adding...' : 'Add Member'}
