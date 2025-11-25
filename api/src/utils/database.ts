@@ -72,7 +72,10 @@ export function handleDbError(error: any): { status: number, message: string } {
         return { status: 500, message: 'Database connection was closed' };
     } else if (error.number === 2) {
         return { status: 500, message: 'Database server not found' };
+    } else if (error.number) {
+        // SQL Server error with error number
+        return { status: 500, message: `Database error: ${error.message || error.originalError?.message || 'Unknown SQL error'}` };
     }
     
-    return { status: 500, message: 'Internal server error' };
+    return { status: 500, message: error.message || 'Internal server error' };
 }

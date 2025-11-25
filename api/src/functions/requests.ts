@@ -381,6 +381,47 @@ async function updateRequest(request: HttpRequest, context: InvocationContext): 
         dbRequest.input('RejectionNotes', updatedTicket.rejection_notes || null);
         dbRequest.input('ModifiedBy', userId);
 
+        // Validate that the status exists
+        const statusCheck = await pool.request()
+            .input('Status', updatedTicket.status)
+            .query(`SELECT StatusID FROM Statuses WHERE StatusName = @Status AND StatusType = 'Request'`);
+        
+        if (statusCheck.recordset.length === 0) {
+            return {
+                status: 400,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    success: false,
+                    error: `Invalid status: ${updatedTicket.status}. Please select a valid status.`
+                })
+            };
+        }
+
+        // Validate that the assignment group exists if provided
+        const assignmentGroup = updatedTicket.assignment_group || updatedTicket.assignmentGroup;
+        if (assignmentGroup) {
+            const groupCheck = await pool.request()
+                .input('AssignmentGroup', assignmentGroup)
+                .query(`SELECT AssignmentGroupID FROM AssignmentGroups WHERE GroupName = @AssignmentGroup AND IsActive = 1`);
+            
+            if (groupCheck.recordset.length === 0) {
+                return {
+                    status: 400,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: `Invalid assignment group: ${assignmentGroup}. Please select a valid group.`
+                    })
+                };
+            }
+        }
+
         let updateQuery = `
             UPDATE Requests 
             SET 
