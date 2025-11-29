@@ -219,13 +219,8 @@ const UserManagement: React.FC = () => {
   return (
     <div className="user-management">
       <div className="page-header">
-        <div className="header-content">
-          <h2>User Management</h2>
-          <p>Manage user roles and permissions</p>
-        </div>
-        <button onClick={openAddUserModal} className="btn btn-add-user">
-          + Add User
-        </button>
+        <h2>User Management</h2>
+        <p className="page-subtitle">Manage user roles and permissions</p>
       </div>
 
       {error && (
@@ -268,9 +263,14 @@ const UserManagement: React.FC = () => {
       <div className="users-table-container">
         <div className="table-header">
           <h3>User List</h3>
-          <button onClick={loadUsers} className="refresh-button" disabled={loading}>
-            {loading ? 'Loading...' : 'Refresh'}
-          </button>
+          <div className="table-actions">
+            <button onClick={openAddUserModal} className="btn btn-add-user">
+              + Add User
+            </button>
+            <button onClick={loadUsers} className="refresh-button" disabled={loading}>
+              {loading ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
         {users.length === 0 ? (
