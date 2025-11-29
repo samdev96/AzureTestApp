@@ -405,35 +405,37 @@ const UserManagement: React.FC = () => {
                 </div>
               </div>
               
-              <div className="form-section">
-                <h3>Assignment Groups</h3>
-                <p className="section-desc">Select the groups this user should be a member of</p>
-                
-                {loadingGroups ? (
-                  <div className="loading-groups">Loading assignment groups...</div>
-                ) : assignmentGroups.length === 0 ? (
-                  <div className="no-groups">No assignment groups available</div>
-                ) : (
-                  <div className="assignment-groups-list">
-                    {assignmentGroups.map((group) => (
-                      <label key={group.AssignmentGroupID} className="group-checkbox">
-                        <input
-                          type="checkbox"
-                          checked={newUserForm.assignmentGroups.includes(group.AssignmentGroupID)}
-                          onChange={() => handleAssignmentGroupToggle(group.AssignmentGroupID)}
-                        />
-                        <span className="checkbox-custom"></span>
-                        <div className="group-info">
-                          <span className="group-name">{group.GroupName}</span>
-                          {group.Description && (
-                            <span className="group-desc">{group.Description}</span>
-                          )}
+              {newUserForm.role === 'admin' && (
+                <div className="form-section">
+                  <h3>Assignment Groups</h3>
+                  <p className="section-desc">Select the groups this user should be a member of</p>
+                  
+                  {loadingGroups ? (
+                    <div className="loading-groups">Loading assignment groups...</div>
+                  ) : assignmentGroups.length === 0 ? (
+                    <div className="no-groups">No assignment groups available</div>
+                  ) : (
+                    <div className="assignment-groups-list">
+                      {assignmentGroups.map((group) => (
+                        <label key={group.AssignmentGroupID} className="group-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={newUserForm.assignmentGroups.includes(group.AssignmentGroupID)}
+                            onChange={() => handleAssignmentGroupToggle(group.AssignmentGroupID)}
+                          />
+                          <span className="checkbox-custom"></span>
+                          <div className="group-info">
+                            <span className="group-name">{group.GroupName}</span>
+                            {group.Description && (
+                              <span className="group-desc">{group.Description}</span>
+                            )}
                         </div>
                       </label>
                     ))}
                   </div>
                 )}
               </div>
+              )}
               
               <div className="modal-footer">
                 <button type="button" className="btn btn-cancel" onClick={closeAddUserModal}>
