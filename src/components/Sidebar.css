@@ -232,16 +232,34 @@
   margin: 0;
 }
 .nav-sublist .nav-item {
-  padding: 16px 20px;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  border-radius: 12px;
-  font-size: 1rem;
-  color: #2c3e50;
-  background: none;
+  padding: 16px 20px;
   margin: 8px 12px;
+  cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
+  border-radius: 12px;
+  background: none;
+}
+.nav-sublist .nav-item .nav-text {
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+  font-weight: 500;
+  color: #2c3e50;
+}
+.nav-sublist .nav-item .nav-icon {
+  font-size: 18px;
+  margin-right: 15px;
+  min-width: 20px;
+  text-align: center;
+  color: #7f8c8d;
+  transition: color 0.3s ease;
+}
+.nav-sublist .nav-item:not(.active):hover {
+  background-color: #f8f9fa;
+  transform: translateX(4px);
 }
 .nav-sublist .nav-item.active {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -251,10 +269,6 @@
 .nav-sublist .nav-item.active .nav-icon,
 .nav-sublist .nav-item.active .nav-text {
   color: #fff;
-}
-.nav-sublist .nav-item:not(.active):hover {
-  background: #f8f9fa;
-  transform: translateX(4px);
 }
 /* --- End Admin Section Styling --- */
 
