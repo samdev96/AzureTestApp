@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import './Sidebar.css';
 
+export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items';
+
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
-  currentPage: 'home' | 'my-tickets' | 'assignment-groups' | 'user-management';
-  onPageChange: (page: 'home' | 'my-tickets' | 'assignment-groups' | 'user-management') => void;
+  currentPage: PageType;
+  onPageChange: (page: PageType) => void;
   isMobileOpen: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange, isMobileOpen }) => {
   const [adminOpen, setAdminOpen] = useState(false);
+  const [cmdbOpen, setCmdbOpen] = useState(false);
   const getSidebarClass = () => {
     let classes = 'sidebar';
     if (collapsed) classes += ' collapsed';
@@ -40,6 +43,39 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
           >
             <span className="nav-icon">🎫</span>
             <span className="nav-text">My Tickets</span>
+          </li>
+          <li className="nav-section">
+            <button
+              className={`nav-section-toggle ${(currentPage === 'services' || currentPage === 'config-items') ? 'active' : ''}`}
+              onClick={() => setCmdbOpen((open) => !open)}
+              aria-expanded={cmdbOpen}
+            >
+              <span className="nav-icon" role="img" aria-label="CMDB">
+                🗄️
+              </span>
+              <span className="nav-text">CMDB</span>
+              <span className="nav-arrow">
+                {cmdbOpen ? '▲' : '▼'}
+              </span>
+            </button>
+            {cmdbOpen && (
+              <ul className="nav-sublist">
+                <li 
+                  className={`nav-item ${currentPage === 'services' ? 'active' : ''}`}
+                  onClick={() => onPageChange('services')}
+                >
+                  <span className="nav-icon">🏢</span>
+                  <span className="nav-text">Services</span>
+                </li>
+                <li 
+                  className={`nav-item ${currentPage === 'config-items' ? 'active' : ''}`}
+                  onClick={() => onPageChange('config-items')}
+                >
+                  <span className="nav-icon">🖥️</span>
+                  <span className="nav-text">Configuration Items</span>
+                </li>
+              </ul>
+            )}
           </li>
           <li className="nav-section">
             <button

@@ -56,7 +56,7 @@ function App() {
           
           {/* Version display */}
           <div className="version-display">
-            v0.4
+            v0.45
           </div>
         </div>
       </Router>

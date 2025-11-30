@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import Sidebar from './Sidebar';
+import Sidebar, { PageType } from './Sidebar';
 import TicketsTable from './TicketsTable';
 import MyTickets from './MyTickets';
 import AssignmentGroupManagement from './AssignmentGroupManagement';
 import UserManagement from './UserManagement';
+import Services from './Services';
+import ConfigurationItems from './ConfigurationItems';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
 import './AdminDashboard.css';
@@ -28,10 +30,10 @@ const AdminDashboard: React.FC = () => {
   });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<'home' | 'my-tickets' | 'assignment-groups' | 'user-management'>('home');
+  const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const handlePageChange = (page: 'home' | 'my-tickets' | 'assignment-groups' | 'user-management') => {
+  const handlePageChange = (page: PageType) => {
     setCurrentPage(page);
     if (window.innerWidth <= 768) {
       setMobileSidebarOpen(false); // Close mobile sidebar on navigation
@@ -73,11 +75,13 @@ const AdminDashboard: React.FC = () => {
     fetchStats();
   }, [user]);
 
-  const pageTitles = {
+  const pageTitles: Record<PageType, string> = {
     home: 'Dashboard',
     'my-tickets': 'My Tickets',
     'assignment-groups': 'Assignment Groups',
-    'user-management': 'User Management'
+    'user-management': 'User Management',
+    'services': 'Services',
+    'config-items': 'Configuration Items'
   };
 
   return (
@@ -146,6 +150,10 @@ const AdminDashboard: React.FC = () => {
           <MyTickets />
         ) : currentPage === 'assignment-groups' ? (
           <AssignmentGroupManagement />
+        ) : currentPage === 'services' ? (
+          <Services />
+        ) : currentPage === 'config-items' ? (
+          <ConfigurationItems />
         ) : (
           <UserManagement />
         )}
