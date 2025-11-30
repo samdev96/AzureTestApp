@@ -84,6 +84,7 @@ const ConfigurationItems: React.FC = () => {
 
   useEffect(() => {
     loadConfigItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadConfigItems = async () => {

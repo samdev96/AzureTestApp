@@ -48,6 +48,7 @@ const Services: React.FC = () => {
 
   useEffect(() => {
     loadServices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadServices = async () => {
