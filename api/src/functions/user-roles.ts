@@ -396,29 +396,68 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
 
                 // If newRole is provided, update the role
                 if (newRole) {
-                    // Deactivate existing roles for the target user
-                    const deactivateRequest = pool.request();
-                    deactivateRequest.input('targetUserEmail', targetUserEmail);
+                    // Check if the user already has this role
+                    const checkExistingRequest = pool.request();
+                    checkExistingRequest.input('targetUserEmail', targetUserEmail);
+                    checkExistingRequest.input('newRole', newRole);
                     
-                    await deactivateRequest.query(`
-                        UPDATE UserRoles 
-                        SET IsActive = 0 
-                        WHERE UserEmail = @targetUserEmail AND IsActive = 1
+                    const existingResult = await checkExistingRequest.query(`
+                        SELECT Id FROM UserRoles 
+                        WHERE UserEmail = @targetUserEmail AND RoleName = @newRole
                     `);
-
-                    // Insert new role with displayName if provided
-                    const insertRequest = pool.request();
-                    insertRequest.input('targetUserEmail', targetUserEmail);
-                    insertRequest.input('newRole', newRole);
-                    insertRequest.input('assignedBy', currentUserEmail);
-                    insertRequest.input('displayName', displayName || null);
                     
-                    await insertRequest.query(`
-                        INSERT INTO UserRoles (UserEmail, RoleName, DisplayName, AssignedDate, AssignedBy, IsActive)
-                        VALUES (@targetUserEmail, @newRole, @displayName, GETDATE(), @assignedBy, 1)
-                    `);
+                    if (existingResult.recordset.length > 0) {
+                        // User already has this role - just update it (reactivate if needed, update display name)
+                        const updateRequest = pool.request();
+                        updateRequest.input('targetUserEmail', targetUserEmail);
+                        updateRequest.input('newRole', newRole);
+                        updateRequest.input('displayName', displayName || null);
+                        
+                        // First deactivate any OTHER roles
+                        await updateRequest.query(`
+                            UPDATE UserRoles 
+                            SET IsActive = 0 
+                            WHERE UserEmail = @targetUserEmail AND RoleName != @newRole
+                        `);
+                        
+                        // Then update/reactivate the target role
+                        const reactivateRequest = pool.request();
+                        reactivateRequest.input('targetUserEmail', targetUserEmail);
+                        reactivateRequest.input('newRole', newRole);
+                        reactivateRequest.input('displayName', displayName || null);
+                        
+                        await reactivateRequest.query(`
+                            UPDATE UserRoles 
+                            SET IsActive = 1, DisplayName = COALESCE(@displayName, DisplayName)
+                            WHERE UserEmail = @targetUserEmail AND RoleName = @newRole
+                        `);
+                        
+                        context.log('User role reactivated/updated:', { targetUserEmail, newRole, displayName });
+                    } else {
+                        // User doesn't have this role - deactivate existing and insert new
+                        const deactivateRequest = pool.request();
+                        deactivateRequest.input('targetUserEmail', targetUserEmail);
+                        
+                        await deactivateRequest.query(`
+                            UPDATE UserRoles 
+                            SET IsActive = 0 
+                            WHERE UserEmail = @targetUserEmail AND IsActive = 1
+                        `);
 
-                    context.log('User role updated:', { targetUserEmail, newRole, displayName, assignedBy: currentUserEmail });
+                        // Insert new role with displayName if provided
+                        const insertRequest = pool.request();
+                        insertRequest.input('targetUserEmail', targetUserEmail);
+                        insertRequest.input('newRole', newRole);
+                        insertRequest.input('assignedBy', currentUserEmail);
+                        insertRequest.input('displayName', displayName || null);
+                        
+                        await insertRequest.query(`
+                            INSERT INTO UserRoles (UserEmail, RoleName, DisplayName, AssignedDate, AssignedBy, IsActive)
+                            VALUES (@targetUserEmail, @newRole, @displayName, GETDATE(), @assignedBy, 1)
+                        `);
+
+                        context.log('User role inserted:', { targetUserEmail, newRole, displayName, assignedBy: currentUserEmail });
+                    }
                 }
             } catch (dbError) {
                 context.log('Database error updating role:', dbError);
