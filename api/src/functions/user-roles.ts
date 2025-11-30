@@ -402,7 +402,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     checkExistingRequest.input('newRole', newRole);
                     
                     const existingResult = await checkExistingRequest.query(`
-                        SELECT Id FROM UserRoles 
+                        SELECT UserRoleID FROM UserRoles 
                         WHERE UserEmail = @targetUserEmail AND RoleName = @newRole
                     `);
                     
