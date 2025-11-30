@@ -13,6 +13,7 @@ interface EditUserForm {
   email: string;
   displayName: string;
   role: 'user' | 'admin';
+  assignmentGroups: number[];
 }
 
 const UserManagement: React.FC = () => {
@@ -39,7 +40,8 @@ const UserManagement: React.FC = () => {
   const [editUserForm, setEditUserForm] = useState<EditUserForm>({
     email: '',
     displayName: '',
-    role: 'user'
+    role: 'user',
+    assignmentGroups: []
   });
   const [editFormErrors, setEditFormErrors] = useState<{ [key: string]: string }>({});
   const [savingUser, setSavingUser] = useState(false);
@@ -50,10 +52,10 @@ const UserManagement: React.FC = () => {
 
   // Load assignment groups when modal opens
   useEffect(() => {
-    if (showAddUserModal) {
+    if (showAddUserModal || showEditUserModal) {
       loadAssignmentGroups();
     }
-  }, [showAddUserModal]);
+  }, [showAddUserModal, showEditUserModal]);
 
   const loadAssignmentGroups = async () => {
     try {
@@ -198,7 +200,8 @@ const UserManagement: React.FC = () => {
     setEditUserForm({
       email: user.userEmail,
       displayName: user.displayName || '',
-      role: user.role
+      role: user.role,
+      assignmentGroups: []  // TODO: Load user's current assignment groups
     });
     setEditFormErrors({});
     setShowEditUserModal(true);
@@ -209,7 +212,8 @@ const UserManagement: React.FC = () => {
     setEditUserForm({
       email: '',
       displayName: '',
-      role: 'user'
+      role: 'user',
+      assignmentGroups: []
     });
     setEditFormErrors({});
   };
@@ -225,7 +229,7 @@ const UserManagement: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleEditFormChange = (field: keyof EditUserForm, value: string) => {
+  const handleEditFormChange = (field: keyof EditUserForm, value: string | number[]) => {
     setEditUserForm(prev => ({
       ...prev,
       [field]: value
@@ -238,6 +242,23 @@ const UserManagement: React.FC = () => {
         return newErrors;
       });
     }
+  };
+
+  const handleEditAssignmentGroupToggle = (groupId: number) => {
+    setEditUserForm(prev => {
+      const currentGroups = prev.assignmentGroups;
+      if (currentGroups.includes(groupId)) {
+        return {
+          ...prev,
+          assignmentGroups: currentGroups.filter(id => id !== groupId)
+        };
+      } else {
+        return {
+          ...prev,
+          assignmentGroups: [...currentGroups, groupId]
+        };
+      }
+    });
   };
 
   const handleSaveUser = async (e: React.FormEvent) => {
@@ -646,6 +667,38 @@ const UserManagement: React.FC = () => {
                   </div>
                 </div>
               </div>
+              
+              {editUserForm.role === 'admin' && (
+                <div className="form-section">
+                  <h3>Assignment Groups</h3>
+                  <p className="section-desc">Select the groups this user should be a member of</p>
+                  
+                  {loadingGroups ? (
+                    <div className="loading-groups">Loading assignment groups...</div>
+                  ) : assignmentGroups.length === 0 ? (
+                    <div className="no-groups">No assignment groups available</div>
+                  ) : (
+                    <div className="assignment-groups-list">
+                      {assignmentGroups.map((group) => (
+                        <label key={group.AssignmentGroupID} className="group-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={editUserForm.assignmentGroups.includes(group.AssignmentGroupID)}
+                            onChange={() => handleEditAssignmentGroupToggle(group.AssignmentGroupID)}
+                          />
+                          <span className="checkbox-custom"></span>
+                          <div className="group-info">
+                            <span className="group-name">{group.GroupName}</span>
+                            {group.Description && (
+                              <span className="group-desc">{group.Description}</span>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               
               <div className="modal-footer">
                 <button type="button" className="btn btn-cancel" onClick={closeEditUserModal} disabled={savingUser}>
