@@ -5,6 +5,8 @@ import TicketsTable from './TicketsTable';
 import MyTickets from './MyTickets';
 import AssignmentGroupManagement from './AssignmentGroupManagement';
 import UserManagement from './UserManagement';
+import UserMenu from './UserMenu';
+import Settings from './Settings';
 import './AdminDashboard.css';
 
 interface TicketStats {
@@ -27,6 +29,7 @@ const AdminDashboard: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<'home' | 'my-tickets' | 'assignment-groups' | 'user-management'>('home');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handlePageChange = (page: 'home' | 'my-tickets' | 'assignment-groups' | 'user-management') => {
     setCurrentPage(page);
@@ -98,8 +101,11 @@ const AdminDashboard: React.FC = () => {
         {currentPage === 'home' ? (
           <>
             <div className="admin-header">
-              <h1>VibeNow ITSM Dashboard</h1>
-              <p className="welcome-text">Welcome back, {user?.userDetails?.split('@')[0]}</p>
+              <div className="admin-header-content">
+                <h1>VibeNow ITSM Dashboard</h1>
+                <p className="welcome-text">Welcome back, {user?.userDetails?.split('@')[0]}</p>
+              </div>
+              <UserMenu onSettingsClick={() => setIsSettingsOpen(true)} />
             </div>
 
             <div className="quick-overview-section">
@@ -144,6 +150,11 @@ const AdminDashboard: React.FC = () => {
           <UserManagement />
         )}
       </div>
+      
+      <Settings 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+      />
     </div>
   );
 };

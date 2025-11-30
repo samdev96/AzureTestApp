@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserMenu from './UserMenu';
+import Settings from './Settings';
 import './Home.css';
 
 interface TicketStats {
@@ -19,6 +20,7 @@ const Home: React.FC = () => {
     totalTickets: 0
   });
   const [loading, setLoading] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleCreateIncident = () => {
     navigate('/create-incident');
@@ -87,7 +89,7 @@ const Home: React.FC = () => {
             <h1>VibeNow</h1>
             <p>Welcome to VibeNow. Create and manage incidents and service requests.</p>
           </div>
-          <UserMenu />
+          <UserMenu onSettingsClick={() => setIsSettingsOpen(true)} />
         </div>
       </header>
 
@@ -133,6 +135,11 @@ const Home: React.FC = () => {
           </div>
         </div>
       </main>
+      
+      <Settings 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+      />
     </div>
   );
 };

@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './UserMenu.css';
 
-const UserMenu: React.FC = () => {
+interface UserMenuProps {
+  onSettingsClick?: () => void;
+}
+
+const UserMenu: React.FC<UserMenuProps> = ({ onSettingsClick }) => {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -25,6 +29,11 @@ const UserMenu: React.FC = () => {
       return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
+  };
+
+  const handleSettingsClick = () => {
+    setIsOpen(false);
+    onSettingsClick?.();
   };
 
   return (
@@ -55,13 +64,9 @@ const UserMenu: React.FC = () => {
           <div className="user-menu-divider"></div>
           
           <div className="user-menu-items">
-            <button className="user-menu-item">
-              <span className="menu-icon">👤</span>
-              Profile Settings
-            </button>
-            <button className="user-menu-item">
-              <span className="menu-icon">🎛️</span>
-              Preferences
+            <button className="user-menu-item" onClick={handleSettingsClick}>
+              <span className="menu-icon">⚙️</span>
+              Settings
             </button>
             <button className="user-menu-item">
               <span className="menu-icon">❓</span>
