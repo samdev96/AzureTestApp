@@ -777,3 +777,70 @@
     width: 100%;
   }
 }
+
+/* Clickable Rows */
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.clickable-row:hover {
+  background-color: #f0f4ff !important;
+}
+
+.clickable-row:active {
+  transform: scale(0.995);
+}
+
+/* User Display Name in Table */
+.user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-details .email {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.user-details .display-name {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+/* Edit User Modal */
+.edit-user-modal {
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.edit-user-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.disabled-input {
+  background-color: #f5f5f5 !important;
+  color: #7f8c8d !important;
+  cursor: not-allowed;
+  border-color: #e1e5e9 !important;
+}
+
+.helper-text {
+  font-size: 0.8rem;
+  color: #95a5a6;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* Edit Modal Responsive */
+@media (max-width: 640px) {
+  .edit-user-modal {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+}

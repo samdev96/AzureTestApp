@@ -118,6 +118,7 @@ export interface AssignmentGroupMember {
 export interface User {
   userEmail: string;
   userObjectId: string;
+  displayName?: string;
   role: 'user' | 'admin';
   isAdmin: boolean;
   assignedDate: string;
@@ -270,6 +271,18 @@ export const userManagementAPI = {
     return apiRequest<any>('/user-roles', {
       method: 'PUT',
       body: JSON.stringify({ targetUserEmail, newRole }),
+    });
+  },
+
+  // Update user details (admin only)
+  update: async (userData: {
+    targetUserEmail: string;
+    displayName?: string;
+    newRole?: 'user' | 'admin';
+  }): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/user-roles', {
+      method: 'PUT',
+      body: JSON.stringify(userData),
     });
   },
 };

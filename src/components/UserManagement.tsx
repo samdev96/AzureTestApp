@@ -9,6 +9,12 @@ interface NewUserForm {
   assignmentGroups: number[];
 }
 
+interface EditUserForm {
+  email: string;
+  displayName: string;
+  role: 'user' | 'admin';
+}
+
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +33,16 @@ const UserManagement: React.FC = () => {
     assignmentGroups: []
   });
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+
+  // Edit User Modal State
+  const [showEditUserModal, setShowEditUserModal] = useState(false);
+  const [editUserForm, setEditUserForm] = useState<EditUserForm>({
+    email: '',
+    displayName: '',
+    role: 'user'
+  });
+  const [editFormErrors, setEditFormErrors] = useState<{ [key: string]: string }>({});
+  const [savingUser, setSavingUser] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -177,6 +193,85 @@ const UserManagement: React.FC = () => {
 
   const [addingUser, setAddingUser] = useState(false);
 
+  // Edit User Modal Functions
+  const openEditUserModal = (user: User) => {
+    setEditUserForm({
+      email: user.userEmail,
+      displayName: user.displayName || '',
+      role: user.role
+    });
+    setEditFormErrors({});
+    setShowEditUserModal(true);
+  };
+
+  const closeEditUserModal = () => {
+    setShowEditUserModal(false);
+    setEditUserForm({
+      email: '',
+      displayName: '',
+      role: 'user'
+    });
+    setEditFormErrors({});
+  };
+
+  const validateEditForm = (): boolean => {
+    const errors: { [key: string]: string } = {};
+    
+    if (!editUserForm.displayName.trim()) {
+      errors.displayName = 'Display name is required';
+    }
+    
+    setEditFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleEditFormChange = (field: keyof EditUserForm, value: string) => {
+    setEditUserForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // Clear error when user starts typing
+    if (editFormErrors[field]) {
+      setEditFormErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleSaveUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateEditForm()) {
+      return;
+    }
+    
+    try {
+      setSavingUser(true);
+      setError('');
+      
+      const response = await userManagementAPI.update({
+        targetUserEmail: editUserForm.email,
+        displayName: editUserForm.displayName,
+        newRole: editUserForm.role
+      });
+      
+      if (response.success) {
+        setSuccessMessage(`User ${editUserForm.email} updated successfully`);
+        closeEditUserModal();
+        await loadUsers(); // Refresh the users list
+      } else {
+        throw new Error(response.error || 'Failed to update user');
+      }
+    } catch (err) {
+      console.error('Error updating user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update user');
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -313,10 +408,17 @@ const UserManagement: React.FC = () => {
               </thead>
               <tbody>
                 {users.map((user) => (
-                  <tr key={user.userEmail}>
+                  <tr 
+                    key={user.userEmail} 
+                    className="clickable-row"
+                    onClick={() => openEditUserModal(user)}
+                  >
                     <td className="user-info">
                       <div className="user-details">
                         <span className="email">{user.userEmail.split('&')[0]}</span>
+                        {user.displayName && (
+                          <span className="display-name">{user.displayName}</span>
+                        )}
                       </div>
                     </td>
                     <td>
@@ -334,7 +436,10 @@ const UserManagement: React.FC = () => {
                       <div className="action-buttons">
                         {user.role === 'user' ? (
                           <button
-                            onClick={() => updateUserRole(user.userEmail, 'admin')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateUserRole(user.userEmail, 'admin');
+                            }}
                             disabled={updatingUser === user.userEmail}
                             className="btn btn-promote"
                           >
@@ -342,7 +447,10 @@ const UserManagement: React.FC = () => {
                           </button>
                         ) : (
                           <button
-                            onClick={() => updateUserRole(user.userEmail, 'user')}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateUserRole(user.userEmail, 'user');
+                            }}
                             disabled={updatingUser === user.userEmail}
                             className="btn btn-demote"
                           >
@@ -465,6 +573,86 @@ const UserManagement: React.FC = () => {
                 </button>
                 <button type="submit" className="btn btn-submit" disabled={addingUser}>
                   {addingUser ? 'Adding...' : 'Add User'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditUserModal && (
+        <div className="modal-overlay" onClick={closeEditUserModal}>
+          <div className="modal-content edit-user-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Edit User</h2>
+              <button className="close-button" onClick={closeEditUserModal}>×</button>
+            </div>
+            
+            <form onSubmit={handleSaveUser} className="edit-user-form">
+              <div className="form-section">
+                <h3>User Information</h3>
+                
+                <div className="form-group">
+                  <label htmlFor="edit-email">Email Address</label>
+                  <input
+                    type="email"
+                    id="edit-email"
+                    value={editUserForm.email}
+                    disabled
+                    className="disabled-input"
+                  />
+                  <span className="helper-text">Email cannot be changed</span>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="edit-displayName">Display Name *</label>
+                  <input
+                    type="text"
+                    id="edit-displayName"
+                    value={editUserForm.displayName}
+                    onChange={(e) => handleEditFormChange('displayName', e.target.value)}
+                    placeholder="John Doe"
+                    className={editFormErrors.displayName ? 'error' : ''}
+                  />
+                  {editFormErrors.displayName && <span className="error-text">{editFormErrors.displayName}</span>}
+                </div>
+              </div>
+              
+              <div className="form-section">
+                <h3>Role Assignment</h3>
+                
+                <div className="form-group">
+                  <label>User Role</label>
+                  <div className="role-selector">
+                    <button
+                      type="button"
+                      className={`role-option ${editUserForm.role === 'user' ? 'selected' : ''}`}
+                      onClick={() => handleEditFormChange('role', 'user')}
+                    >
+                      <span className="role-icon">👤</span>
+                      <span className="role-name">User</span>
+                      <span className="role-desc">Standard access to create and view tickets</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`role-option ${editUserForm.role === 'admin' ? 'selected' : ''}`}
+                      onClick={() => handleEditFormChange('role', 'admin')}
+                    >
+                      <span className="role-icon">🛡️</span>
+                      <span className="role-name">Administrator</span>
+                      <span className="role-desc">Full access including user management</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="modal-footer">
+                <button type="button" className="btn btn-cancel" onClick={closeEditUserModal} disabled={savingUser}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-submit" disabled={savingUser}>
+                  {savingUser ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

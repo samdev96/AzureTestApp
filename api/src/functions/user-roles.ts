@@ -167,6 +167,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         SELECT 
                             COALESCE(ur.UserEmail, '') as UserEmail,
                             COALESCE(ur.UserObjectID, '') as UserObjectID,
+                            COALESCE(ur.DisplayName, '') as DisplayName,
                             COALESCE(ur.RoleName, 'user') as RoleName,
                             ur.AssignedDate,
                             ur.AssignedBy,
@@ -246,6 +247,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         userMap.set(key, {
                             userEmail: row.UserEmail,
                             userObjectId: row.UserObjectID,
+                            displayName: row.DisplayName || '',
                             role: row.RoleName || 'user',
                             isAdmin: row.IsAdmin === 1,
                             assignedDate: row.AssignedDate,
@@ -345,9 +347,9 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
 
             // Parse request body
             const requestText = await request.text();
-            const { targetUserEmail, newRole } = JSON.parse(requestText);
+            const { targetUserEmail, newRole, displayName } = JSON.parse(requestText);
 
-            if (!targetUserEmail || !newRole) {
+            if (!targetUserEmail) {
                 return {
                     status: 400,
                     headers: {
@@ -356,13 +358,13 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     },
                     body: JSON.stringify({
                         success: false,
-                        error: 'targetUserEmail and newRole are required'
+                        error: 'targetUserEmail is required'
                     })
                 };
             }
 
-            // Validate role
-            if (!['user', 'admin'].includes(newRole)) {
+            // Validate role if provided
+            if (newRole && !['user', 'admin'].includes(newRole)) {
                 return {
                     status: 400,
                     headers: {
@@ -377,28 +379,47 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
             }
 
             try {
-                // Deactivate existing roles for the target user
-                const deactivateRequest = pool.request();
-                deactivateRequest.input('targetUserEmail', targetUserEmail);
-                
-                await deactivateRequest.query(`
-                    UPDATE UserRoles 
-                    SET IsActive = 0 
-                    WHERE UserEmail = @targetUserEmail AND IsActive = 1
-                `);
+                // If displayName is provided, update it on existing records
+                if (displayName !== undefined) {
+                    const updateDisplayNameRequest = pool.request();
+                    updateDisplayNameRequest.input('targetUserEmail', targetUserEmail);
+                    updateDisplayNameRequest.input('displayName', displayName);
+                    
+                    await updateDisplayNameRequest.query(`
+                        UPDATE UserRoles 
+                        SET DisplayName = @displayName
+                        WHERE UserEmail = @targetUserEmail
+                    `);
+                    
+                    context.log('Display name updated:', { targetUserEmail, displayName });
+                }
 
-                // Insert new role
-                const insertRequest = pool.request();
-                insertRequest.input('targetUserEmail', targetUserEmail);
-                insertRequest.input('newRole', newRole);
-                insertRequest.input('assignedBy', currentUserEmail);
-                
-                await insertRequest.query(`
-                    INSERT INTO UserRoles (UserEmail, RoleName, AssignedDate, AssignedBy, IsActive)
-                    VALUES (@targetUserEmail, @newRole, GETDATE(), @assignedBy, 1)
-                `);
+                // If newRole is provided, update the role
+                if (newRole) {
+                    // Deactivate existing roles for the target user
+                    const deactivateRequest = pool.request();
+                    deactivateRequest.input('targetUserEmail', targetUserEmail);
+                    
+                    await deactivateRequest.query(`
+                        UPDATE UserRoles 
+                        SET IsActive = 0 
+                        WHERE UserEmail = @targetUserEmail AND IsActive = 1
+                    `);
 
-                context.log('User role updated:', { targetUserEmail, newRole, assignedBy: currentUserEmail });
+                    // Insert new role with displayName if provided
+                    const insertRequest = pool.request();
+                    insertRequest.input('targetUserEmail', targetUserEmail);
+                    insertRequest.input('newRole', newRole);
+                    insertRequest.input('assignedBy', currentUserEmail);
+                    insertRequest.input('displayName', displayName || null);
+                    
+                    await insertRequest.query(`
+                        INSERT INTO UserRoles (UserEmail, RoleName, DisplayName, AssignedDate, AssignedBy, IsActive)
+                        VALUES (@targetUserEmail, @newRole, @displayName, GETDATE(), @assignedBy, 1)
+                    `);
+
+                    context.log('User role updated:', { targetUserEmail, newRole, displayName, assignedBy: currentUserEmail });
+                }
             } catch (dbError) {
                 context.log('Database error updating role:', dbError);
                 
