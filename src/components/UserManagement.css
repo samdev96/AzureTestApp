@@ -811,16 +811,17 @@
 
 /* Edit User Modal */
 .edit-user-modal {
-  width: 90%;
-  max-width: 500px;
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
 .edit-user-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  padding: 1.5rem 2rem 2rem;
 }
 
 .disabled-input {
@@ -842,5 +843,9 @@
   .edit-user-modal {
     max-height: 100vh;
     border-radius: 0;
+  }
+  
+  .edit-user-modal .role-selector {
+    grid-template-columns: 1fr;
   }
 }
