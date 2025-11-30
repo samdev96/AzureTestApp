@@ -252,6 +252,19 @@ export const userManagementAPI = {
     return apiRequest<User[]>('/user-roles?all=true');
   },
 
+  // Create a new user (admin only)
+  create: async (userData: {
+    email: string;
+    displayName: string;
+    role: 'user' | 'admin';
+    assignmentGroups: number[];
+  }): Promise<ApiResponse<any>> => {
+    return apiRequest<any>('/user-roles', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
+
   // Update user role (admin only)
   updateRole: async (targetUserEmail: string, newRole: 'user' | 'admin'): Promise<ApiResponse<any>> => {
     return apiRequest<any>('/user-roles', {

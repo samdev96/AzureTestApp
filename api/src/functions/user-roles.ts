@@ -10,7 +10,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
             status: 200,
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type'
             }
         };
@@ -427,6 +427,194 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     }
                 })
             };
+        } else if (request.method === 'POST') {
+            // Create new user - admin only
+            if (!isDevelopment) {
+                const adminCheckRequest = pool.request();
+                adminCheckRequest.input('userEmail', currentUserEmail);
+                adminCheckRequest.input('userObjectId', currentUserObjectId);
+                
+                try {
+                    const adminResult = await adminCheckRequest.query(`
+                        SELECT RoleName 
+                        FROM UserRoles 
+                        WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
+                            AND RoleName = 'admin' 
+                            AND IsActive = 1
+                    `);
+                    
+                    if (adminResult.recordset.length === 0) {
+                        return {
+                            status: 403,
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            body: JSON.stringify({
+                                success: false,
+                                error: 'Admin access required'
+                            })
+                        };
+                    }
+                } catch (dbError) {
+                    context.log('Admin check error for POST:', dbError);
+                    if (!dbError.message?.includes('Invalid object name')) {
+                        throw dbError;
+                    }
+                }
+            } else {
+                context.log('Development mode: skipping admin check for POST');
+            }
+
+            // Parse request body
+            const requestText = await request.text();
+            const { email, displayName, role, assignmentGroups } = JSON.parse(requestText);
+
+            if (!email || !displayName) {
+                return {
+                    status: 400,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'Email and display name are required'
+                    })
+                };
+            }
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return {
+                    status: 400,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'Invalid email format'
+                    })
+                };
+            }
+
+            // Validate role
+            const userRole = role || 'user';
+            if (!['user', 'admin'].includes(userRole)) {
+                return {
+                    status: 400,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'Role must be either "user" or "admin"'
+                    })
+                };
+            }
+
+            try {
+                // Check if user already exists
+                const checkRequest = pool.request();
+                checkRequest.input('email', email);
+                
+                const existingUser = await checkRequest.query(`
+                    SELECT UserEmail FROM UserRoles WHERE UserEmail = @email AND IsActive = 1
+                `);
+
+                if (existingUser.recordset.length > 0) {
+                    return {
+                        status: 400,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        body: JSON.stringify({
+                            success: false,
+                            error: 'A user with this email already exists'
+                        })
+                    };
+                }
+
+                // Insert new user role
+                const insertRequest = pool.request();
+                insertRequest.input('email', email);
+                insertRequest.input('displayName', displayName);
+                insertRequest.input('role', userRole);
+                insertRequest.input('assignedBy', currentUserEmail);
+                
+                await insertRequest.query(`
+                    INSERT INTO UserRoles (UserEmail, DisplayName, RoleName, AssignedDate, AssignedBy, IsActive)
+                    VALUES (@email, @displayName, @role, GETDATE(), @assignedBy, 1)
+                `);
+
+                // If user is admin and has assignment groups, add them to those groups
+                if (userRole === 'admin' && assignmentGroups && assignmentGroups.length > 0) {
+                    for (const groupId of assignmentGroups) {
+                        const groupRequest = pool.request();
+                        groupRequest.input('groupId', groupId);
+                        groupRequest.input('email', email);
+                        groupRequest.input('assignedBy', currentUserEmail);
+                        
+                        await groupRequest.query(`
+                            INSERT INTO AssignmentGroupMembers (AssignmentGroupID, UserEmail, IsActive, CreatedDate, CreatedBy)
+                            VALUES (@groupId, @email, 1, GETDATE(), @assignedBy)
+                        `);
+                    }
+                }
+
+                context.log('New user created:', { email, displayName, role: userRole, assignmentGroups });
+
+                return {
+                    status: 201,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: true,
+                        message: 'User created successfully',
+                        data: {
+                            email,
+                            displayName,
+                            role: userRole,
+                            assignmentGroups: assignmentGroups || [],
+                            assignedBy: currentUserEmail,
+                            assignedDate: new Date().toISOString()
+                        }
+                    })
+                };
+            } catch (dbError) {
+                context.log('Database error creating user:', dbError);
+                
+                if (isDevelopment && dbError.message?.includes('Invalid object name')) {
+                    context.log('Development mode: simulating successful user creation');
+                    return {
+                        status: 201,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        body: JSON.stringify({
+                            success: true,
+                            message: 'User created successfully (simulated)',
+                            data: {
+                                email,
+                                displayName,
+                                role: userRole,
+                                assignmentGroups: assignmentGroups || [],
+                                assignedBy: currentUserEmail,
+                                assignedDate: new Date().toISOString()
+                            }
+                        })
+                    };
+                }
+                
+                throw dbError;
+            }
         } else {
             return {
                 status: 405,
@@ -461,7 +649,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
 
 // Register the function
 app.http('user-roles', {
-    methods: ['GET', 'PUT', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
     route: 'user-roles',
     authLevel: 'anonymous',
     handler: userRoles

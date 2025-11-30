@@ -175,6 +175,8 @@ const UserManagement: React.FC = () => {
     });
   };
 
+  const [addingUser, setAddingUser] = useState(false);
+
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -182,10 +184,30 @@ const UserManagement: React.FC = () => {
       return;
     }
     
-    // TODO: Implement backend API call
-    console.log('New user data:', newUserForm);
-    setSuccessMessage(`User ${newUserForm.email} would be created (backend not implemented yet)`);
-    closeAddUserModal();
+    try {
+      setAddingUser(true);
+      setError('');
+      
+      const response = await userManagementAPI.create({
+        email: newUserForm.email,
+        displayName: newUserForm.displayName,
+        role: newUserForm.role,
+        assignmentGroups: newUserForm.assignmentGroups
+      });
+      
+      if (response.success) {
+        setSuccessMessage(`User ${newUserForm.email} created successfully`);
+        closeAddUserModal();
+        await loadUsers(); // Refresh the users list
+      } else {
+        throw new Error(response.error || 'Failed to create user');
+      }
+    } catch (err) {
+      console.error('Error creating user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create user');
+    } finally {
+      setAddingUser(false);
+    }
   };
 
   const getRoleBadgeClass = (role: string) => {
@@ -438,11 +460,11 @@ const UserManagement: React.FC = () => {
               )}
               
               <div className="modal-footer">
-                <button type="button" className="btn btn-cancel" onClick={closeAddUserModal}>
+                <button type="button" className="btn btn-cancel" onClick={closeAddUserModal} disabled={addingUser}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-submit">
-                  Add User
+                <button type="submit" className="btn btn-submit" disabled={addingUser}>
+                  {addingUser ? 'Adding...' : 'Add User'}
                 </button>
               </div>
             </form>
