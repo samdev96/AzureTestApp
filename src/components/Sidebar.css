@@ -241,21 +241,20 @@
   color: #2c3e50;
   background: none;
   margin: 8px 12px;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.3s ease;
 }
 .nav-sublist .nav-item.active {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
-  font-weight: 600;
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 .nav-sublist .nav-item.active .nav-icon,
 .nav-sublist .nav-item.active .nav-text {
   color: #fff;
 }
-.nav-sublist .nav-item:hover {
+.nav-sublist .nav-item:not(.active):hover {
   background: #f8f9fa;
-  color: #667eea;
+  transform: translateX(4px);
 }
 /* --- End Admin Section Styling --- */
 
