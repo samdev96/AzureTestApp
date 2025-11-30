@@ -176,6 +176,7 @@
   width: calc(100% - 24px);
   text-align: left;
   font-family: inherit;
+  font-size: inherit;
 }
 .nav-section-toggle:hover {
   background-color: #f8f9fa;
