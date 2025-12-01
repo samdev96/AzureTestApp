@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Sidebar.css';
 
-export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items';
+export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items' | 'relationships';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -46,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
           </li>
           <li className="nav-section">
             <button
-              className={`nav-section-toggle ${(currentPage === 'services' || currentPage === 'config-items') ? 'active' : ''}`}
+              className={`nav-section-toggle ${(currentPage === 'services' || currentPage === 'config-items' || currentPage === 'relationships') ? 'active' : ''}`}
               onClick={() => setCmdbOpen((open) => !open)}
               aria-expanded={cmdbOpen}
             >
@@ -73,6 +73,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
                 >
                   <span className="nav-icon">🖥️</span>
                   <span className="nav-text">Configuration Items</span>
+                </li>
+                <li 
+                  className={`nav-item ${currentPage === 'relationships' ? 'active' : ''}`}
+                  onClick={() => onPageChange('relationships')}
+                >
+                  <span className="nav-icon">🔗</span>
+                  <span className="nav-text">Relationships</span>
                 </li>
               </ul>
             )}
