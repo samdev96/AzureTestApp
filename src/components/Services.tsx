@@ -44,7 +44,6 @@ interface ServiceStats {
 
 const CRITICALITIES = ['Critical', 'High', 'Medium', 'Low'];
 const STATUSES = ['Active', 'Inactive', 'Planned', 'Retired'];
-const SERVICE_CI_RELATIONSHIP_TYPES = ['Contains', 'DependsOn', 'Uses'];
 
 const Services: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
@@ -596,74 +595,83 @@ const Services: React.FC = () => {
 
             {/* Linked CIs Tab */}
             {activeTab === 'cis' && selectedService && (
-              <div className="linked-items-tab">
-                {/* Add CI Form */}
-                <div className="add-linked-item">
+              <div className="linked-cis-tab">
+                {/* Add CI Section */}
+                <div className="link-ci-section">
                   <h4>Link a Configuration Item</h4>
-                  <form onSubmit={handleAddCi} className="add-link-form">
+                  <div className="link-ci-dropdown">
                     <select
                       value={addCiForm.ciId}
-                      onChange={(e) => setAddCiForm(prev => ({ ...prev, ciId: e.target.value }))}
-                      required
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value) {
+                          setAddCiForm(prev => ({ ...prev, ciId: value }));
+                          // Auto-submit when a CI is selected
+                          const form = e.target.closest('.link-ci-section');
+                          if (form) {
+                            const submitBtn = form.querySelector('.btn-link-ci') as HTMLButtonElement;
+                            if (submitBtn) submitBtn.click();
+                          }
+                        }
+                      }}
                     >
-                      <option value="">Select a CI...</option>
+                      <option value="">
+                        {availableCis.length === 0 
+                          ? 'No CIs available to link' 
+                          : 'Select a CI to link...'}
+                      </option>
                       {availableCis.map(ci => (
                         <option key={ci.CiId} value={ci.CiId}>
-                          {getTypeIcon(ci.CiType)} {ci.CiName} ({ci.Environment})
+                          {ci.CiName} ({ci.CiType} - {ci.Environment})
                         </option>
                       ))}
                     </select>
-                    <select
-                      value={addCiForm.relationshipType}
-                      onChange={(e) => setAddCiForm(prev => ({ ...prev, relationshipType: e.target.value }))}
+                    <button 
+                      type="button" 
+                      className="btn-link-ci"
+                      style={{ display: 'none' }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleAddCi(e as unknown as React.FormEvent);
+                      }}
                     >
-                      {SERVICE_CI_RELATIONSHIP_TYPES.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                    <label className="checkbox-inline">
-                      <input
-                        type="checkbox"
-                        checked={addCiForm.isCritical}
-                        onChange={(e) => setAddCiForm(prev => ({ ...prev, isCritical: e.target.checked }))}
-                      />
-                      Critical
-                    </label>
-                    <button type="submit" className="btn-add-link" disabled={!addCiForm.ciId}>
-                      + Add
+                      Link
                     </button>
-                  </form>
+                  </div>
                 </div>
 
                 {/* Linked CIs List */}
-                <div className="linked-items-list">
+                <div className="linked-cis-list">
+                  <h4>Linked Configuration Items ({linkedCis.length})</h4>
                   {linkedCis.length === 0 ? (
-                    <div className="no-linked-items">
+                    <div className="empty-linked-cis">
+                      <span className="empty-icon">🔗</span>
                       <p>No Configuration Items linked to this service yet.</p>
+                      <p className="empty-hint">Select a CI from the dropdown above to link it.</p>
                     </div>
                   ) : (
-                    linkedCis.map(mapping => (
-                      <div key={mapping.MappingId} className="linked-item-card">
-                        <div className="linked-item-icon">
-                          {getTypeIcon(mapping.CiType)}
-                        </div>
-                        <div className="linked-item-details">
-                          <div className="linked-item-name">{mapping.CiName}</div>
-                          <div className="linked-item-meta">
-                            {mapping.CiType} • {mapping.Environment}
-                            <span className="relationship-type">{mapping.RelationshipType}</span>
-                            {mapping.IsCritical && <span className="critical-flag">⚠️ Critical</span>}
+                    <div className="linked-cis-grid">
+                      {linkedCis.map(mapping => (
+                        <div key={mapping.MappingId} className="linked-ci-card">
+                          <div className="linked-ci-info">
+                            <span className="linked-ci-icon">{getTypeIcon(mapping.CiType)}</span>
+                            <div className="linked-ci-details">
+                              <span className="linked-ci-name">{mapping.CiName}</span>
+                              <span className="linked-ci-meta">
+                                {mapping.CiType} • {mapping.Environment}
+                              </span>
+                            </div>
                           </div>
+                          <button
+                            className="btn-unlink-ci"
+                            onClick={() => handleRemoveCi(mapping.MappingId)}
+                            title="Unlink CI"
+                          >
+                            ✕
+                          </button>
                         </div>
-                        <button
-                          className="btn-remove-link"
-                          onClick={() => handleRemoveCi(mapping.MappingId)}
-                          title="Remove link"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
