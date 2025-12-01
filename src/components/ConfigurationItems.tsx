@@ -1,548 +1,881 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './ConfigurationItems.css';
 
 interface ConfigurationItem {
-  CiId: number;
-  CiName: string;
+  Id: number;
+  Name: string;
   CiType: string;
-  SubType: string | null;
   Status: string;
   Environment: string;
-  Location: string | null;
-  IpAddress: string | null;
-  Hostname: string | null;
-  Version: string | null;
-  Vendor: string | null;
-  Owner: string | null;
-  Description: string | null;
-  SupportGroup: string | null;
-  ServiceCount: number;
-  RelationshipCount: number;
-  CreatedDate: string;
+  Description: string;
+  Metadata: string | null;
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 interface CiType {
-  TypeId: number;
+  Id: number;
   TypeName: string;
-  Category: string;
-  Icon: string;
+  Description: string;
 }
 
-interface CiStats {
-  total: number;
-  servers: number;
-  applications: number;
-  databases: number;
+interface LinkedService {
+  MappingId: number;
+  ServiceId: number;
+  ServiceName: string;
+  LinkedAt: string;
 }
 
-const CI_TYPES: CiType[] = [
-  { TypeId: 1, TypeName: 'Server', Category: 'Hardware', Icon: '🖥️' },
-  { TypeId: 2, TypeName: 'Virtual Machine', Category: 'Hardware', Icon: '💻' },
-  { TypeId: 3, TypeName: 'Container', Category: 'Cloud', Icon: '📦' },
-  { TypeId: 4, TypeName: 'Database', Category: 'Software', Icon: '🗄️' },
-  { TypeId: 5, TypeName: 'Application', Category: 'Software', Icon: '📱' },
-  { TypeId: 6, TypeName: 'Web Server', Category: 'Software', Icon: '🌐' },
-  { TypeId: 7, TypeName: 'API', Category: 'Software', Icon: '🔌' },
-  { TypeId: 8, TypeName: 'Load Balancer', Category: 'Network', Icon: '⚖️' },
-  { TypeId: 9, TypeName: 'Firewall', Category: 'Network', Icon: '🛡️' },
-  { TypeId: 10, TypeName: 'Storage', Category: 'Hardware', Icon: '💾' },
-  { TypeId: 11, TypeName: 'Cloud Service', Category: 'Cloud', Icon: '☁️' },
-  { TypeId: 12, TypeName: 'SaaS Application', Category: 'Cloud', Icon: '🌩️' },
-];
+interface RelatedCI {
+  RelationshipId: number;
+  RelatedCiId: number;
+  RelatedCiName: string;
+  RelatedCiType: string;
+  RelationshipType: string;
+  Direction: 'outgoing' | 'incoming';
+  CreatedAt: string;
+}
 
-const ENVIRONMENTS = ['Production', 'Staging', 'Development', 'Test', 'DR'];
-const STATUSES = ['Active', 'Inactive', 'Decommissioned', 'Planned', 'Maintenance'];
+interface AvailableService {
+  Id: number;
+  Name: string;
+}
+
+interface AvailableCIForRelation {
+  Id: number;
+  Name: string;
+  CiType: string;
+}
+
+interface RelationshipType {
+  Id: number;
+  TypeName: string;
+  Description: string;
+}
 
 const ConfigurationItems: React.FC = () => {
-  const [configItems, setConfigItems] = useState<ConfigurationItem[]>([]);
+  const [cis, setCis] = useState<ConfigurationItem[]>([]);
+  const [ciTypes, setCiTypes] = useState<CiType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editingCi, setEditingCi] = useState<ConfigurationItem | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [envFilter, setEnvFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedCi, setSelectedCi] = useState<ConfigurationItem | null>(null);
-  const [stats, setStats] = useState<CiStats>({ total: 0, servers: 0, applications: 0, databases: 0 });
-
-  // Form state for Add/Edit
+  const [filterType, setFilterType] = useState('');
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterEnvironment, setFilterEnvironment] = useState('');
+  const [activeTab, setActiveTab] = useState<'details' | 'services' | 'relationships'>('details');
+  
+  // Form state
   const [formData, setFormData] = useState({
-    ciName: '',
-    ciType: '',
-    subType: '',
+    name: '',
+    ciTypeId: '',
     status: 'Active',
     environment: 'Production',
-    location: '',
-    ipAddress: '',
-    hostname: '',
-    version: '',
-    vendor: '',
-    owner: '',
     description: '',
-    supportGroupId: ''
+    metadata: ''
   });
 
-  useEffect(() => {
-    loadConfigItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Linked services state
+  const [linkedServices, setLinkedServices] = useState<LinkedService[]>([]);
+  const [availableServices, setAvailableServices] = useState<AvailableService[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
 
-  const loadConfigItems = async () => {
+  // Related CIs state
+  const [relatedCIs, setRelatedCIs] = useState<RelatedCI[]>([]);
+  const [availableCIs, setAvailableCIs] = useState<AvailableCIForRelation[]>([]);
+  const [relationshipTypes, setRelationshipTypes] = useState<RelationshipType[]>([]);
+  const [selectedRelatedCiId, setSelectedRelatedCiId] = useState<string>('');
+  const [selectedRelationshipTypeId, setSelectedRelationshipTypeId] = useState<string>('');
+  const [relationsLoading, setRelationsLoading] = useState(false);
+
+  const statuses = ['Active', 'Inactive', 'Maintenance', 'Decommissioned'];
+  const environments = ['Production', 'Staging', 'Development', 'Testing', 'DR'];
+
+  const loadCIs = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/configuration-items');
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setConfigItems(data.data);
-          calculateStats(data.data);
-        } else {
-          // No data yet, that's okay
-          setConfigItems([]);
-          calculateStats([]);
-        }
-      } else {
-        // API might not exist yet
-        setConfigItems([]);
-        calculateStats([]);
-      }
+      if (!response.ok) throw new Error('Failed to load configuration items');
+      const data = await response.json();
+      setCis(data.configurationItems || []);
     } catch (err) {
-      console.log('API not available yet, showing empty state');
-      setConfigItems([]);
-      calculateStats([]);
+      setError(err instanceof Error ? err.message : 'Failed to load configuration items');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const calculateStats = (items: ConfigurationItem[]) => {
-    setStats({
-      total: items.length,
-      servers: items.filter(i => i.CiType === 'Server' || i.CiType === 'Virtual Machine').length,
-      applications: items.filter(i => i.CiType === 'Application' || i.CiType === 'Web Server' || i.CiType === 'API').length,
-      databases: items.filter(i => i.CiType === 'Database').length,
-    });
-  };
-
-  const getTypeIcon = (typeName: string): string => {
-    const type = CI_TYPES.find(t => t.TypeName === typeName);
-    return type?.Icon || '📦';
-  };
-
-  const getStatusBadgeClass = (status: string): string => {
-    switch (status) {
-      case 'Active': return 'status-active';
-      case 'Inactive': return 'status-inactive';
-      case 'Maintenance': return 'status-maintenance';
-      case 'Decommissioned': return 'status-decommissioned';
-      case 'Planned': return 'status-planned';
-      default: return '';
+  const loadCiTypes = useCallback(async () => {
+    try {
+      const response = await fetch('/api/configuration-items/types');
+      if (!response.ok) throw new Error('Failed to load CI types');
+      const data = await response.json();
+      setCiTypes(data.ciTypes || []);
+    } catch (err) {
+      console.error('Failed to load CI types:', err);
     }
+  }, []);
+
+  const loadLinkedServices = useCallback(async (ciId: number) => {
+    try {
+      setServicesLoading(true);
+      const response = await fetch(`/api/service-ci-mappings?ciId=${ciId}`);
+      if (!response.ok) throw new Error('Failed to load linked services');
+      const data = await response.json();
+      
+      const services: LinkedService[] = (data.mappings || []).map((m: { MappingId: number; ServiceId: number; ServiceName: string; CreatedAt: string }) => ({
+        MappingId: m.MappingId,
+        ServiceId: m.ServiceId,
+        ServiceName: m.ServiceName,
+        LinkedAt: m.CreatedAt
+      }));
+      setLinkedServices(services);
+    } catch (err) {
+      console.error('Failed to load linked services:', err);
+    } finally {
+      setServicesLoading(false);
+    }
+  }, []);
+
+  const loadAvailableServices = useCallback(async (ciId: number) => {
+    try {
+      const response = await fetch('/api/services');
+      if (!response.ok) throw new Error('Failed to load services');
+      const data = await response.json();
+      
+      // Get currently linked service IDs
+      const linkedIds = linkedServices.map(s => s.ServiceId);
+      
+      // Filter out already linked services
+      const available = (data.services || [])
+        .filter((s: AvailableService) => !linkedIds.includes(s.Id))
+        .map((s: AvailableService) => ({ Id: s.Id, Name: s.Name }));
+      
+      setAvailableServices(available);
+    } catch (err) {
+      console.error('Failed to load available services:', err);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedServices]);
+
+  const loadRelatedCIs = useCallback(async (ciId: number) => {
+    try {
+      setRelationsLoading(true);
+      const response = await fetch(`/api/ci-relationships?ciId=${ciId}`);
+      if (!response.ok) throw new Error('Failed to load related CIs');
+      const data = await response.json();
+      
+      const relations: RelatedCI[] = (data.relationships || []).map((r: {
+        RelationshipId: number;
+        SourceCiId: number;
+        SourceCiName: string;
+        SourceCiType: string;
+        TargetCiId: number;
+        TargetCiName: string;
+        TargetCiType: string;
+        RelationshipType: string;
+        CreatedAt: string;
+      }) => {
+        // Determine direction based on whether this CI is source or target
+        const isSource = r.SourceCiId === ciId;
+        return {
+          RelationshipId: r.RelationshipId,
+          RelatedCiId: isSource ? r.TargetCiId : r.SourceCiId,
+          RelatedCiName: isSource ? r.TargetCiName : r.SourceCiName,
+          RelatedCiType: isSource ? r.TargetCiType : r.SourceCiType,
+          RelationshipType: r.RelationshipType,
+          Direction: isSource ? 'outgoing' : 'incoming' as 'outgoing' | 'incoming',
+          CreatedAt: r.CreatedAt
+        };
+      });
+      setRelatedCIs(relations);
+    } catch (err) {
+      console.error('Failed to load related CIs:', err);
+    } finally {
+      setRelationsLoading(false);
+    }
+  }, []);
+
+  const loadAvailableCIsForRelation = useCallback(async (ciId: number) => {
+    try {
+      const response = await fetch('/api/configuration-items');
+      if (!response.ok) throw new Error('Failed to load CIs');
+      const data = await response.json();
+      
+      // Get currently related CI IDs
+      const relatedIds = relatedCIs.map(r => r.RelatedCiId);
+      
+      // Filter out the current CI and already related CIs
+      const available = (data.configurationItems || [])
+        .filter((c: ConfigurationItem) => c.Id !== ciId && !relatedIds.includes(c.Id))
+        .map((c: ConfigurationItem) => ({ Id: c.Id, Name: c.Name, CiType: c.CiType }));
+      
+      setAvailableCIs(available);
+    } catch (err) {
+      console.error('Failed to load available CIs:', err);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [relatedCIs]);
+
+  const loadRelationshipTypes = useCallback(async () => {
+    try {
+      const response = await fetch('/api/relationship-types');
+      if (!response.ok) throw new Error('Failed to load relationship types');
+      const data = await response.json();
+      setRelationshipTypes(data.relationshipTypes || []);
+    } catch (err) {
+      console.error('Failed to load relationship types:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCIs();
+    loadCiTypes();
+    loadRelationshipTypes();
+  }, [loadCIs, loadCiTypes, loadRelationshipTypes]);
+
+  useEffect(() => {
+    if (editingCi && activeTab === 'services') {
+      loadLinkedServices(editingCi.Id);
+    }
+  }, [editingCi, activeTab, loadLinkedServices]);
+
+  useEffect(() => {
+    if (editingCi && activeTab === 'services' && linkedServices.length >= 0) {
+      loadAvailableServices(editingCi.Id);
+    }
+  }, [editingCi, activeTab, linkedServices, loadAvailableServices]);
+
+  useEffect(() => {
+    if (editingCi && activeTab === 'relationships') {
+      loadRelatedCIs(editingCi.Id);
+    }
+  }, [editingCi, activeTab, loadRelatedCIs]);
+
+  useEffect(() => {
+    if (editingCi && activeTab === 'relationships' && relatedCIs.length >= 0) {
+      loadAvailableCIsForRelation(editingCi.Id);
+    }
+  }, [editingCi, activeTab, relatedCIs, loadAvailableCIsForRelation]);
+
+  const handleOpenModal = (ci?: ConfigurationItem) => {
+    if (ci) {
+      setEditingCi(ci);
+      const ciType = ciTypes.find(t => t.TypeName === ci.CiType);
+      setFormData({
+        name: ci.Name,
+        ciTypeId: ciType ? ciType.Id.toString() : '',
+        status: ci.Status,
+        environment: ci.Environment,
+        description: ci.Description || '',
+        metadata: ci.Metadata || ''
+      });
+      setActiveTab('details');
+    } else {
+      setEditingCi(null);
+      setFormData({
+        name: '',
+        ciTypeId: ciTypes.length > 0 ? ciTypes[0].Id.toString() : '',
+        status: 'Active',
+        environment: 'Production',
+        description: '',
+        metadata: ''
+      });
+      setActiveTab('details');
+    }
+    setLinkedServices([]);
+    setAvailableServices([]);
+    setRelatedCIs([]);
+    setAvailableCIs([]);
+    setShowModal(true);
   };
 
-  const filteredItems = configItems.filter(item => {
-    const matchesSearch = item.CiName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.Description?.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesType = !typeFilter || item.CiType === typeFilter;
-    const matchesEnv = !envFilter || item.Environment === envFilter;
-    const matchesStatus = !statusFilter || item.Status === statusFilter;
-    return matchesSearch && matchesType && matchesEnv && matchesStatus;
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const openAddModal = () => {
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingCi(null);
     setFormData({
-      ciName: '',
-      ciType: '',
-      subType: '',
+      name: '',
+      ciTypeId: '',
       status: 'Active',
       environment: 'Production',
-      location: '',
-      ipAddress: '',
-      hostname: '',
-      version: '',
-      vendor: '',
-      owner: '',
       description: '',
-      supportGroupId: ''
+      metadata: ''
     });
-    setSelectedCi(null);
-    setIsAddModalOpen(true);
-  };
-
-  const openEditModal = (ci: ConfigurationItem) => {
-    setFormData({
-      ciName: ci.CiName,
-      ciType: ci.CiType,
-      subType: ci.SubType || '',
-      status: ci.Status,
-      environment: ci.Environment,
-      location: ci.Location || '',
-      ipAddress: ci.IpAddress || '',
-      hostname: ci.Hostname || '',
-      version: ci.Version || '',
-      vendor: ci.Vendor || '',
-      owner: ci.Owner || '',
-      description: ci.Description || '',
-      supportGroupId: ''
-    });
-    setSelectedCi(ci);
-    setIsAddModalOpen(true);
+    setActiveTab('details');
+    setLinkedServices([]);
+    setAvailableServices([]);
+    setRelatedCIs([]);
+    setAvailableCIs([]);
+    setSelectedRelatedCiId('');
+    setSelectedRelationshipTypeId('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
     try {
-      const url = selectedCi 
-        ? `/api/configuration-items/${selectedCi.CiId}`
+      const url = editingCi 
+        ? `/api/configuration-items/${editingCi.Id}` 
         : '/api/configuration-items';
       
-      const method = selectedCi ? 'PUT' : 'POST';
-
       const response = await fetch(url, {
-        method,
+        method: editingCi ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          name: formData.name,
+          ciTypeId: parseInt(formData.ciTypeId),
+          status: formData.status,
+          environment: formData.environment,
+          description: formData.description || null,
+          metadata: formData.metadata || null
+        })
       });
 
-      if (response.ok) {
-        setIsAddModalOpen(false);
-        loadConfigItems();
-      } else {
-        const data = await response.json();
-        setError(data.error || 'Failed to save configuration item');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save configuration item');
       }
+
+      handleCloseModal();
+      loadCIs();
     } catch (err) {
-      setError('Failed to save configuration item. API may not be available yet.');
+      setError(err instanceof Error ? err.message : 'Failed to save configuration item');
     }
   };
 
-  const closeModal = () => {
-    setIsAddModalOpen(false);
-    setSelectedCi(null);
-    setError('');
+  const handleDelete = async (id: number) => {
+    if (!window.confirm('Are you sure you want to delete this configuration item?')) return;
+    
+    try {
+      const response = await fetch(`/api/configuration-items/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete configuration item');
+      }
+
+      loadCIs();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete configuration item');
+    }
   };
 
+  const handleLinkService = async (serviceId: number) => {
+    if (!editingCi) return;
+    
+    try {
+      const response = await fetch('/api/service-ci-mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceId: serviceId,
+          ciId: editingCi.Id
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to link service');
+      }
+
+      // Reload linked services
+      loadLinkedServices(editingCi.Id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to link service');
+    }
+  };
+
+  const handleUnlinkService = async (mappingId: number) => {
+    if (!editingCi) return;
+    
+    try {
+      const response = await fetch(`/api/service-ci-mappings/${mappingId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to unlink service');
+      }
+
+      // Reload linked services
+      loadLinkedServices(editingCi.Id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to unlink service');
+    }
+  };
+
+  const handleAddRelationship = async () => {
+    if (!editingCi || !selectedRelatedCiId || !selectedRelationshipTypeId) return;
+    
+    try {
+      const response = await fetch('/api/ci-relationships', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sourceCiId: editingCi.Id,
+          targetCiId: parseInt(selectedRelatedCiId),
+          relationshipTypeId: parseInt(selectedRelationshipTypeId)
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add relationship');
+      }
+
+      // Reset selection and reload
+      setSelectedRelatedCiId('');
+      setSelectedRelationshipTypeId('');
+      loadRelatedCIs(editingCi.Id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add relationship');
+    }
+  };
+
+  const handleRemoveRelationship = async (relationshipId: number) => {
+    if (!editingCi) return;
+    
+    try {
+      const response = await fetch(`/api/ci-relationships/${relationshipId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to remove relationship');
+      }
+
+      loadRelatedCIs(editingCi.Id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove relationship');
+    }
+  };
+
+  const filteredCIs = cis.filter(ci => {
+    const matchesSearch = ci.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         ci.Description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = !filterType || ci.CiType === filterType;
+    const matchesStatus = !filterStatus || ci.Status === filterStatus;
+    const matchesEnvironment = !filterEnvironment || ci.Environment === filterEnvironment;
+    return matchesSearch && matchesType && matchesStatus && matchesEnvironment;
+  });
+
+  const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+      case 'Active': return 'status-badge status-active';
+      case 'Inactive': return 'status-badge status-inactive';
+      case 'Maintenance': return 'status-badge status-maintenance';
+      case 'Decommissioned': return 'status-badge status-decommissioned';
+      default: return 'status-badge';
+    }
+  };
+
+  const getEnvironmentBadgeClass = (env: string) => {
+    switch (env) {
+      case 'Production': return 'env-badge env-production';
+      case 'Staging': return 'env-badge env-staging';
+      case 'Development': return 'env-badge env-development';
+      case 'Testing': return 'env-badge env-testing';
+      case 'DR': return 'env-badge env-dr';
+      default: return 'env-badge';
+    }
+  };
+
+  const getCiTypeIcon = (type: string) => {
+    switch (type) {
+      case 'Server': return '🖥️';
+      case 'Database': return '🗄️';
+      case 'Application': return '📱';
+      case 'Network Device': return '🌐';
+      case 'Storage': return '💾';
+      case 'Virtual Machine': return '☁️';
+      case 'Container': return '📦';
+      case 'Load Balancer': return '⚖️';
+      default: return '⚙️';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="ci-page">
+        <div className="loading-spinner">Loading configuration items...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="configuration-items">
+    <div className="ci-page">
       <div className="ci-header">
-        <div>
-          <h1>Configuration Items</h1>
-          <p className="ci-subtitle">Manage infrastructure and application components</p>
+        <div className="ci-title-section">
+          <h1>⚙️ Configuration Items</h1>
+          <p className="ci-subtitle">Manage your IT assets and configuration items</p>
         </div>
-        <button className="btn-add-ci" onClick={openAddModal}>
-          + Add CI
+        <button className="btn-primary" onClick={() => handleOpenModal()}>
+          + New CI
         </button>
       </div>
 
       {error && (
         <div className="error-banner">
           {error}
-          <button onClick={() => setError('')}>×</button>
+          <button onClick={() => setError(null)}>×</button>
         </div>
       )}
-
-      <div className="ci-stats-grid">
-        <div className="ci-stat-card">
-          <h3>Total CIs</h3>
-          <div className="ci-stat-number">{stats.total}</div>
-        </div>
-        <div className="ci-stat-card">
-          <h3>Servers</h3>
-          <div className="ci-stat-number servers">{stats.servers}</div>
-        </div>
-        <div className="ci-stat-card">
-          <h3>Applications</h3>
-          <div className="ci-stat-number applications">{stats.applications}</div>
-        </div>
-        <div className="ci-stat-card">
-          <h3>Databases</h3>
-          <div className="ci-stat-number databases">{stats.databases}</div>
-        </div>
-      </div>
 
       <div className="ci-filters">
         <div className="search-box">
           <input
             type="text"
-            placeholder="🔍 Search configuration items..."
+            placeholder="Search configuration items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-          <option value="">All Types</option>
-          {CI_TYPES.map(type => (
-            <option key={type.TypeId} value={type.TypeName}>
-              {type.Icon} {type.TypeName}
-            </option>
-          ))}
-        </select>
-        <select value={envFilter} onChange={(e) => setEnvFilter(e.target.value)}>
-          <option value="">All Environments</option>
-          {ENVIRONMENTS.map(env => (
-            <option key={env} value={env}>{env}</option>
-          ))}
-        </select>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-          <option value="">All Statuses</option>
-          {STATUSES.map(status => (
-            <option key={status} value={status}>{status}</option>
-          ))}
-        </select>
+        <div className="filter-group">
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value)}
+          >
+            <option value="">All Types</option>
+            {ciTypes.map(type => (
+              <option key={type.Id} value={type.TypeName}>{type.TypeName}</option>
+            ))}
+          </select>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+          >
+            <option value="">All Statuses</option>
+            {statuses.map(status => (
+              <option key={status} value={status}>{status}</option>
+            ))}
+          </select>
+          <select
+            value={filterEnvironment}
+            onChange={(e) => setFilterEnvironment(e.target.value)}
+          >
+            <option value="">All Environments</option>
+            {environments.map(env => (
+              <option key={env} value={env}>{env}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      <div className="ci-table-container">
-        {loading ? (
-          <div className="loading-state">Loading configuration items...</div>
-        ) : filteredItems.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">📦</div>
-            <h3>No Configuration Items Found</h3>
-            <p>
-              {configItems.length === 0 
-                ? 'Get started by adding your first configuration item.'
-                : 'No items match your current filters.'}
-            </p>
-            {configItems.length === 0 && (
-              <button className="btn-add-ci" onClick={openAddModal}>
-                + Add Your First CI
-              </button>
-            )}
-          </div>
-        ) : (
-          <table className="ci-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Environment</th>
-                <th>Status</th>
-                <th>Location</th>
-                <th>Services</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map(ci => (
-                <tr key={ci.CiId} onClick={() => openEditModal(ci)}>
-                  <td className="ci-name-cell">
-                    <span className="ci-icon">{getTypeIcon(ci.CiType)}</span>
-                    <div>
-                      <div className="ci-name">{ci.CiName}</div>
-                      {ci.SubType && <div className="ci-subtype">{ci.SubType}</div>}
-                    </div>
-                  </td>
-                  <td>{ci.CiType}</td>
-                  <td>
-                    <span className={`env-badge env-${ci.Environment.toLowerCase()}`}>
-                      {ci.Environment}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`status-badge ${getStatusBadgeClass(ci.Status)}`}>
-                      {ci.Status}
-                    </span>
-                  </td>
-                  <td>{ci.Location || '-'}</td>
-                  <td>
-                    <span className="service-count">{ci.ServiceCount || 0}</span>
-                  </td>
-                  <td>
-                    <button 
-                      className="btn-view"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEditModal(ci);
-                      }}
-                    >
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Add/Edit Modal */}
-      {isAddModalOpen && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content ci-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{selectedCi ? 'Edit Configuration Item' : 'Add Configuration Item'}</h2>
-              <button className="modal-close" onClick={closeModal}>×</button>
+      <div className="ci-grid">
+        {filteredCIs.map(ci => (
+          <div key={ci.Id} className="ci-card">
+            <div className="ci-card-header">
+              <span className="ci-type-icon">{getCiTypeIcon(ci.CiType)}</span>
+              <div className="ci-card-title">
+                <h3>{ci.Name}</h3>
+                <span className="ci-type-label">{ci.CiType}</span>
+              </div>
+              <div className="ci-card-actions">
+                <button 
+                  className="btn-icon" 
+                  onClick={() => handleOpenModal(ci)}
+                  title="Edit"
+                >
+                  ✏️
+                </button>
+                <button 
+                  className="btn-icon btn-danger" 
+                  onClick={() => handleDelete(ci.Id)}
+                  title="Delete"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
-            <form onSubmit={handleSubmit}>
-              <div className="form-row">
+            <div className="ci-card-body">
+              {ci.Description && (
+                <p className="ci-description">{ci.Description}</p>
+              )}
+              <div className="ci-badges">
+                <span className={getStatusBadgeClass(ci.Status)}>{ci.Status}</span>
+                <span className={getEnvironmentBadgeClass(ci.Environment)}>{ci.Environment}</span>
+              </div>
+            </div>
+            <div className="ci-card-footer">
+              <span className="ci-date">Updated: {new Date(ci.UpdatedAt).toLocaleDateString()}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredCIs.length === 0 && (
+        <div className="empty-state">
+          <span className="empty-icon">⚙️</span>
+          <h3>No Configuration Items Found</h3>
+          <p>Create your first CI to get started tracking your IT assets.</p>
+          <button className="btn-primary" onClick={() => handleOpenModal()}>
+            + Create CI
+          </button>
+        </div>
+      )}
+
+      {showModal && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content modal-large" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingCi ? 'Edit Configuration Item' : 'New Configuration Item'}</h2>
+              <button className="modal-close" onClick={handleCloseModal}>×</button>
+            </div>
+            
+            {editingCi && (
+              <div className="modal-tabs">
+                <button 
+                  className={`modal-tab ${activeTab === 'details' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('details')}
+                >
+                  Details
+                </button>
+                <button 
+                  className={`modal-tab ${activeTab === 'services' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('services')}
+                >
+                  Linked Services ({linkedServices.length})
+                </button>
+                <button 
+                  className={`modal-tab ${activeTab === 'relationships' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('relationships')}
+                >
+                  Related CIs ({relatedCIs.length})
+                </button>
+              </div>
+            )}
+
+            {activeTab === 'details' && (
+              <form onSubmit={handleSubmit} className="modal-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Name *</label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      required
+                      placeholder="e.g., PROD-WEB-01"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>CI Type *</label>
+                    <select
+                      value={formData.ciTypeId}
+                      onChange={(e) => setFormData({...formData, ciTypeId: e.target.value})}
+                      required
+                    >
+                      <option value="">Select Type</option>
+                      {ciTypes.map(type => (
+                        <option key={type.Id} value={type.Id}>{type.TypeName}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData({...formData, status: e.target.value})}
+                    >
+                      {statuses.map(status => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Environment</label>
+                    <select
+                      value={formData.environment}
+                      onChange={(e) => setFormData({...formData, environment: e.target.value})}
+                    >
+                      {environments.map(env => (
+                        <option key={env} value={env}>{env}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 <div className="form-group">
-                  <label>Name *</label>
-                  <input
-                    type="text"
-                    name="ciName"
-                    value={formData.ciName}
-                    onChange={handleInputChange}
-                    placeholder="e.g., PROD-WEB-01"
-                    required
+                  <label>Description</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    rows={3}
+                    placeholder="Describe this configuration item..."
                   />
                 </div>
-              </div>
 
-              <div className="form-row">
                 <div className="form-group">
-                  <label>Type *</label>
-                  <select
-                    name="ciType"
-                    value={formData.ciType}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select Type</option>
-                    {CI_TYPES.map(type => (
-                      <option key={type.TypeId} value={type.TypeName}>
-                        {type.Icon} {type.TypeName}
+                  <label>Metadata (JSON)</label>
+                  <textarea
+                    value={formData.metadata}
+                    onChange={(e) => setFormData({...formData, metadata: e.target.value})}
+                    rows={3}
+                    placeholder='{"ip": "10.0.0.1", "os": "Ubuntu 22.04"}'
+                  />
+                </div>
+
+                <div className="modal-actions">
+                  <button type="button" className="btn-secondary" onClick={handleCloseModal}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    {editingCi ? 'Update CI' : 'Create CI'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {activeTab === 'services' && editingCi && (
+              <div className="linked-items-tab">
+                <div className="link-section">
+                  <h3>Add Service Link</h3>
+                  <div className="link-controls">
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          handleLinkService(parseInt(e.target.value));
+                        }
+                      }}
+                      disabled={availableServices.length === 0}
+                    >
+                      <option value="">
+                        {availableServices.length === 0 
+                          ? 'No services available to link' 
+                          : 'Select a service to link...'}
                       </option>
-                    ))}
-                  </select>
+                      {availableServices.map(service => (
+                        <option key={service.Id} value={service.Id}>
+                          {service.Name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Sub-Type</label>
-                  <input
-                    type="text"
-                    name="subType"
-                    value={formData.subType}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Windows Server 2022"
-                  />
-                </div>
-              </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Environment *</label>
-                  <select
-                    name="environment"
-                    value={formData.environment}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {ENVIRONMENTS.map(env => (
-                      <option key={env} value={env}>{env}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Status *</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {STATUSES.map(status => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
+                <div className="linked-items-list">
+                  <h3>Linked Services</h3>
+                  {servicesLoading ? (
+                    <div className="loading-inline">Loading services...</div>
+                  ) : linkedServices.length === 0 ? (
+                    <div className="empty-links">
+                      <p>This CI is not linked to any services yet.</p>
+                    </div>
+                  ) : (
+                    <div className="linked-items-grid">
+                      {linkedServices.map(service => (
+                        <div key={service.MappingId} className="linked-item-card">
+                          <div className="linked-item-info">
+                            <span className="linked-item-icon">🏢</span>
+                            <div className="linked-item-details">
+                              <span className="linked-item-name">{service.ServiceName}</span>
+                              <span className="linked-item-date">
+                                Linked: {new Date(service.LinkedAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                          <button 
+                            className="btn-unlink"
+                            onClick={() => handleUnlinkService(service.MappingId)}
+                            title="Unlink service"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Location</label>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Azure East US"
-                  />
+            {activeTab === 'relationships' && editingCi && (
+              <div className="linked-items-tab">
+                <div className="link-section">
+                  <h3>Add CI Relationship</h3>
+                  <div className="relationship-controls">
+                    <select
+                      value={selectedRelatedCiId}
+                      onChange={(e) => setSelectedRelatedCiId(e.target.value)}
+                      disabled={availableCIs.length === 0}
+                    >
+                      <option value="">
+                        {availableCIs.length === 0 
+                          ? 'No CIs available to relate' 
+                          : 'Select a CI...'}
+                      </option>
+                      {availableCIs.map(ci => (
+                        <option key={ci.Id} value={ci.Id}>
+                          {ci.Name} ({ci.CiType})
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={selectedRelationshipTypeId}
+                      onChange={(e) => setSelectedRelationshipTypeId(e.target.value)}
+                      disabled={!selectedRelatedCiId}
+                    >
+                      <option value="">Select relationship type...</option>
+                      {relationshipTypes.map(rt => (
+                        <option key={rt.Id} value={rt.Id}>
+                          {rt.TypeName}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      className="btn-primary"
+                      onClick={handleAddRelationship}
+                      disabled={!selectedRelatedCiId || !selectedRelationshipTypeId}
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>IP Address</label>
-                  <input
-                    type="text"
-                    name="ipAddress"
-                    value={formData.ipAddress}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 10.0.1.15"
-                  />
-                </div>
-              </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Hostname</label>
-                  <input
-                    type="text"
-                    name="hostname"
-                    value={formData.hostname}
-                    onChange={handleInputChange}
-                    placeholder="e.g., prod-web-01.company.com"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Version</label>
-                  <input
-                    type="text"
-                    name="version"
-                    value={formData.version}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 2.1.0"
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Vendor</label>
-                  <input
-                    type="text"
-                    name="vendor"
-                    value={formData.vendor}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Microsoft"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Owner (Email)</label>
-                  <input
-                    type="email"
-                    name="owner"
-                    value={formData.owner}
-                    onChange={handleInputChange}
-                    placeholder="e.g., infra@company.com"
-                  />
+                <div className="linked-items-list">
+                  <h3>Related CIs</h3>
+                  {relationsLoading ? (
+                    <div className="loading-inline">Loading relationships...</div>
+                  ) : relatedCIs.length === 0 ? (
+                    <div className="empty-links">
+                      <p>This CI has no relationships with other CIs yet.</p>
+                    </div>
+                  ) : (
+                    <div className="linked-items-grid">
+                      {relatedCIs.map(rel => (
+                        <div key={rel.RelationshipId} className="linked-item-card relationship-card">
+                          <div className="linked-item-info">
+                            <span className="linked-item-icon">{getCiTypeIcon(rel.RelatedCiType)}</span>
+                            <div className="linked-item-details">
+                              <span className="linked-item-name">{rel.RelatedCiName}</span>
+                              <span className="relationship-type">
+                                {rel.Direction === 'outgoing' ? '→' : '←'} {rel.RelationshipType}
+                              </span>
+                              <span className="linked-item-meta">{rel.RelatedCiType}</span>
+                            </div>
+                          </div>
+                          <button 
+                            className="btn-unlink"
+                            onClick={() => handleRemoveRelationship(rel.RelationshipId)}
+                            title="Remove relationship"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
-
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Brief description of this configuration item..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={closeModal}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-save">
-                  {selectedCi ? 'Update CI' : 'Add CI'}
-                </button>
-              </div>
-            </form>
+            )}
           </div>
         </div>
       )}

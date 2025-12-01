@@ -15,6 +15,27 @@ interface Service {
   CreatedDate: string;
 }
 
+interface ConfigurationItem {
+  CiId: number;
+  CiName: string;
+  CiType: string;
+  Environment: string;
+  Status: string;
+}
+
+interface ServiceCiMapping {
+  MappingId: number;
+  ServiceId: number;
+  CiId: number;
+  CiName: string;
+  CiType: string;
+  Environment: string;
+  CiStatus: string;
+  RelationshipType: string;
+  IsCritical: boolean;
+  Notes: string | null;
+}
+
 interface ServiceStats {
   total: number;
   critical: number;
@@ -23,9 +44,12 @@ interface ServiceStats {
 
 const CRITICALITIES = ['Critical', 'High', 'Medium', 'Low'];
 const STATUSES = ['Active', 'Inactive', 'Planned', 'Retired'];
+const SERVICE_CI_RELATIONSHIP_TYPES = ['Contains', 'DependsOn', 'Uses'];
 
 const Services: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
+  const [allCis, setAllCis] = useState<ConfigurationItem[]>([]);
+  const [linkedCis, setLinkedCis] = useState<ServiceCiMapping[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,7 +58,9 @@ const Services: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [stats, setStats] = useState<ServiceStats>({ total: 0, critical: 0, active: 0 });
+  const [activeTab, setActiveTab] = useState<'details' | 'cis'>('details');
 
+  // Form state for Add/Edit
   const [formData, setFormData] = useState({
     serviceName: '',
     description: '',
@@ -46,8 +72,17 @@ const Services: React.FC = () => {
     supportGroupId: ''
   });
 
+  // Add CI form state
+  const [addCiForm, setAddCiForm] = useState({
+    ciId: '',
+    relationshipType: 'Contains',
+    isCritical: false,
+    notes: ''
+  });
+
   useEffect(() => {
     loadServices();
+    loadAllCis();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -75,6 +110,35 @@ const Services: React.FC = () => {
       calculateStats([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAllCis = async () => {
+    try {
+      const response = await fetch('/api/configuration-items');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setAllCis(data.data);
+        }
+      }
+    } catch (err) {
+      console.log('Error loading CIs');
+    }
+  };
+
+  const loadLinkedCis = async (serviceId: number) => {
+    try {
+      const response = await fetch(`/api/service-ci-mappings?serviceId=${serviceId}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setLinkedCis(data.data);
+        }
+      }
+    } catch (err) {
+      console.log('Error loading linked CIs');
+      setLinkedCis([]);
     }
   };
 
@@ -116,6 +180,16 @@ const Services: React.FC = () => {
     }
   };
 
+  const getTypeIcon = (ciType: string): string => {
+    const icons: Record<string, string> = {
+      'Server': '🖥️', 'Virtual Machine': '💻', 'Container': '📦',
+      'Database': '🗄️', 'Application': '📱', 'Web Server': '🌐',
+      'API': '🔌', 'Load Balancer': '⚖️', 'Firewall': '🛡️',
+      'Storage': '💾', 'Cloud Service': '☁️', 'SaaS Application': '🌩️'
+    };
+    return icons[ciType] || '📦';
+  };
+
   const filteredServices = services.filter(service => {
     const matchesSearch = service.ServiceName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (service.Description?.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -141,10 +215,12 @@ const Services: React.FC = () => {
       supportGroupId: ''
     });
     setSelectedService(null);
+    setLinkedCis([]);
+    setActiveTab('details');
     setIsAddModalOpen(true);
   };
 
-  const openEditModal = (service: Service) => {
+  const openEditModal = async (service: Service) => {
     setFormData({
       serviceName: service.ServiceName,
       description: service.Description || '',
@@ -156,7 +232,9 @@ const Services: React.FC = () => {
       supportGroupId: ''
     });
     setSelectedService(service);
+    setActiveTab('details');
     setIsAddModalOpen(true);
+    await loadLinkedCis(service.ServiceId);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -188,11 +266,68 @@ const Services: React.FC = () => {
     }
   };
 
+  const handleAddCi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedService || !addCiForm.ciId) return;
+
+    try {
+      const response = await fetch('/api/service-ci-mappings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceId: selectedService.ServiceId,
+          ciId: parseInt(addCiForm.ciId),
+          relationshipType: addCiForm.relationshipType,
+          isCritical: addCiForm.isCritical,
+          notes: addCiForm.notes || null
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setAddCiForm({ ciId: '', relationshipType: 'Contains', isCritical: false, notes: '' });
+        await loadLinkedCis(selectedService.ServiceId);
+        loadServices(); // Refresh CI count
+      } else {
+        setError(data.error || 'Failed to link CI');
+      }
+    } catch (err) {
+      setError('Failed to link CI');
+    }
+  };
+
+  const handleRemoveCi = async (mappingId: number) => {
+    if (!selectedService) return;
+
+    try {
+      const response = await fetch(`/api/service-ci-mappings/${mappingId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        await loadLinkedCis(selectedService.ServiceId);
+        loadServices(); // Refresh CI count
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to remove CI');
+      }
+    } catch (err) {
+      setError('Failed to remove CI');
+    }
+  };
+
   const closeModal = () => {
     setIsAddModalOpen(false);
     setSelectedService(null);
+    setLinkedCis([]);
     setError('');
   };
+
+  // Get CIs that are not already linked
+  const availableCis = allCis.filter(
+    ci => !linkedCis.some(linked => linked.CiId === ci.CiId)
+  );
 
   return (
     <div className="services-page">
@@ -206,7 +341,7 @@ const Services: React.FC = () => {
         </button>
       </div>
 
-      {error && (
+      {error && !isAddModalOpen && (
         <div className="error-banner">
           {error}
           <button onClick={() => setError('')}>×</button>
@@ -324,7 +459,7 @@ const Services: React.FC = () => {
         )}
       </div>
 
-      {/* Add/Edit Modal */}
+      {/* Add/Edit Modal with Tabs */}
       {isAddModalOpen && (
         <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content service-modal" onClick={(e) => e.stopPropagation()}>
@@ -332,102 +467,207 @@ const Services: React.FC = () => {
               <h2>{selectedService ? 'Edit Service' : 'Add Service'}</h2>
               <button className="modal-close" onClick={closeModal}>×</button>
             </div>
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>Service Name *</label>
-                <input
-                  type="text"
-                  name="serviceName"
-                  value={formData.serviceName}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Email System, CRM Platform"
-                  required
-                />
-              </div>
 
-              <div className="form-group">
-                <label>Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Brief description of this service..."
-                  rows={3}
-                />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Criticality *</label>
-                  <select
-                    name="criticality"
-                    value={formData.criticality}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {CRITICALITIES.map(c => (
-                      <option key={c} value={c}>{getCriticalityIcon(c)} {c}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Status *</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {STATUSES.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Business Owner</label>
-                  <input
-                    type="email"
-                    name="businessOwner"
-                    value={formData.businessOwner}
-                    onChange={handleInputChange}
-                    placeholder="e.g., john@company.com"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Technical Owner</label>
-                  <input
-                    type="email"
-                    name="technicalOwner"
-                    value={formData.technicalOwner}
-                    onChange={handleInputChange}
-                    placeholder="e.g., jane@company.com"
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>SLA</label>
-                <input
-                  type="text"
-                  name="sla"
-                  value={formData.sla}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 99.9% uptime, 4hr response time"
-                />
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={closeModal}>
-                  Cancel
+            {/* Tabs - only show for existing services */}
+            {selectedService && (
+              <div className="modal-tabs">
+                <button
+                  className={`modal-tab ${activeTab === 'details' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('details')}
+                >
+                  📝 Details
                 </button>
-                <button type="submit" className="btn-save">
-                  {selectedService ? 'Update Service' : 'Add Service'}
+                <button
+                  className={`modal-tab ${activeTab === 'cis' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('cis')}
+                >
+                  🖥️ Linked CIs
+                  <span className="tab-badge">{linkedCis.length}</span>
                 </button>
               </div>
-            </form>
+            )}
+
+            {error && (
+              <div className="modal-error">
+                {error}
+                <button onClick={() => setError('')}>×</button>
+              </div>
+            )}
+
+            {/* Details Tab */}
+            {activeTab === 'details' && (
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label>Service Name *</label>
+                  <input
+                    type="text"
+                    name="serviceName"
+                    value={formData.serviceName}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Email System, CRM Platform"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Description</label>
+                  <textarea
+                    name="description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                    placeholder="Brief description of this service..."
+                    rows={3}
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Criticality *</label>
+                    <select
+                      name="criticality"
+                      value={formData.criticality}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {CRITICALITIES.map(c => (
+                        <option key={c} value={c}>{getCriticalityIcon(c)} {c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Status *</label>
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {STATUSES.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Business Owner</label>
+                    <input
+                      type="email"
+                      name="businessOwner"
+                      value={formData.businessOwner}
+                      onChange={handleInputChange}
+                      placeholder="e.g., john@company.com"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Technical Owner</label>
+                    <input
+                      type="email"
+                      name="technicalOwner"
+                      value={formData.technicalOwner}
+                      onChange={handleInputChange}
+                      placeholder="e.g., jane@company.com"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>SLA</label>
+                  <input
+                    type="text"
+                    name="sla"
+                    value={formData.sla}
+                    onChange={handleInputChange}
+                    placeholder="e.g., 99.9% uptime, 4hr response time"
+                  />
+                </div>
+
+                <div className="modal-actions">
+                  <button type="button" className="btn-cancel" onClick={closeModal}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-save">
+                    {selectedService ? 'Update Service' : 'Add Service'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Linked CIs Tab */}
+            {activeTab === 'cis' && selectedService && (
+              <div className="linked-items-tab">
+                {/* Add CI Form */}
+                <div className="add-linked-item">
+                  <h4>Link a Configuration Item</h4>
+                  <form onSubmit={handleAddCi} className="add-link-form">
+                    <select
+                      value={addCiForm.ciId}
+                      onChange={(e) => setAddCiForm(prev => ({ ...prev, ciId: e.target.value }))}
+                      required
+                    >
+                      <option value="">Select a CI...</option>
+                      {availableCis.map(ci => (
+                        <option key={ci.CiId} value={ci.CiId}>
+                          {getTypeIcon(ci.CiType)} {ci.CiName} ({ci.Environment})
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={addCiForm.relationshipType}
+                      onChange={(e) => setAddCiForm(prev => ({ ...prev, relationshipType: e.target.value }))}
+                    >
+                      {SERVICE_CI_RELATIONSHIP_TYPES.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                    <label className="checkbox-inline">
+                      <input
+                        type="checkbox"
+                        checked={addCiForm.isCritical}
+                        onChange={(e) => setAddCiForm(prev => ({ ...prev, isCritical: e.target.checked }))}
+                      />
+                      Critical
+                    </label>
+                    <button type="submit" className="btn-add-link" disabled={!addCiForm.ciId}>
+                      + Add
+                    </button>
+                  </form>
+                </div>
+
+                {/* Linked CIs List */}
+                <div className="linked-items-list">
+                  {linkedCis.length === 0 ? (
+                    <div className="no-linked-items">
+                      <p>No Configuration Items linked to this service yet.</p>
+                    </div>
+                  ) : (
+                    linkedCis.map(mapping => (
+                      <div key={mapping.MappingId} className="linked-item-card">
+                        <div className="linked-item-icon">
+                          {getTypeIcon(mapping.CiType)}
+                        </div>
+                        <div className="linked-item-details">
+                          <div className="linked-item-name">{mapping.CiName}</div>
+                          <div className="linked-item-meta">
+                            {mapping.CiType} • {mapping.Environment}
+                            <span className="relationship-type">{mapping.RelationshipType}</span>
+                            {mapping.IsCritical && <span className="critical-flag">⚠️ Critical</span>}
+                          </div>
+                        </div>
+                        <button
+                          className="btn-remove-link"
+                          onClick={() => handleRemoveCi(mapping.MappingId)}
+                          title="Remove link"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

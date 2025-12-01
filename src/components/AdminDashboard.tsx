@@ -7,7 +7,6 @@ import AssignmentGroupManagement from './AssignmentGroupManagement';
 import UserManagement from './UserManagement';
 import Services from './Services';
 import ConfigurationItems from './ConfigurationItems';
-import Relationships from './Relationships';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
 import './AdminDashboard.css';
@@ -82,8 +81,7 @@ const AdminDashboard: React.FC = () => {
     'assignment-groups': 'Assignment Groups',
     'user-management': 'User Management',
     'services': 'Services',
-    'config-items': 'Configuration Items',
-    'relationships': 'Relationships'
+    'config-items': 'Configuration Items'
   };
 
   return (
@@ -156,8 +154,6 @@ const AdminDashboard: React.FC = () => {
           <Services />
         ) : currentPage === 'config-items' ? (
           <ConfigurationItems />
-        ) : currentPage === 'relationships' ? (
-          <Relationships />
         ) : (
           <UserManagement />
         )}
