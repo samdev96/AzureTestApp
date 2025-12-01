@@ -8,9 +8,16 @@
   color: #2c3e50;
   transition: width 0.3s ease;
   z-index: 1000;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 4px 0 16px rgba(0, 0, 0, 0.08);
   border-right: 2px solid #f0f0f0;
+}
+
+.sidebar-nav {
+  padding: 20px 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: calc(100vh - 70px);
 }
 
 .sidebar.collapsed {
@@ -91,10 +98,6 @@
 .sidebar.collapsed .sidebar-header {
   padding: 20px 10px;
   justify-content: center;
-}
-
-.sidebar-nav {
-  padding: 20px 0;
 }
 
 .sidebar-nav ul {
