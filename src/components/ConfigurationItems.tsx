@@ -2,21 +2,22 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './ConfigurationItems.css';
 
 interface ConfigurationItem {
-  Id: number;
-  Name: string;
+  CiId: number;
+  CiName: string;
   CiType: string;
+  SubType: string | null;
   Status: string;
   Environment: string;
-  Description: string;
-  Metadata: string | null;
-  CreatedAt: string;
-  UpdatedAt: string;
+  Description: string | null;
+  CreatedDate: string;
+  ModifiedDate: string;
 }
 
 interface CiType {
-  Id: number;
+  TypeId: number;
   TypeName: string;
-  Description: string;
+  Category: string;
+  Icon: string | null;
 }
 
 interface LinkedService {
@@ -37,13 +38,13 @@ interface RelatedCI {
 }
 
 interface AvailableService {
-  Id: number;
-  Name: string;
+  ServiceId: number;
+  ServiceName: string;
 }
 
 interface AvailableCIForRelation {
-  Id: number;
-  Name: string;
+  CiId: number;
+  CiName: string;
   CiType: string;
 }
 
@@ -98,7 +99,8 @@ const ConfigurationItems: React.FC = () => {
       const response = await fetch('/api/configuration-items');
       if (!response.ok) throw new Error('Failed to load configuration items');
       const data = await response.json();
-      setCis(data.configurationItems || []);
+      // API returns { success: true, data: [...] }
+      setCis(data.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load configuration items');
     } finally {
@@ -108,10 +110,10 @@ const ConfigurationItems: React.FC = () => {
 
   const loadCiTypes = useCallback(async () => {
     try {
-      const response = await fetch('/api/configuration-items/types');
+      const response = await fetch('/api/ci-types');
       if (!response.ok) throw new Error('Failed to load CI types');
       const data = await response.json();
-      setCiTypes(data.ciTypes || []);
+      setCiTypes(data.data || []);
     } catch (err) {
       console.error('Failed to load CI types:', err);
     }
@@ -148,9 +150,9 @@ const ConfigurationItems: React.FC = () => {
       const linkedIds = linkedServices.map(s => s.ServiceId);
       
       // Filter out already linked services
-      const available = (data.services || [])
-        .filter((s: AvailableService) => !linkedIds.includes(s.Id))
-        .map((s: AvailableService) => ({ Id: s.Id, Name: s.Name }));
+      const available = (data.data || [])
+        .filter((s: AvailableService) => !linkedIds.includes(s.ServiceId))
+        .map((s: AvailableService) => ({ ServiceId: s.ServiceId, ServiceName: s.ServiceName }));
       
       setAvailableServices(available);
     } catch (err) {
@@ -208,8 +210,8 @@ const ConfigurationItems: React.FC = () => {
       
       // Filter out the current CI and already related CIs
       const available = (data.configurationItems || [])
-        .filter((c: ConfigurationItem) => c.Id !== ciId && !relatedIds.includes(c.Id))
-        .map((c: ConfigurationItem) => ({ Id: c.Id, Name: c.Name, CiType: c.CiType }));
+        .filter((c: ConfigurationItem) => c.CiId !== ciId && !relatedIds.includes(c.CiId))
+        .map((c: ConfigurationItem) => ({ Id: c.CiId, Name: c.CiName, CiType: c.CiType }));
       
       setAvailableCIs(available);
     } catch (err) {
@@ -237,25 +239,25 @@ const ConfigurationItems: React.FC = () => {
 
   useEffect(() => {
     if (editingCi && activeTab === 'services') {
-      loadLinkedServices(editingCi.Id);
+      loadLinkedServices(editingCi.CiId);
     }
   }, [editingCi, activeTab, loadLinkedServices]);
 
   useEffect(() => {
     if (editingCi && activeTab === 'services' && linkedServices.length >= 0) {
-      loadAvailableServices(editingCi.Id);
+      loadAvailableServices(editingCi.CiId);
     }
   }, [editingCi, activeTab, linkedServices, loadAvailableServices]);
 
   useEffect(() => {
     if (editingCi && activeTab === 'relationships') {
-      loadRelatedCIs(editingCi.Id);
+      loadRelatedCIs(editingCi.CiId);
     }
   }, [editingCi, activeTab, loadRelatedCIs]);
 
   useEffect(() => {
     if (editingCi && activeTab === 'relationships' && relatedCIs.length >= 0) {
-      loadAvailableCIsForRelation(editingCi.Id);
+      loadAvailableCIsForRelation(editingCi.CiId);
     }
   }, [editingCi, activeTab, relatedCIs, loadAvailableCIsForRelation]);
 
@@ -264,19 +266,19 @@ const ConfigurationItems: React.FC = () => {
       setEditingCi(ci);
       const ciType = ciTypes.find(t => t.TypeName === ci.CiType);
       setFormData({
-        name: ci.Name,
-        ciTypeId: ciType ? ciType.Id.toString() : '',
+        name: ci.CiName,
+        ciTypeId: ciType ? ciType.TypeId.toString() : '',
         status: ci.Status,
         environment: ci.Environment,
         description: ci.Description || '',
-        metadata: ci.Metadata || ''
+        metadata: ci.Description || ''
       });
       setActiveTab('details');
     } else {
       setEditingCi(null);
       setFormData({
         name: '',
-        ciTypeId: ciTypes.length > 0 ? ciTypes[0].Id.toString() : '',
+        ciTypeId: ciTypes.length > 0 ? ciTypes[0].TypeId.toString() : '',
         status: 'Active',
         environment: 'Production',
         description: '',
@@ -315,7 +317,7 @@ const ConfigurationItems: React.FC = () => {
     e.preventDefault();
     try {
       const url = editingCi 
-        ? `/api/configuration-items/${editingCi.Id}` 
+        ? `/api/configuration-items/${editingCi.CiId}` 
         : '/api/configuration-items';
       
       const response = await fetch(url, {
@@ -371,7 +373,7 @@ const ConfigurationItems: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           serviceId: serviceId,
-          ciId: editingCi.Id
+          ciId: editingCi.CiId
         })
       });
 
@@ -381,7 +383,7 @@ const ConfigurationItems: React.FC = () => {
       }
 
       // Reload linked services
-      loadLinkedServices(editingCi.Id);
+      loadLinkedServices(editingCi.CiId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to link service');
     }
@@ -401,7 +403,7 @@ const ConfigurationItems: React.FC = () => {
       }
 
       // Reload linked services
-      loadLinkedServices(editingCi.Id);
+      loadLinkedServices(editingCi.CiId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to unlink service');
     }
@@ -415,7 +417,7 @@ const ConfigurationItems: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sourceCiId: editingCi.Id,
+          sourceCiId: editingCi.CiId,
           targetCiId: parseInt(selectedRelatedCiId),
           relationshipTypeId: parseInt(selectedRelationshipTypeId)
         })
@@ -429,7 +431,7 @@ const ConfigurationItems: React.FC = () => {
       // Reset selection and reload
       setSelectedRelatedCiId('');
       setSelectedRelationshipTypeId('');
-      loadRelatedCIs(editingCi.Id);
+      loadRelatedCIs(editingCi.CiId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add relationship');
     }
@@ -448,14 +450,14 @@ const ConfigurationItems: React.FC = () => {
         throw new Error(errorData.error || 'Failed to remove relationship');
       }
 
-      loadRelatedCIs(editingCi.Id);
+      loadRelatedCIs(editingCi.CiId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to remove relationship');
     }
   };
 
   const filteredCIs = cis.filter(ci => {
-    const matchesSearch = ci.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = ci.CiName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          ci.Description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = !filterType || ci.CiType === filterType;
     const matchesStatus = !filterStatus || ci.Status === filterStatus;
@@ -541,7 +543,7 @@ const ConfigurationItems: React.FC = () => {
           >
             <option value="">All Types</option>
             {ciTypes.map(type => (
-              <option key={type.Id} value={type.TypeName}>{type.TypeName}</option>
+              <option key={type.TypeId} value={type.TypeName}>{type.TypeName}</option>
             ))}
           </select>
           <select
@@ -567,11 +569,11 @@ const ConfigurationItems: React.FC = () => {
 
       <div className="ci-grid">
         {filteredCIs.map(ci => (
-          <div key={ci.Id} className="ci-card">
+          <div key={ci.CiId} className="ci-card">
             <div className="ci-card-header">
               <span className="ci-type-icon">{getCiTypeIcon(ci.CiType)}</span>
               <div className="ci-card-title">
-                <h3>{ci.Name}</h3>
+                <h3>{ci.CiName}</h3>
                 <span className="ci-type-label">{ci.CiType}</span>
               </div>
               <div className="ci-card-actions">
@@ -584,7 +586,7 @@ const ConfigurationItems: React.FC = () => {
                 </button>
                 <button 
                   className="btn-icon btn-danger" 
-                  onClick={() => handleDelete(ci.Id)}
+                  onClick={() => handleDelete(ci.CiId)}
                   title="Delete"
                 >
                   🗑️
@@ -601,7 +603,7 @@ const ConfigurationItems: React.FC = () => {
               </div>
             </div>
             <div className="ci-card-footer">
-              <span className="ci-date">Updated: {new Date(ci.UpdatedAt).toLocaleDateString()}</span>
+              <span className="ci-date">Updated: {new Date(ci.ModifiedDate).toLocaleDateString()}</span>
             </div>
           </div>
         ))}
@@ -671,7 +673,7 @@ const ConfigurationItems: React.FC = () => {
                     >
                       <option value="">Select Type</option>
                       {ciTypes.map(type => (
-                        <option key={type.Id} value={type.Id}>{type.TypeName}</option>
+                        <option key={type.TypeId} value={type.TypeId}>{type.TypeName}</option>
                       ))}
                     </select>
                   </div>
@@ -753,8 +755,8 @@ const ConfigurationItems: React.FC = () => {
                           : 'Select a service to link...'}
                       </option>
                       {availableServices.map(service => (
-                        <option key={service.Id} value={service.Id}>
-                          {service.Name}
+                        <option key={service.ServiceId} value={service.ServiceId}>
+                          {service.ServiceName}
                         </option>
                       ))}
                     </select>
@@ -813,8 +815,8 @@ const ConfigurationItems: React.FC = () => {
                           : 'Select a CI...'}
                       </option>
                       {availableCIs.map(ci => (
-                        <option key={ci.Id} value={ci.Id}>
-                          {ci.Name} ({ci.CiType})
+                        <option key={ci.CiId} value={ci.CiId}>
+                          {ci.CiName} ({ci.CiType})
                         </option>
                       ))}
                     </select>
