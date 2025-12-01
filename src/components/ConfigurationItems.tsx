@@ -54,6 +54,12 @@ interface RelationshipType {
   Description: string;
 }
 
+interface CiStats {
+  total: number;
+  active: number;
+  production: number;
+}
+
 const ConfigurationItems: React.FC = () => {
   const [cis, setCis] = useState<ConfigurationItem[]>([]);
   const [ciTypes, setCiTypes] = useState<CiType[]>([]);
@@ -66,6 +72,7 @@ const ConfigurationItems: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterEnvironment, setFilterEnvironment] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'services' | 'relationships'>('details');
+  const [stats, setStats] = useState<CiStats>({ total: 0, active: 0, production: 0 });
   
   // Form state
   const [formData, setFormData] = useState({
@@ -100,7 +107,14 @@ const ConfigurationItems: React.FC = () => {
       if (!response.ok) throw new Error('Failed to load configuration items');
       const data = await response.json();
       // API returns { success: true, data: [...] }
-      setCis(data.data || []);
+      const items = data.data || [];
+      setCis(items);
+      // Calculate stats
+      setStats({
+        total: items.length,
+        active: items.filter((ci: ConfigurationItem) => ci.Status === 'Active').length,
+        production: items.filter((ci: ConfigurationItem) => ci.Environment === 'Production').length
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load configuration items');
     } finally {
@@ -512,11 +526,11 @@ const ConfigurationItems: React.FC = () => {
   return (
     <div className="ci-page">
       <div className="ci-header">
-        <div className="ci-title-section">
-          <h1>⚙️ Configuration Items</h1>
+        <div>
+          <h1>Configuration Items</h1>
           <p className="ci-subtitle">Manage your IT assets and configuration items</p>
         </div>
-        <button className="btn-primary" onClick={() => handleOpenModal()}>
+        <button className="btn-add-ci" onClick={() => handleOpenModal()}>
           + New CI
         </button>
       </div>
@@ -528,44 +542,57 @@ const ConfigurationItems: React.FC = () => {
         </div>
       )}
 
+      <div className="ci-stats-grid">
+        <div className="ci-stat-card">
+          <h3>Total CIs</h3>
+          <div className="ci-stat-number">{stats.total}</div>
+        </div>
+        <div className="ci-stat-card">
+          <h3>Active CIs</h3>
+          <div className="ci-stat-number active">{stats.active}</div>
+        </div>
+        <div className="ci-stat-card">
+          <h3>Production CIs</h3>
+          <div className="ci-stat-number production">{stats.production}</div>
+        </div>
+      </div>
+
       <div className="ci-filters">
         <div className="search-box">
           <input
             type="text"
-            placeholder="Search configuration items..."
+            placeholder="🔍 Search configuration items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="filter-group">
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
-          >
-            <option value="">All Types</option>
-            {ciTypes.map(type => (
-              <option key={type.TypeId} value={type.TypeName}>{type.TypeName}</option>
-            ))}
-          </select>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-          >
-            <option value="">All Statuses</option>
-            {statuses.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-          <select
-            value={filterEnvironment}
-            onChange={(e) => setFilterEnvironment(e.target.value)}
-          >
-            <option value="">All Environments</option>
-            {environments.map(env => (
-              <option key={env} value={env}>{env}</option>
-            ))}
-          </select>
-        </div>
+        <select
+          value={filterType}
+          onChange={(e) => setFilterType(e.target.value)}
+        >
+          <option value="">All Types</option>
+          {ciTypes.map(type => (
+            <option key={type.TypeId} value={type.TypeName}>{type.TypeName}</option>
+          ))}
+        </select>
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+        >
+          <option value="">All Statuses</option>
+          {statuses.map(status => (
+            <option key={status} value={status}>{status}</option>
+          ))}
+        </select>
+        <select
+          value={filterEnvironment}
+          onChange={(e) => setFilterEnvironment(e.target.value)}
+        >
+          <option value="">All Environments</option>
+          {environments.map(env => (
+            <option key={env} value={env}>{env}</option>
+          ))}
+        </select>
       </div>
 
       <div className="ci-table-container">
