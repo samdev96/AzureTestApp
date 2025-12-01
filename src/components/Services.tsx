@@ -599,45 +599,70 @@ const Services: React.FC = () => {
                 {/* Add CI Section */}
                 <div className="link-ci-section">
                   <h4>Link a Configuration Item</h4>
-                  <div className="link-ci-dropdown">
-                    <select
-                      value={addCiForm.ciId}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value) {
-                          setAddCiForm(prev => ({ ...prev, ciId: value }));
-                          // Auto-submit when a CI is selected
-                          const form = e.target.closest('.link-ci-section');
-                          if (form) {
-                            const submitBtn = form.querySelector('.btn-link-ci') as HTMLButtonElement;
-                            if (submitBtn) submitBtn.click();
-                          }
-                        }
-                      }}
-                    >
-                      <option value="">
-                        {availableCis.length === 0 
-                          ? 'No CIs available to link' 
-                          : 'Select a CI to link...'}
-                      </option>
-                      {availableCis.map(ci => (
-                        <option key={ci.CiId} value={ci.CiId}>
-                          {ci.CiName} ({ci.CiType} - {ci.Environment})
-                        </option>
-                      ))}
-                    </select>
-                    <button 
-                      type="button" 
-                      className="btn-link-ci"
-                      style={{ display: 'none' }}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleAddCi(e as unknown as React.FormEvent);
-                      }}
-                    >
-                      Link
-                    </button>
-                  </div>
+                  <form onSubmit={handleAddCi} className="link-ci-form">
+                    <div className="link-ci-row">
+                      <div className="form-group">
+                        <label>Configuration Item *</label>
+                        <select
+                          value={addCiForm.ciId}
+                          onChange={(e) => setAddCiForm(prev => ({ ...prev, ciId: e.target.value }))}
+                          required
+                        >
+                          <option value="">
+                            {availableCis.length === 0 
+                              ? 'No CIs available to link' 
+                              : 'Select a CI...'}
+                          </option>
+                          {availableCis.map(ci => (
+                            <option key={ci.CiId} value={ci.CiId}>
+                              {ci.CiName} ({ci.CiType} - {ci.Environment})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Relationship Type</label>
+                        <select
+                          value={addCiForm.relationshipType}
+                          onChange={(e) => setAddCiForm(prev => ({ ...prev, relationshipType: e.target.value }))}
+                        >
+                          <option value="Contains">Contains</option>
+                          <option value="DependsOn">Depends On</option>
+                          <option value="Uses">Uses</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="link-ci-row">
+                      <div className="form-group">
+                        <label>Notes (optional)</label>
+                        <input
+                          type="text"
+                          value={addCiForm.notes}
+                          onChange={(e) => setAddCiForm(prev => ({ ...prev, notes: e.target.value }))}
+                          placeholder="Add any notes about this relationship..."
+                        />
+                      </div>
+                      <div className="form-group form-group-checkbox">
+                        <label className="checkbox-label">
+                          <input
+                            type="checkbox"
+                            checked={addCiForm.isCritical}
+                            onChange={(e) => setAddCiForm(prev => ({ ...prev, isCritical: e.target.checked }))}
+                          />
+                          <span>Critical Component</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div className="link-ci-actions">
+                      <button 
+                        type="submit" 
+                        className="btn-link-ci"
+                        disabled={!addCiForm.ciId}
+                      >
+                        + Link CI
+                      </button>
+                    </div>
+                  </form>
                 </div>
 
                 {/* Linked CIs List */}
@@ -647,7 +672,7 @@ const Services: React.FC = () => {
                     <div className="empty-linked-cis">
                       <span className="empty-icon">🔗</span>
                       <p>No Configuration Items linked to this service yet.</p>
-                      <p className="empty-hint">Select a CI from the dropdown above to link it.</p>
+                      <p className="empty-hint">Select a CI from the form above to link it.</p>
                     </div>
                   ) : (
                     <div className="linked-cis-grid">
@@ -656,9 +681,16 @@ const Services: React.FC = () => {
                           <div className="linked-ci-info">
                             <span className="linked-ci-icon">{getTypeIcon(mapping.CiType)}</span>
                             <div className="linked-ci-details">
-                              <span className="linked-ci-name">{mapping.CiName}</span>
+                              <span className="linked-ci-name">
+                                {mapping.CiName}
+                                {mapping.IsCritical && <span className="critical-badge">⚠️ Critical</span>}
+                              </span>
                               <span className="linked-ci-meta">
                                 {mapping.CiType} • {mapping.Environment}
+                              </span>
+                              <span className="linked-ci-relationship">
+                                {mapping.RelationshipType}
+                                {mapping.Notes && <span className="linked-ci-notes"> — {mapping.Notes}</span>}
                               </span>
                             </div>
                           </div>

@@ -529,28 +529,104 @@
   font-size: 14px;
   font-weight: 600;
   color: #374151;
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
 }
 
-.link-ci-dropdown select {
+.link-ci-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.link-ci-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.link-ci-form .form-group {
+  margin-bottom: 0;
+}
+
+.link-ci-form .form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.link-ci-form .form-group select,
+.link-ci-form .form-group input[type="text"] {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   font-size: 14px;
   background: white;
-  cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.link-ci-dropdown select:focus {
+.link-ci-form .form-group select:focus,
+.link-ci-form .form-group input[type="text"]:focus {
   outline: none;
   border-color: #7c3aed;
   box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
 }
 
-.link-ci-dropdown select:hover {
+.link-ci-form .form-group select:hover,
+.link-ci-form .form-group input[type="text"]:hover {
   border-color: #d1d5db;
+}
+
+.form-group-checkbox {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 10px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #7c3aed;
+  cursor: pointer;
+}
+
+.link-ci-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-link-ci {
+  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-link-ci:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+}
+
+.btn-link-ci:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .linked-cis-list h4 {
@@ -610,11 +686,34 @@
   font-weight: 600;
   color: #1e1e1e;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.critical-badge {
+  font-size: 11px;
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
 }
 
 .linked-ci-meta {
   font-size: 12px;
   color: #666;
+}
+
+.linked-ci-relationship {
+  font-size: 11px;
+  color: #7c3aed;
+  font-weight: 500;
+}
+
+.linked-ci-notes {
+  color: #9ca3af;
+  font-weight: 400;
 }
 
 .btn-unlink-ci {
