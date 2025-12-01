@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Sidebar.css';
 
-export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items';
+export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items' | 'cmdb-graph';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -48,7 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
           </li>
           <li className="nav-section">
             <button
-              className={`nav-section-toggle ${(currentPage === 'services' || currentPage === 'config-items') ? 'active' : ''}`}
+              className={`nav-section-toggle ${(currentPage === 'services' || currentPage === 'config-items' || currentPage === 'cmdb-graph') ? 'active' : ''}`}
               onClick={() => setCmdbOpen((open) => !open)}
               aria-expanded={cmdbOpen}
             >
@@ -75,6 +75,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
                 >
                   <span className="nav-icon">🖥️</span>
                   <span className="nav-text">Configuration Items</span>
+                </li>
+                <li 
+                  className={`nav-item ${currentPage === 'cmdb-graph' ? 'active' : ''}`}
+                  onClick={() => onPageChange('cmdb-graph')}
+                >
+                  <span className="nav-icon">🔗</span>
+                  <span className="nav-text">Graph View</span>
                 </li>
               </ul>
             )}

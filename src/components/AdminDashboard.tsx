@@ -7,6 +7,7 @@ import AssignmentGroupManagement from './AssignmentGroupManagement';
 import UserManagement from './UserManagement';
 import Services from './Services';
 import ConfigurationItems from './ConfigurationItems';
+import CMDBGraph from './CMDBGraph';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
 import './AdminDashboard.css';
@@ -81,7 +82,8 @@ const AdminDashboard: React.FC = () => {
     'assignment-groups': 'Assignment Groups',
     'user-management': 'User Management',
     'services': 'Services',
-    'config-items': 'Configuration Items'
+    'config-items': 'Configuration Items',
+    'cmdb-graph': 'CMDB Graph View'
   };
 
   return (
@@ -154,6 +156,8 @@ const AdminDashboard: React.FC = () => {
           <Services />
         ) : currentPage === 'config-items' ? (
           <ConfigurationItems />
+        ) : currentPage === 'cmdb-graph' ? (
+          <CMDBGraph />
         ) : (
           <UserManagement />
         )}

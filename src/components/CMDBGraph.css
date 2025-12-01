@@ -1,0 +1,414 @@
+.cmdb-graph-container {
+  width: 100%;
+  height: calc(100vh - 60px);
+  background: #f8fafc;
+}
+
+.cmdb-graph-loading,
+.cmdb-graph-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #7c3aed;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   CUSTOM NODES
+   ============================================ */
+
+/* Service Node */
+.service-node {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 12px 16px;
+  min-width: 180px;
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.2s ease;
+}
+
+.service-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+}
+
+.service-node.impacted {
+  animation: pulse-orange 1.5s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.6);
+}
+
+.service-node.impact-source {
+  animation: pulse-red 1s ease-in-out infinite;
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
+}
+
+/* CI Node */
+.ci-node {
+  background: white;
+  border: 3px solid #3b82f6;
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 160px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.ci-node:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.ci-node.impacted {
+  animation: pulse-orange 1.5s ease-in-out infinite;
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.6);
+}
+
+.ci-node.impact-source {
+  animation: pulse-red 1s ease-in-out infinite;
+  box-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
+}
+
+@keyframes pulse-orange {
+  0%, 100% { box-shadow: 0 0 20px rgba(249, 115, 22, 0.4); }
+  50% { box-shadow: 0 0 30px rgba(249, 115, 22, 0.8); }
+}
+
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+  50% { box-shadow: 0 0 40px rgba(239, 68, 68, 1); }
+}
+
+/* Node Header */
+.node-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.node-icon {
+  font-size: 18px;
+}
+
+.node-title {
+  font-weight: 600;
+  font-size: 14px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.service-node .node-title {
+  color: white;
+}
+
+.ci-node .node-title {
+  color: #1e293b;
+}
+
+.node-edit-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 4px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.service-node:hover .node-edit-btn,
+.ci-node:hover .node-edit-btn {
+  opacity: 1;
+}
+
+.ci-node .node-edit-btn {
+  background: #f1f5f9;
+}
+
+.node-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.ci-node .node-edit-btn:hover {
+  background: #e2e8f0;
+}
+
+/* Node Type (CI only) */
+.node-type {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+/* Node Badges */
+.node-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  color: white;
+  text-transform: uppercase;
+}
+
+.service-node .badge {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ci-node .env-badge {
+  color: white;
+}
+
+.ci-node .status-badge {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.ci-node .status-badge.active {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+/* Node Owner */
+.node-owner {
+  margin-top: 8px;
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+/* React Flow Handles */
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+  background: #94a3b8;
+  border: 2px solid white;
+}
+
+.service-node .react-flow__handle {
+  background: white;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   PANELS
+   ============================================ */
+
+.graph-panel {
+  background: white;
+  border-radius: 12px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+/* Controls Panel */
+.controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel-section {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.panel-divider {
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #7c3aed;
+}
+
+.filter-select {
+  padding: 6px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #475569;
+  background: white;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #7c3aed;
+}
+
+/* Impact Panel */
+.impact-panel {
+  min-width: 220px;
+}
+
+.impact-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.impact-icon {
+  font-size: 18px;
+}
+
+.impact-toggle {
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.impact-toggle:hover {
+  background: #e2e8f0;
+}
+
+.impact-toggle.active {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.impact-instructions {
+  margin-top: 12px;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.impact-active {
+  color: #ea580c;
+  margin-bottom: 4px;
+}
+
+.impact-count {
+  font-weight: 600;
+  color: #dc2626;
+}
+
+/* Stats Panel */
+.stats-panel {
+  display: flex;
+  gap: 20px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.stat-icon {
+  font-size: 20px;
+}
+
+.stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+/* ============================================
+   REACT FLOW OVERRIDES
+   ============================================ */
+
+.react-flow__controls {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.react-flow__controls-button {
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.react-flow__controls-button:hover {
+  background: #f8fafc;
+}
+
+.react-flow__minimap {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.react-flow__edge-text {
+  font-size: 10px;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .controls-panel {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .panel-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .stats-panel {
+    gap: 12px;
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+}
