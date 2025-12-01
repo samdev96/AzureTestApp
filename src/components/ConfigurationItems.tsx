@@ -345,6 +345,7 @@ const ConfigurationItems: React.FC = () => {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this configuration item?')) return;
     
@@ -567,58 +568,77 @@ const ConfigurationItems: React.FC = () => {
         </div>
       </div>
 
-      <div className="ci-grid">
-        {filteredCIs.map(ci => (
-          <div key={ci.CiId} className="ci-card">
-            <div className="ci-card-header">
-              <span className="ci-type-icon">{getCiTypeIcon(ci.CiType)}</span>
-              <div className="ci-card-title">
-                <h3>{ci.CiName}</h3>
-                <span className="ci-type-label">{ci.CiType}</span>
-              </div>
-              <div className="ci-card-actions">
-                <button 
-                  className="btn-icon" 
-                  onClick={() => handleOpenModal(ci)}
-                  title="Edit"
-                >
-                  ✏️
-                </button>
-                <button 
-                  className="btn-icon btn-danger" 
-                  onClick={() => handleDelete(ci.CiId)}
-                  title="Delete"
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
-            <div className="ci-card-body">
-              {ci.Description && (
-                <p className="ci-description">{ci.Description}</p>
-              )}
-              <div className="ci-badges">
-                <span className={getStatusBadgeClass(ci.Status)}>{ci.Status}</span>
-                <span className={getEnvironmentBadgeClass(ci.Environment)}>{ci.Environment}</span>
-              </div>
-            </div>
-            <div className="ci-card-footer">
-              <span className="ci-date">Updated: {new Date(ci.ModifiedDate).toLocaleDateString()}</span>
-            </div>
+      <div className="ci-table-container">
+        {filteredCIs.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-icon">⚙️</span>
+            <h3>No Configuration Items Found</h3>
+            <p>
+              {cis.length === 0 
+                ? 'Get started by adding your first configuration item.'
+                : 'No CIs match your current filters.'}
+            </p>
+            {cis.length === 0 && (
+              <button className="btn-primary" onClick={() => handleOpenModal()}>
+                + Add Your First CI
+              </button>
+            )}
           </div>
-        ))}
+        ) : (
+          <table className="ci-table">
+            <thead>
+              <tr>
+                <th>CI Name</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Environment</th>
+                <th>Updated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredCIs.map(ci => (
+                <tr key={ci.CiId} onClick={() => handleOpenModal(ci)}>
+                  <td className="ci-name-cell">
+                    <div className="ci-name-wrapper">
+                      <span className="ci-type-icon">{getCiTypeIcon(ci.CiType)}</span>
+                      <div>
+                        <div className="ci-name">{ci.CiName}</div>
+                        {ci.Description && (
+                          <div className="ci-description">{ci.Description}</div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="ci-type-badge">{ci.CiType}</span>
+                  </td>
+                  <td>
+                    <span className={getStatusBadgeClass(ci.Status)}>{ci.Status}</span>
+                  </td>
+                  <td>
+                    <span className={getEnvironmentBadgeClass(ci.Environment)}>{ci.Environment}</span>
+                  </td>
+                  <td className="ci-date">
+                    {ci.ModifiedDate ? new Date(ci.ModifiedDate).toLocaleDateString() : '-'}
+                  </td>
+                  <td>
+                    <button 
+                      className="btn-view"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenModal(ci);
+                      }}
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
-
-      {filteredCIs.length === 0 && (
-        <div className="empty-state">
-          <span className="empty-icon">⚙️</span>
-          <h3>No Configuration Items Found</h3>
-          <p>Create your first CI to get started tracking your IT assets.</p>
-          <button className="btn-primary" onClick={() => handleOpenModal()}>
-            + Create CI
-          </button>
-        </div>
-      )}
 
       {showModal && (
         <div className="modal-overlay" onClick={handleCloseModal}>
