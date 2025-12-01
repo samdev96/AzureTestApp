@@ -57,6 +57,12 @@
 
 .sidebar.collapsed .sidebar-title {
   opacity: 0;
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 24px 10px;
+  justify-content: center;
 }
 
 .sidebar-nav {
@@ -115,15 +121,20 @@
 
 .sidebar.collapsed .nav-text {
   opacity: 0;
+  display: none;
+  width: 0;
+  overflow: hidden;
 }
 
 .sidebar.collapsed .nav-item {
-  padding: 15px;
+  padding: 14px;
   justify-content: center;
+  margin: 6px 8px;
 }
 
 .sidebar.collapsed .nav-icon {
   margin-right: 0;
+  font-size: 20px;
 }
 
 /* Tooltip for collapsed state */
