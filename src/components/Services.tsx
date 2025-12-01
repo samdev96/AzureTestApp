@@ -139,7 +139,8 @@ const Services: React.FC = () => {
       const response = await fetch('/api/assignment-groups');
       if (response.ok) {
         const data = await response.json();
-        setAssignmentGroups(data.assignmentGroups || []);
+        // API returns { success: true, data: [...] }
+        setAssignmentGroups(data.data || []);
       }
     } catch (err) {
       console.log('Error loading assignment groups');

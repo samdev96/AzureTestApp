@@ -175,7 +175,8 @@ const ConfigurationItems: React.FC = () => {
       const response = await fetch('/api/assignment-groups');
       if (!response.ok) throw new Error('Failed to load assignment groups');
       const data = await response.json();
-      setAssignmentGroups(data.assignmentGroups || []);
+      // API returns { success: true, data: [...] }
+      setAssignmentGroups(data.data || []);
     } catch (err) {
       console.error('Failed to load assignment groups:', err);
     }
