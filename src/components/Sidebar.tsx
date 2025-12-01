@@ -23,10 +23,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
 
   return (
     <div className={getSidebarClass()}>
+      <button onClick={onToggle} className="sidebar-toggle" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+        <span className="toggle-icon">{collapsed ? '›' : '‹'}</span>
+      </button>
       <div className="sidebar-header">
-        <button onClick={onToggle} className="sidebar-toggle">
-          {collapsed ? '➡️' : '⬅️'}
-        </button>
+        <span className="sidebar-logo">🚀</span>
+        <span className="sidebar-title">VibeNow</span>
       </div>
       <nav className="sidebar-nav">
         <ul>
