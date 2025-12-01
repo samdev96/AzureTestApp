@@ -8,9 +8,28 @@ interface ConfigurationItem {
   SubType: string | null;
   Status: string;
   Environment: string;
+  Location: string | null;
+  IpAddress: string | null;
+  Hostname: string | null;
+  Version: string | null;
+  Vendor: string | null;
+  SupportGroupId: number | null;
+  SupportGroup: string | null;
+  Owner: string | null;
   Description: string | null;
+  Attributes: string | null;
+  SerialNumber: string | null;
+  AssetTag: string | null;
+  PurchaseDate: string | null;
+  ExpiryDate: string | null;
+  Cost: number | null;
   CreatedDate: string;
   ModifiedDate: string;
+}
+
+interface AssignmentGroup {
+  AssignmentGroupID: number;
+  GroupName: string;
 }
 
 interface CiType {
@@ -49,8 +68,10 @@ interface AvailableCIForRelation {
 }
 
 interface RelationshipType {
-  Id: number;
+  TypeId: number;
   TypeName: string;
+  ReverseTypeName: string;
+  Category: string;
   Description: string;
 }
 
@@ -78,11 +99,27 @@ const ConfigurationItems: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     ciTypeId: '',
+    subType: '',
     status: 'Active',
     environment: 'Production',
+    location: '',
+    ipAddress: '',
+    hostname: '',
+    version: '',
+    vendor: '',
+    supportGroupId: '',
+    owner: '',
     description: '',
-    metadata: ''
+    serialNumber: '',
+    assetTag: '',
+    purchaseDate: '',
+    expiryDate: '',
+    cost: '',
+    attributes: ''
   });
+
+  // Assignment groups for dropdown
+  const [assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>([]);
 
   // Linked services state
   const [linkedServices, setLinkedServices] = useState<LinkedService[]>([]);
@@ -130,6 +167,17 @@ const ConfigurationItems: React.FC = () => {
       setCiTypes(data.data || []);
     } catch (err) {
       console.error('Failed to load CI types:', err);
+    }
+  }, []);
+
+  const loadAssignmentGroups = useCallback(async () => {
+    try {
+      const response = await fetch('/api/assignment-groups');
+      if (!response.ok) throw new Error('Failed to load assignment groups');
+      const data = await response.json();
+      setAssignmentGroups(data.assignmentGroups || []);
+    } catch (err) {
+      console.error('Failed to load assignment groups:', err);
     }
   }, []);
 
@@ -223,9 +271,10 @@ const ConfigurationItems: React.FC = () => {
       const relatedIds = relatedCIs.map(r => r.RelatedCiId);
       
       // Filter out the current CI and already related CIs
-      const available = (data.configurationItems || [])
+      // API returns data.data array with CiId, CiName, CiType fields
+      const available = (data.data || [])
         .filter((c: ConfigurationItem) => c.CiId !== ciId && !relatedIds.includes(c.CiId))
-        .map((c: ConfigurationItem) => ({ Id: c.CiId, Name: c.CiName, CiType: c.CiType }));
+        .map((c: ConfigurationItem) => ({ CiId: c.CiId, CiName: c.CiName, CiType: c.CiType }));
       
       setAvailableCIs(available);
     } catch (err) {
@@ -239,7 +288,8 @@ const ConfigurationItems: React.FC = () => {
       const response = await fetch('/api/relationship-types');
       if (!response.ok) throw new Error('Failed to load relationship types');
       const data = await response.json();
-      setRelationshipTypes(data.relationshipTypes || []);
+      // API returns { success: true, data: [...] }
+      setRelationshipTypes(data.data || []);
     } catch (err) {
       console.error('Failed to load relationship types:', err);
     }
@@ -249,7 +299,8 @@ const ConfigurationItems: React.FC = () => {
     loadCIs();
     loadCiTypes();
     loadRelationshipTypes();
-  }, [loadCIs, loadCiTypes, loadRelationshipTypes]);
+    loadAssignmentGroups();
+  }, [loadCIs, loadCiTypes, loadRelationshipTypes, loadAssignmentGroups]);
 
   useEffect(() => {
     if (editingCi && activeTab === 'services') {
@@ -282,10 +333,23 @@ const ConfigurationItems: React.FC = () => {
       setFormData({
         name: ci.CiName,
         ciTypeId: ciType ? ciType.TypeId.toString() : '',
+        subType: ci.SubType || '',
         status: ci.Status,
         environment: ci.Environment,
+        location: ci.Location || '',
+        ipAddress: ci.IpAddress || '',
+        hostname: ci.Hostname || '',
+        version: ci.Version || '',
+        vendor: ci.Vendor || '',
+        supportGroupId: ci.SupportGroupId?.toString() || '',
+        owner: ci.Owner || '',
         description: ci.Description || '',
-        metadata: ci.Description || ''
+        serialNumber: ci.SerialNumber || '',
+        assetTag: ci.AssetTag || '',
+        purchaseDate: ci.PurchaseDate ? ci.PurchaseDate.split('T')[0] : '',
+        expiryDate: ci.ExpiryDate ? ci.ExpiryDate.split('T')[0] : '',
+        cost: ci.Cost?.toString() || '',
+        attributes: ci.Attributes || ''
       });
       setActiveTab('details');
     } else {
@@ -293,10 +357,23 @@ const ConfigurationItems: React.FC = () => {
       setFormData({
         name: '',
         ciTypeId: ciTypes.length > 0 ? ciTypes[0].TypeId.toString() : '',
+        subType: '',
         status: 'Active',
         environment: 'Production',
+        location: '',
+        ipAddress: '',
+        hostname: '',
+        version: '',
+        vendor: '',
+        supportGroupId: '',
+        owner: '',
         description: '',
-        metadata: ''
+        serialNumber: '',
+        assetTag: '',
+        purchaseDate: '',
+        expiryDate: '',
+        cost: '',
+        attributes: ''
       });
       setActiveTab('details');
     }
@@ -313,10 +390,23 @@ const ConfigurationItems: React.FC = () => {
     setFormData({
       name: '',
       ciTypeId: '',
+      subType: '',
       status: 'Active',
       environment: 'Production',
+      location: '',
+      ipAddress: '',
+      hostname: '',
+      version: '',
+      vendor: '',
+      supportGroupId: '',
+      owner: '',
       description: '',
-      metadata: ''
+      serialNumber: '',
+      assetTag: '',
+      purchaseDate: '',
+      expiryDate: '',
+      cost: '',
+      attributes: ''
     });
     setActiveTab('details');
     setLinkedServices([]);
@@ -330,6 +420,9 @@ const ConfigurationItems: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Get the selected CI type name from ID
+      const selectedType = ciTypes.find(t => t.TypeId.toString() === formData.ciTypeId);
+      
       const url = editingCi 
         ? `/api/configuration-items/${editingCi.CiId}` 
         : '/api/configuration-items';
@@ -338,12 +431,25 @@ const ConfigurationItems: React.FC = () => {
         method: editingCi ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
-          ciTypeId: parseInt(formData.ciTypeId),
+          ciName: formData.name,
+          ciType: selectedType?.TypeName || '',
+          subType: formData.subType || null,
           status: formData.status,
           environment: formData.environment,
+          location: formData.location || null,
+          ipAddress: formData.ipAddress || null,
+          hostname: formData.hostname || null,
+          version: formData.version || null,
+          vendor: formData.vendor || null,
+          supportGroupId: formData.supportGroupId ? parseInt(formData.supportGroupId) : null,
+          owner: formData.owner || null,
           description: formData.description || null,
-          metadata: formData.metadata || null
+          serialNumber: formData.serialNumber || null,
+          assetTag: formData.assetTag || null,
+          purchaseDate: formData.purchaseDate || null,
+          expiryDate: formData.expiryDate || null,
+          cost: formData.cost ? parseFloat(formData.cost) : null,
+          attributes: formData.attributes ? JSON.parse(formData.attributes) : null
         })
       });
 
@@ -434,7 +540,7 @@ const ConfigurationItems: React.FC = () => {
         body: JSON.stringify({
           sourceCiId: editingCi.CiId,
           targetCiId: parseInt(selectedRelatedCiId),
-          relationshipTypeId: parseInt(selectedRelationshipTypeId)
+          relationshipType: selectedRelationshipTypeId // API expects type name, not ID
         })
       });
 
@@ -699,76 +805,236 @@ const ConfigurationItems: React.FC = () => {
             )}
 
             {activeTab === 'details' && (
-              <form onSubmit={handleSubmit} className="modal-form">
-                <div className="form-row">
+              <form onSubmit={handleSubmit} className="modal-form ci-form-expanded">
+                <div className="form-section">
+                  <h4 className="form-section-title">Basic Information</h4>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Name *</label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                        required
+                        placeholder="e.g., PROD-WEB-01"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>CI Type *</label>
+                      <select
+                        value={formData.ciTypeId}
+                        onChange={(e) => setFormData({...formData, ciTypeId: e.target.value})}
+                        required
+                      >
+                        <option value="">Select Type</option>
+                        {ciTypes.map(type => (
+                          <option key={type.TypeId} value={type.TypeId}>{type.TypeName}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Sub Type</label>
+                      <input
+                        type="text"
+                        value={formData.subType}
+                        onChange={(e) => setFormData({...formData, subType: e.target.value})}
+                        placeholder="e.g., Windows Server 2022, PostgreSQL 15"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Version</label>
+                      <input
+                        type="text"
+                        value={formData.version}
+                        onChange={(e) => setFormData({...formData, version: e.target.value})}
+                        placeholder="e.g., 2.1.0, 15.4"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Status</label>
+                      <select
+                        value={formData.status}
+                        onChange={(e) => setFormData({...formData, status: e.target.value})}
+                      >
+                        {statuses.map(status => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Environment</label>
+                      <select
+                        value={formData.environment}
+                        onChange={(e) => setFormData({...formData, environment: e.target.value})}
+                      >
+                        {environments.map(env => (
+                          <option key={env} value={env}>{env}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="form-group">
-                    <label>Name *</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      required
-                      placeholder="e.g., PROD-WEB-01"
+                    <label>Description</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({...formData, description: e.target.value})}
+                      rows={2}
+                      placeholder="Describe this configuration item..."
                     />
                   </div>
-                  <div className="form-group">
-                    <label>CI Type *</label>
-                    <select
-                      value={formData.ciTypeId}
-                      onChange={(e) => setFormData({...formData, ciTypeId: e.target.value})}
-                      required
-                    >
-                      <option value="">Select Type</option>
-                      {ciTypes.map(type => (
-                        <option key={type.TypeId} value={type.TypeId}>{type.TypeName}</option>
-                      ))}
-                    </select>
+                </div>
+
+                <div className="form-section">
+                  <h4 className="form-section-title">Network & Location</h4>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Hostname</label>
+                      <input
+                        type="text"
+                        value={formData.hostname}
+                        onChange={(e) => setFormData({...formData, hostname: e.target.value})}
+                        placeholder="e.g., srv-web-01.company.com"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>IP Address</label>
+                      <input
+                        type="text"
+                        value={formData.ipAddress}
+                        onChange={(e) => setFormData({...formData, ipAddress: e.target.value})}
+                        placeholder="e.g., 10.0.0.50"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Location</label>
+                      <input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) => setFormData({...formData, location: e.target.value})}
+                        placeholder="e.g., Azure East US, On-Prem DC1"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Vendor</label>
+                      <input
+                        type="text"
+                        value={formData.vendor}
+                        onChange={(e) => setFormData({...formData, vendor: e.target.value})}
+                        placeholder="e.g., Microsoft, Oracle, AWS"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Status</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    >
-                      {statuses.map(status => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Environment</label>
-                    <select
-                      value={formData.environment}
-                      onChange={(e) => setFormData({...formData, environment: e.target.value})}
-                    >
-                      {environments.map(env => (
-                        <option key={env} value={env}>{env}</option>
-                      ))}
-                    </select>
+                <div className="form-section">
+                  <h4 className="form-section-title">Ownership & Support</h4>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Owner</label>
+                      <input
+                        type="email"
+                        value={formData.owner}
+                        onChange={(e) => setFormData({...formData, owner: e.target.value})}
+                        placeholder="e.g., john.doe@company.com"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Support Group</label>
+                      <select
+                        value={formData.supportGroupId}
+                        onChange={(e) => setFormData({...formData, supportGroupId: e.target.value})}
+                      >
+                        <option value="">Select Support Group</option>
+                        {assignmentGroups.map(group => (
+                          <option key={group.AssignmentGroupID} value={group.AssignmentGroupID}>
+                            {group.GroupName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Description</label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    rows={3}
-                    placeholder="Describe this configuration item..."
-                  />
+                <div className="form-section">
+                  <h4 className="form-section-title">Asset Information</h4>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Serial Number</label>
+                      <input
+                        type="text"
+                        value={formData.serialNumber}
+                        onChange={(e) => setFormData({...formData, serialNumber: e.target.value})}
+                        placeholder="e.g., ABC123XYZ"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Asset Tag</label>
+                      <input
+                        type="text"
+                        value={formData.assetTag}
+                        onChange={(e) => setFormData({...formData, assetTag: e.target.value})}
+                        placeholder="e.g., ASSET-001234"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Purchase Date</label>
+                      <input
+                        type="date"
+                        value={formData.purchaseDate}
+                        onChange={(e) => setFormData({...formData, purchaseDate: e.target.value})}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Expiry/Warranty Date</label>
+                      <input
+                        type="date"
+                        value={formData.expiryDate}
+                        onChange={(e) => setFormData({...formData, expiryDate: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Cost ($)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.cost}
+                        onChange={(e) => setFormData({...formData, cost: e.target.value})}
+                        placeholder="e.g., 5000.00"
+                      />
+                    </div>
+                    <div className="form-group">
+                      {/* Empty for layout */}
+                    </div>
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label>Metadata (JSON)</label>
-                  <textarea
-                    value={formData.metadata}
-                    onChange={(e) => setFormData({...formData, metadata: e.target.value})}
-                    rows={3}
-                    placeholder='{"ip": "10.0.0.1", "os": "Ubuntu 22.04"}'
-                  />
+                <div className="form-section">
+                  <h4 className="form-section-title">Custom Attributes (JSON)</h4>
+                  <div className="form-group">
+                    <textarea
+                      value={formData.attributes}
+                      onChange={(e) => setFormData({...formData, attributes: e.target.value})}
+                      rows={3}
+                      placeholder='{"cpu": "4 vCPU", "ram": "16GB", "disk": "500GB SSD"}'
+                    />
+                  </div>
                 </div>
 
                 <div className="modal-actions">
@@ -874,7 +1140,7 @@ const ConfigurationItems: React.FC = () => {
                     >
                       <option value="">Select relationship type...</option>
                       {relationshipTypes.map(rt => (
-                        <option key={rt.Id} value={rt.Id}>
+                        <option key={rt.TypeId} value={rt.TypeName}>
                           {rt.TypeName}
                         </option>
                       ))}

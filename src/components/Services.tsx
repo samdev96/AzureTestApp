@@ -10,6 +10,7 @@ interface Service {
   Criticality: string;
   Status: string;
   SLA: string | null;
+  SupportGroupId: number | null;
   SupportGroup: string | null;
   CiCount: number;
   CreatedDate: string;
@@ -42,12 +43,18 @@ interface ServiceStats {
   active: number;
 }
 
+interface AssignmentGroup {
+  AssignmentGroupID: number;
+  GroupName: string;
+}
+
 const CRITICALITIES = ['Critical', 'High', 'Medium', 'Low'];
 const STATUSES = ['Active', 'Inactive', 'Planned', 'Retired'];
 
 const Services: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [allCis, setAllCis] = useState<ConfigurationItem[]>([]);
+  const [assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>([]);
   const [linkedCis, setLinkedCis] = useState<ServiceCiMapping[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -82,6 +89,7 @@ const Services: React.FC = () => {
   useEffect(() => {
     loadServices();
     loadAllCis();
+    loadAssignmentGroups();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -123,6 +131,18 @@ const Services: React.FC = () => {
       }
     } catch (err) {
       console.log('Error loading CIs');
+    }
+  };
+
+  const loadAssignmentGroups = async () => {
+    try {
+      const response = await fetch('/api/assignment-groups');
+      if (response.ok) {
+        const data = await response.json();
+        setAssignmentGroups(data.assignmentGroups || []);
+      }
+    } catch (err) {
+      console.log('Error loading assignment groups');
     }
   };
 
@@ -228,7 +248,7 @@ const Services: React.FC = () => {
       criticality: service.Criticality,
       status: service.Status,
       sla: service.SLA || '',
-      supportGroupId: ''
+      supportGroupId: service.SupportGroupId?.toString() || ''
     });
     setSelectedService(service);
     setActiveTab('details');
@@ -571,15 +591,32 @@ const Services: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label>SLA</label>
-                  <input
-                    type="text"
-                    name="sla"
-                    value={formData.sla}
-                    onChange={handleInputChange}
-                    placeholder="e.g., 99.9% uptime, 4hr response time"
-                  />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>SLA</label>
+                    <input
+                      type="text"
+                      name="sla"
+                      value={formData.sla}
+                      onChange={handleInputChange}
+                      placeholder="e.g., 99.9% uptime, 4hr response time"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Support Group</label>
+                    <select
+                      name="supportGroupId"
+                      value={formData.supportGroupId}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Support Group</option>
+                      {assignmentGroups.map(group => (
+                        <option key={group.AssignmentGroupID} value={group.AssignmentGroupID}>
+                          {group.GroupName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="modal-actions">
