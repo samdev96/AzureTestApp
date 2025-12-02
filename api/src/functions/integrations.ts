@@ -14,7 +14,7 @@ app.http('integrations-list', {
         try {
             const pool = await getDbConnection();
             const result = await pool.request().query(`
-                SELECT * FROM vw_IntegrationCatalog
+                SELECT * FROM vw_IntegrationsExpanded
                 ORDER BY IntegrationName
             `);
             
@@ -45,7 +45,7 @@ app.http('integrations-get', {
             // Get integration
             const integrationResult = await pool.request()
                 .input('id', id)
-                .query(`SELECT * FROM vw_IntegrationCatalog WHERE IntegrationId = @id`);
+                .query(`SELECT * FROM vw_IntegrationsExpanded WHERE IntegrationId = @id`);
             
             if (integrationResult.recordset.length === 0) {
                 return { status: 404, jsonBody: { success: false, error: 'Integration not found' } };
@@ -395,7 +395,7 @@ app.http('integrations-graph', {
             
             // Get all integrations with resolved names
             const integrationsResult = await pool.request().query(`
-                SELECT * FROM vw_IntegrationCatalog WHERE Status = 'Active'
+                SELECT * FROM vw_IntegrationsExpanded WHERE Status = 'Active'
             `);
             
             // Get all external systems
