@@ -301,12 +301,22 @@ const CMDBGraph: React.FC<CMDBGraphProps> = ({ onEditService, onEditCI }) => {
 
     // Create service nodes
     if (showServices) {
+      const serviceColCount = Math.min(services.length, 5); // Max 5 services per row
+      const serviceSpacingX = 350; // Horizontal spacing between services
+      const serviceSpacingY = 200; // Vertical spacing between service rows
+      
       services.forEach((service, index) => {
         const nodeId = `service-${service.ServiceId}`;
+        const col = index % serviceColCount;
+        const row = Math.floor(index / serviceColCount);
+        
         newNodes.push({
           id: nodeId,
           type: 'serviceNode',
-          position: { x: 250 + (index % 4) * 300, y: 50 },
+          position: { 
+            x: 100 + col * serviceSpacingX, 
+            y: 50 + row * serviceSpacingY 
+          },
           data: {
             label: service.ServiceName,
             criticality: service.Criticality,
@@ -322,12 +332,23 @@ const CMDBGraph: React.FC<CMDBGraphProps> = ({ onEditService, onEditCI }) => {
 
     // Create CI nodes
     if (showCIs) {
+      const ciColCount = Math.min(filteredCIs.length, 5); // Max 5 CIs per row
+      const ciSpacingX = 320; // Horizontal spacing between CIs
+      const ciSpacingY = 200; // Vertical spacing between CI rows
+      const ciStartY = showServices ? 350 + Math.ceil(services.length / 5) * 200 : 50; // Start below services
+      
       filteredCIs.forEach((ci, index) => {
         const nodeId = `ci-${ci.CiId}`;
+        const col = index % ciColCount;
+        const row = Math.floor(index / ciColCount);
+        
         newNodes.push({
           id: nodeId,
           type: 'ciNode',
-          position: { x: 100 + (index % 6) * 220, y: 300 + Math.floor(index / 6) * 180 },
+          position: { 
+            x: 100 + col * ciSpacingX, 
+            y: ciStartY + row * ciSpacingY 
+          },
           data: {
             label: ci.CiName,
             ciType: ci.CiType,
@@ -451,9 +472,10 @@ const CMDBGraph: React.FC<CMDBGraphProps> = ({ onEditService, onEditCI }) => {
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={{ padding: 0.3, maxZoom: 0.8 }}
         minZoom={0.1}
         maxZoom={2}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
       >
         <Background color="#e2e8f0" gap={20} />
         <Controls />
