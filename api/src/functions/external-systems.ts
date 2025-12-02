@@ -14,7 +14,7 @@ app.http('external-systems-list', {
         try {
             const pool = await getDbConnection();
             const result = await pool.request().query(`
-                SELECT * FROM vw_ExternalSystemsSummary
+                SELECT * FROM ExternalSystems
                 ORDER BY SystemName
             `);
             
