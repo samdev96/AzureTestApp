@@ -75,9 +75,9 @@ const ExternalSystems: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadSystems();
   }, [statusFilter, categoryFilter]);
