@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   externalSystemsAPI, 
   ExternalSystem,
@@ -52,7 +52,7 @@ const ExternalSystems: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   // Load external systems
-  const loadSystems = async () => {
+  const loadSystems = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -75,12 +75,11 @@ const ExternalSystems: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, categoryFilter]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadSystems();
-  }, [statusFilter, categoryFilter]);
+  }, [loadSystems]);
 
   // Filter systems by search term
   const filteredSystems = systems.filter(system => {

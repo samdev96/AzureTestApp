@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   integrationsAPI, 
   Integration,
@@ -58,7 +58,7 @@ const IntegrationCatalog: React.FC<IntegrationCatalogProps> = ({ onIntegrationSe
   const [saving, setSaving] = useState(false);
 
   // Load integrations
-  const loadIntegrations = async () => {
+  const loadIntegrations = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -85,12 +85,11 @@ const IntegrationCatalog: React.FC<IntegrationCatalogProps> = ({ onIntegrationSe
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, typeFilter, healthFilter]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     loadIntegrations();
-  }, [statusFilter, typeFilter, healthFilter]);
+  }, [loadIntegrations]);
 
   // Filter integrations by search term
   const filteredIntegrations = integrations.filter(integration => {
