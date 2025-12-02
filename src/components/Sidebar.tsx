@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Sidebar.css';
 
-export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items' | 'cmdb-graph';
+export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items' | 'cmdb-graph' | 'integrations' | 'external-systems';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -14,6 +14,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange, isMobileOpen }) => {
   const [adminOpen, setAdminOpen] = useState(false);
   const [cmdbOpen, setCmdbOpen] = useState(false);
+  const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const getSidebarClass = () => {
     let classes = 'sidebar';
     if (collapsed) classes += ' collapsed';
@@ -82,6 +83,39 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
                 >
                   <span className="nav-icon">🔗</span>
                   <span className="nav-text">Graph View</span>
+                </li>
+              </ul>
+            )}
+          </li>
+          <li className="nav-section">
+            <button
+              className={`nav-section-toggle ${(currentPage === 'integrations' || currentPage === 'external-systems') ? 'active' : ''}`}
+              onClick={() => setIntegrationsOpen((open) => !open)}
+              aria-expanded={integrationsOpen}
+            >
+              <span className="nav-icon" role="img" aria-label="Integrations">
+                🔌
+              </span>
+              <span className="nav-text">Integrations</span>
+              <span className="nav-arrow">
+                {integrationsOpen ? '▲' : '▼'}
+              </span>
+            </button>
+            {integrationsOpen && (
+              <ul className="nav-sublist">
+                <li 
+                  className={`nav-item ${currentPage === 'integrations' ? 'active' : ''}`}
+                  onClick={() => onPageChange('integrations')}
+                >
+                  <span className="nav-icon">📋</span>
+                  <span className="nav-text">Catalog</span>
+                </li>
+                <li 
+                  className={`nav-item ${currentPage === 'external-systems' ? 'active' : ''}`}
+                  onClick={() => onPageChange('external-systems')}
+                >
+                  <span className="nav-icon">🏢</span>
+                  <span className="nav-text">External Systems</span>
                 </li>
               </ul>
             )}

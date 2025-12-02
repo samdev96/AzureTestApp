@@ -338,3 +338,289 @@ export const ticketsAPI = {
     }
   },
 };
+
+// =============================================
+// INTEGRATION CATALOG API
+// =============================================
+
+// External System interfaces
+export interface ExternalSystem {
+  ExternalSystemId: number;
+  SystemName: string;
+  Vendor: string;
+  Category: string;
+  Description?: string;
+  BaseUrl?: string;
+  DocumentationUrl?: string;
+  ContactEmail?: string;
+  ContractExpiry?: string;
+  Status: string;
+  CreatedAt: string;
+  UpdatedAt?: string;
+  CreatedBy?: string;
+}
+
+export interface CreateExternalSystemData {
+  systemName: string;
+  vendor: string;
+  category: string;
+  description?: string;
+  baseUrl?: string;
+  documentationUrl?: string;
+  contactEmail?: string;
+  contractExpiry?: string;
+  status?: string;
+  createdBy?: string;
+}
+
+// Integration interfaces
+export interface Integration {
+  IntegrationId: number;
+  IntegrationName: string;
+  Description?: string;
+  IntegrationType: string;
+  Direction: string;
+  SourceType: string;
+  SourceServiceId?: number;
+  SourceCiId?: number;
+  SourceExternalId?: number;
+  TargetType: string;
+  TargetServiceId?: number;
+  TargetCiId?: number;
+  TargetExternalId?: number;
+  Protocol?: string;
+  AuthMethod?: string;
+  Endpoint?: string;
+  Port?: number;
+  DataFormat?: string;
+  DataClassification?: string;
+  FrequencyType?: string;
+  FrequencyDetails?: string;
+  Status: string;
+  HealthStatus?: string;
+  LastHealthCheck?: string;
+  SLA?: string;
+  Owner?: string;
+  CreatedAt: string;
+  UpdatedAt?: string;
+  CreatedBy?: string;
+  // Expanded fields from view
+  SourceServiceName?: string;
+  SourceCiName?: string;
+  SourceExternalName?: string;
+  TargetServiceName?: string;
+  TargetCiName?: string;
+  TargetExternalName?: string;
+  SourceName?: string;
+  TargetName?: string;
+}
+
+export interface CreateIntegrationData {
+  integrationName: string;
+  description?: string;
+  integrationType: string;
+  direction: string;
+  sourceType: string;
+  sourceServiceId?: number;
+  sourceCiId?: number;
+  sourceExternalId?: number;
+  targetType: string;
+  targetServiceId?: number;
+  targetCiId?: number;
+  targetExternalId?: number;
+  protocol?: string;
+  authMethod?: string;
+  endpoint?: string;
+  port?: number;
+  dataFormat?: string;
+  dataClassification?: string;
+  frequencyType?: string;
+  frequencyDetails?: string;
+  status?: string;
+  healthStatus?: string;
+  sla?: string;
+  owner?: string;
+  createdBy?: string;
+}
+
+// Integration Data Field interfaces
+export interface IntegrationDataField {
+  DataFieldId: number;
+  IntegrationId: number;
+  FieldName: string;
+  FieldType: string;
+  Direction: string;
+  IsPII: boolean;
+  IsRequired: boolean;
+  SampleValue?: string;
+  Description?: string;
+  CreatedAt: string;
+  UpdatedAt?: string;
+}
+
+export interface CreateIntegrationDataFieldData {
+  integrationId: number;
+  fieldName: string;
+  fieldType?: string;
+  direction?: string;
+  isPII?: boolean;
+  isRequired?: boolean;
+  sampleValue?: string;
+  description?: string;
+}
+
+// External Systems API
+export const externalSystemsAPI = {
+  // Get all external systems
+  getAll: async (filters?: {
+    status?: string;
+    category?: string;
+  }): Promise<ApiResponse<ExternalSystem[]>> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.category) params.append('category', filters.category);
+    
+    const queryString = params.toString();
+    const endpoint = `/external-systems${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest<ExternalSystem[]>(endpoint);
+  },
+
+  // Get a single external system by ID
+  getById: async (id: number): Promise<ApiResponse<ExternalSystem>> => {
+    return apiRequest<ExternalSystem>(`/external-systems/${id}`);
+  },
+
+  // Create a new external system
+  create: async (data: CreateExternalSystemData): Promise<ApiResponse<ExternalSystem>> => {
+    return apiRequest<ExternalSystem>('/external-systems', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update an external system
+  update: async (id: number, data: Partial<CreateExternalSystemData>): Promise<ApiResponse<ExternalSystem>> => {
+    return apiRequest<ExternalSystem>(`/external-systems/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Delete an external system
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/external-systems/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Integrations API
+export const integrationsAPI = {
+  // Get all integrations
+  getAll: async (filters?: {
+    status?: string;
+    integrationType?: string;
+    sourceType?: string;
+    targetType?: string;
+    healthStatus?: string;
+  }): Promise<ApiResponse<Integration[]>> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.integrationType) params.append('integrationType', filters.integrationType);
+    if (filters?.sourceType) params.append('sourceType', filters.sourceType);
+    if (filters?.targetType) params.append('targetType', filters.targetType);
+    if (filters?.healthStatus) params.append('healthStatus', filters.healthStatus);
+    
+    const queryString = params.toString();
+    const endpoint = `/integrations${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest<Integration[]>(endpoint);
+  },
+
+  // Get a single integration by ID
+  getById: async (id: number): Promise<ApiResponse<Integration>> => {
+    return apiRequest<Integration>(`/integrations/${id}`);
+  },
+
+  // Create a new integration
+  create: async (data: CreateIntegrationData): Promise<ApiResponse<Integration>> => {
+    return apiRequest<Integration>('/integrations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update an integration
+  update: async (id: number, data: Partial<CreateIntegrationData>): Promise<ApiResponse<Integration>> => {
+    return apiRequest<Integration>(`/integrations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Delete an integration
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/integrations/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Update health status
+  updateHealth: async (id: number, healthStatus: string): Promise<ApiResponse<Integration>> => {
+    return apiRequest<Integration>(`/integrations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ healthStatus }),
+    });
+  },
+};
+
+// Integration Data Fields API
+export const integrationDataFieldsAPI = {
+  // Get all data fields for an integration
+  getByIntegration: async (integrationId: number): Promise<ApiResponse<IntegrationDataField[]>> => {
+    return apiRequest<IntegrationDataField[]>(`/integrations/${integrationId}/data-fields`);
+  },
+
+  // Get a single data field by ID
+  getById: async (id: number): Promise<ApiResponse<IntegrationDataField>> => {
+    return apiRequest<IntegrationDataField>(`/integration-data-fields/${id}`);
+  },
+
+  // Create a new data field
+  create: async (data: CreateIntegrationDataFieldData): Promise<ApiResponse<IntegrationDataField>> => {
+    return apiRequest<IntegrationDataField>('/integration-data-fields', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Bulk create data fields
+  bulkCreate: async (integrationId: number, fields: Omit<CreateIntegrationDataFieldData, 'integrationId'>[]): Promise<ApiResponse<{
+    created: number;
+    fields: IntegrationDataField[];
+  }>> => {
+    return apiRequest<{ created: number; fields: IntegrationDataField[] }>(
+      `/integrations/${integrationId}/data-fields/bulk`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ fields }),
+      }
+    );
+  },
+
+  // Update a data field
+  update: async (id: number, data: Partial<CreateIntegrationDataFieldData>): Promise<ApiResponse<IntegrationDataField>> => {
+    return apiRequest<IntegrationDataField>(`/integration-data-fields/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Delete a data field
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/integration-data-fields/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};

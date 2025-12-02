@@ -8,6 +8,8 @@ import UserManagement from './UserManagement';
 import Services from './Services';
 import ConfigurationItems from './ConfigurationItems';
 import CMDBGraph from './CMDBGraph';
+import IntegrationCatalog from './IntegrationCatalog';
+import ExternalSystems from './ExternalSystems';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
 import './AdminDashboard.css';
@@ -83,7 +85,9 @@ const AdminDashboard: React.FC = () => {
     'user-management': 'User Management',
     'services': 'Services',
     'config-items': 'Configuration Items',
-    'cmdb-graph': 'CMDB Graph View'
+    'cmdb-graph': 'CMDB Graph View',
+    'integrations': 'Integration Catalog',
+    'external-systems': 'External Systems'
   };
 
   return (
@@ -158,6 +162,10 @@ const AdminDashboard: React.FC = () => {
           <ConfigurationItems />
         ) : currentPage === 'cmdb-graph' ? (
           <CMDBGraph />
+        ) : currentPage === 'integrations' ? (
+          <IntegrationCatalog />
+        ) : currentPage === 'external-systems' ? (
+          <ExternalSystems />
         ) : (
           <UserManagement />
         )}
