@@ -13,6 +13,7 @@ import ReactFlow, {
   Handle,
   Position,
 } from 'reactflow';
+import dagre from 'dagre';
 import 'reactflow/dist/style.css';
 import './CMDBGraph.css';
 
@@ -281,6 +282,50 @@ const CMDBGraph: React.FC<CMDBGraphProps> = ({ onEditService, onEditCI }) => {
     return impacted;
   }, [impactMode, impactSourceId, serviceCiMappings, ciRelationships]);
 
+  // Dagre layout function
+  const getLayoutedElements = useCallback((nodes: Node[], edges: Edge[], direction = 'TB') => {
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
+    
+    // Configure the layout
+    const nodeWidth = 200;
+    const nodeHeight = 100;
+    dagreGraph.setGraph({ 
+      rankdir: direction,  // TB = top to bottom, LR = left to right
+      nodesep: 80,         // Horizontal spacing between nodes
+      ranksep: 120,        // Vertical spacing between ranks/levels
+      marginx: 50,
+      marginy: 50,
+    });
+
+    // Add nodes to dagre
+    nodes.forEach((node) => {
+      dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    });
+
+    // Add edges to dagre
+    edges.forEach((edge) => {
+      dagreGraph.setEdge(edge.source, edge.target);
+    });
+
+    // Run the layout algorithm
+    dagre.layout(dagreGraph);
+
+    // Get the positioned nodes
+    const layoutedNodes = nodes.map((node) => {
+      const nodeWithPosition = dagreGraph.node(node.id);
+      return {
+        ...node,
+        position: {
+          x: nodeWithPosition.x - nodeWidth / 2,
+          y: nodeWithPosition.y - nodeHeight / 2,
+        },
+      };
+    });
+
+    return { nodes: layoutedNodes, edges };
+  }, []);
+
   // Build nodes and edges
   useEffect(() => {
     if (loading) return;
@@ -299,24 +344,14 @@ const CMDBGraph: React.FC<CMDBGraphProps> = ({ onEditService, onEditCI }) => {
 
     const filteredCiIds = new Set(filteredCIs.map(ci => ci.CiId));
 
-    // Create service nodes
+    // Create service nodes (no initial position - dagre will set it)
     if (showServices) {
-      const serviceColCount = Math.min(services.length, 5); // Max 5 services per row
-      const serviceSpacingX = 350; // Horizontal spacing between services
-      const serviceSpacingY = 200; // Vertical spacing between service rows
-      
-      services.forEach((service, index) => {
+      services.forEach((service) => {
         const nodeId = `service-${service.ServiceId}`;
-        const col = index % serviceColCount;
-        const row = Math.floor(index / serviceColCount);
-        
         newNodes.push({
           id: nodeId,
           type: 'serviceNode',
-          position: { 
-            x: 100 + col * serviceSpacingX, 
-            y: 50 + row * serviceSpacingY 
-          },
+          position: { x: 0, y: 0 }, // Will be set by dagre
           data: {
             label: service.ServiceName,
             criticality: service.Criticality,
@@ -330,25 +365,14 @@ const CMDBGraph: React.FC<CMDBGraphProps> = ({ onEditService, onEditCI }) => {
       });
     }
 
-    // Create CI nodes
+    // Create CI nodes (no initial position - dagre will set it)
     if (showCIs) {
-      const ciColCount = Math.min(filteredCIs.length, 5); // Max 5 CIs per row
-      const ciSpacingX = 320; // Horizontal spacing between CIs
-      const ciSpacingY = 200; // Vertical spacing between CI rows
-      const ciStartY = showServices ? 350 + Math.ceil(services.length / 5) * 200 : 50; // Start below services
-      
-      filteredCIs.forEach((ci, index) => {
+      filteredCIs.forEach((ci) => {
         const nodeId = `ci-${ci.CiId}`;
-        const col = index % ciColCount;
-        const row = Math.floor(index / ciColCount);
-        
         newNodes.push({
           id: nodeId,
           type: 'ciNode',
-          position: { 
-            x: 100 + col * ciSpacingX, 
-            y: ciStartY + row * ciSpacingY 
-          },
+          position: { x: 0, y: 0 }, // Will be set by dagre
           data: {
             label: ci.CiName,
             ciType: ci.CiType,
@@ -402,8 +426,6 @@ const CMDBGraph: React.FC<CMDBGraphProps> = ({ onEditService, onEditCI }) => {
             id: edgeId,
             source: `ci-${rel.SourceCiId}`,
             target: `ci-${rel.TargetCiId}`,
-            sourceHandle: 'right',
-            targetHandle: 'left',
             label: rel.RelationshipType,
             type: 'smoothstep',
             animated: isImpactedEdge,
@@ -421,10 +443,17 @@ const CMDBGraph: React.FC<CMDBGraphProps> = ({ onEditService, onEditCI }) => {
         });
     }
 
-    setNodes(newNodes);
-    setEdges(newEdges);
+    // Apply dagre layout to position nodes based on relationships
+    if (newNodes.length > 0) {
+      const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(newNodes, newEdges, 'TB');
+      setNodes(layoutedNodes);
+      setEdges(layoutedEdges);
+    } else {
+      setNodes(newNodes);
+      setEdges(newEdges);
+    }
   }, [services, cis, serviceCiMappings, ciRelationships, loading, showServices, showCIs, 
-      filterCiType, filterEnvironment, impactedNodes, impactSourceId, onEditService, onEditCI, setNodes, setEdges]);
+      filterCiType, filterEnvironment, impactedNodes, impactSourceId, onEditService, onEditCI, setNodes, setEdges, getLayoutedElements]);
 
   // Handle node click for impact analysis
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
