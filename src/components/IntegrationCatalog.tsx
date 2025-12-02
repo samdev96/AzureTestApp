@@ -85,6 +85,7 @@ const IntegrationCatalog: React.FC<IntegrationCatalogProps> = ({ onIntegrationSe
     } finally {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   };
 
   useEffect(() => {
