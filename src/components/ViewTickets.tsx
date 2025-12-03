@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ticketsAPI, Incident, ServiceRequest } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import './ViewTickets.css';
@@ -21,6 +21,7 @@ interface DisplayTicket {
 
 const ViewTickets: React.FC = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -30,6 +31,9 @@ const ViewTickets: React.FC = () => {
 
   // Check if user is admin using the computed property from AuthContext
   const isAdmin = user?.isAdmin || false;
+  
+  // Check if user came from the portal (user portal for admins)
+  const cameFromPortal = location.state?.from === 'portal';
 
   // Fetch tickets from API
   useEffect(() => {
@@ -133,7 +137,7 @@ const ViewTickets: React.FC = () => {
   return (
     <div className="tickets-container">
       <div className="tickets-header">
-        <Link to="/" className="back-link">← Back to Home</Link>
+        <Link to={cameFromPortal ? "/portal" : "/"} className="back-link">← Back to Home</Link>
         <h1>📊 View Tickets</h1>
         <p>Manage and track your incidents and service requests</p>
         {user && (

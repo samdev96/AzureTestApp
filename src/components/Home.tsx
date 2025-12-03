@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
@@ -13,6 +13,7 @@ interface TicketStats {
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [stats, setStats] = useState<TicketStats>({
     openIncidents: 0,
@@ -21,6 +22,9 @@ const Home: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  
+  // Check if we're on the /portal route (user portal for admins)
+  const isPortalRoute = location.pathname === '/portal';
 
   const handleCreateIncident = () => {
     navigate('/create-incident');
@@ -31,7 +35,7 @@ const Home: React.FC = () => {
   };
 
   const handleViewTickets = () => {
-    navigate('/view-tickets');
+    navigate('/view-tickets', { state: { from: isPortalRoute ? 'portal' : 'home' } });
   };
 
   useEffect(() => {
