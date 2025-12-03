@@ -45,10 +45,11 @@ const Home: React.FC = () => {
       try {
         setLoading(true);
 
-        // Fetch incidents and requests data
+        // Fetch incidents and requests data - always use myTicketsOnly for user portal
+        // This ensures users (and admins in user portal mode) only see their own stats
         const [incidentsResponse, requestsResponse] = await Promise.all([
-          fetch('/api/incidents'),
-          fetch('/api/requests')
+          fetch('/api/incidents?myTicketsOnly=true'),
+          fetch('/api/requests?myTicketsOnly=true')
         ]);
 
         const incidentsData = await incidentsResponse.json();
