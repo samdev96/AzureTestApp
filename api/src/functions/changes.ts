@@ -197,6 +197,10 @@ app.http('changes-create', {
                 }
             }
             
+            // Helper to convert empty strings to null for dates
+            const parseDate = (val: any) => val && val.trim() !== '' ? val : null;
+            const parseNumber = (val: any) => val && val !== '' ? parseInt(val, 10) : null;
+            
             const result = await pool.request()
                 .input('title', body.title)
                 .input('description', body.description)
@@ -207,17 +211,17 @@ app.http('changes-create', {
                 .input('riskLevel', body.riskLevel || 'Medium')
                 .input('impact', body.impact || 'Medium')
                 .input('status', body.status || 'Draft')
-                .input('requestedStartDate', body.requestedStartDate || null)
-                .input('requestedEndDate', body.requestedEndDate || null)
+                .input('requestedStartDate', parseDate(body.requestedStartDate))
+                .input('requestedEndDate', parseDate(body.requestedEndDate))
                 .input('environment', body.environment || 'Production')
                 .input('implementationPlan', body.implementationPlan || null)
                 .input('backoutPlan', body.backoutPlan || null)
                 .input('testPlan', body.testPlan || null)
                 .input('communicationPlan', body.communicationPlan || null)
-                .input('primaryServiceId', body.primaryServiceId || null)
+                .input('primaryServiceId', parseNumber(body.primaryServiceId))
                 .input('requestedBy', body.requestedBy || userId)
                 .input('assignedTo', body.assignedTo || null)
-                .input('assignmentGroupId', body.assignmentGroupId || null)
+                .input('assignmentGroupId', parseNumber(body.assignmentGroupId))
                 .input('changeManager', body.changeManager || null)
                 .input('requiresCAB', body.requiresCAB || false)
                 .input('createdBy', userId)
@@ -280,6 +284,10 @@ app.http('changes-update', {
                 }
             }
             
+            // Helper to convert empty strings to null for dates
+            const parseDate = (val: any) => val && val.trim && val.trim() !== '' ? val : (val || null);
+            const parseNumber = (val: any) => val && val !== '' ? parseInt(val, 10) : null;
+            
             const result = await pool.request()
                 .input('id', id)
                 .input('title', body.title)
@@ -291,23 +299,23 @@ app.http('changes-update', {
                 .input('riskLevel', body.riskLevel)
                 .input('impact', body.impact)
                 .input('status', body.status)
-                .input('requestedStartDate', body.requestedStartDate || null)
-                .input('requestedEndDate', body.requestedEndDate || null)
-                .input('scheduledStartDate', body.scheduledStartDate || null)
-                .input('scheduledEndDate', body.scheduledEndDate || null)
-                .input('actualStartDate', body.actualStartDate || null)
-                .input('actualEndDate', body.actualEndDate || null)
+                .input('requestedStartDate', parseDate(body.requestedStartDate))
+                .input('requestedEndDate', parseDate(body.requestedEndDate))
+                .input('scheduledStartDate', parseDate(body.scheduledStartDate))
+                .input('scheduledEndDate', parseDate(body.scheduledEndDate))
+                .input('actualStartDate', parseDate(body.actualStartDate))
+                .input('actualEndDate', parseDate(body.actualEndDate))
                 .input('environment', body.environment)
                 .input('implementationPlan', body.implementationPlan || null)
                 .input('backoutPlan', body.backoutPlan || null)
                 .input('testPlan', body.testPlan || null)
                 .input('communicationPlan', body.communicationPlan || null)
-                .input('primaryServiceId', body.primaryServiceId || null)
+                .input('primaryServiceId', parseNumber(body.primaryServiceId))
                 .input('assignedTo', body.assignedTo || null)
-                .input('assignmentGroupId', body.assignmentGroupId || null)
+                .input('assignmentGroupId', parseNumber(body.assignmentGroupId))
                 .input('changeManager', body.changeManager || null)
                 .input('requiresCAB', body.requiresCAB || false)
-                .input('cabDate', body.cabDate || null)
+                .input('cabDate', parseDate(body.cabDate))
                 .input('cabNotes', body.cabNotes || null)
                 .input('closureCode', body.closureCode || null)
                 .input('closureNotes', body.closureNotes || null)
