@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (clientPrincipal) {
             console.log('✅ User authenticated:', clientPrincipal);
             
-            // Check database for user roles
+            // Check database for user roles - MUST complete before setting user
             let isAdmin = false;
             let dbRoles: string[] = [];
             
@@ -76,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const combinedRoles = [...(clientPrincipal.userRoles || ['authenticated']), ...dbRoles];
             const uniqueRoles = Array.from(new Set(combinedRoles));
             
+            // Set user AFTER roles are determined
             setUser({
               userId: clientPrincipal.userId,
               userDetails: clientPrincipal.userDetails,
@@ -84,6 +85,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               claims: clientPrincipal.claims || [],
               isAdmin: isAdmin
             });
+            console.log('✅ User state set with isAdmin:', isAdmin);
           } else {
             console.log('❌ No client principal found');
             setUser(null);

@@ -29,6 +29,14 @@ function App() {
               }
             />
             <Route
+              path="/portal"
+              element={
+                <ProtectedRoute>
+                  <DashboardRouter forceUserPortal={true} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/create-incident"
               element={
                 <ProtectedRoute>
