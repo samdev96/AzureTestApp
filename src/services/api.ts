@@ -162,11 +162,13 @@ export const incidentsAPI = {
     status?: string;
     priority?: string;
     assignedTo?: string;
+    myTicketsOnly?: boolean;
   }): Promise<ApiResponse<Incident[]>> => {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
     if (filters?.priority) params.append('priority', filters.priority);
     if (filters?.assignedTo) params.append('assignedTo', filters.assignedTo);
+    if (filters?.myTicketsOnly) params.append('myTicketsOnly', 'true');
     
     const queryString = params.toString();
     const endpoint = `/incidents${queryString ? `?${queryString}` : ''}`;
@@ -191,12 +193,14 @@ export const requestsAPI = {
     type?: string;
     urgency?: string;
     assignedTo?: string;
+    myTicketsOnly?: boolean;
   }): Promise<ApiResponse<ServiceRequest[]>> => {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
     if (filters?.type) params.append('type', filters.type);
     if (filters?.urgency) params.append('urgency', filters.urgency);
     if (filters?.assignedTo) params.append('assignedTo', filters.assignedTo);
+    if (filters?.myTicketsOnly) params.append('myTicketsOnly', 'true');
     
     const queryString = params.toString();
     const endpoint = `/requests${queryString ? `?${queryString}` : ''}`;
@@ -304,7 +308,7 @@ export const userRolesAPI = {
 // Combined tickets API for the view tickets page
 export const ticketsAPI = {
   // Get all tickets (both incidents and requests)
-  getAll: async (): Promise<{
+  getAll: async (options?: { myTicketsOnly?: boolean }): Promise<{
     success: boolean;
     incidents: Incident[];
     requests: ServiceRequest[];
@@ -312,8 +316,8 @@ export const ticketsAPI = {
   }> => {
     try {
       const [incidentsResponse, requestsResponse] = await Promise.all([
-        incidentsAPI.getAll(),
-        requestsAPI.getAll()
+        incidentsAPI.getAll({ myTicketsOnly: options?.myTicketsOnly }),
+        requestsAPI.getAll({ myTicketsOnly: options?.myTicketsOnly })
       ]);
 
       if (!incidentsResponse.success || !requestsResponse.success) {

@@ -34,18 +34,23 @@ const ViewTickets: React.FC = () => {
   
   // Check if user came from the portal (user portal for admins)
   const cameFromPortal = location.state?.from === 'portal';
+  
+  // In user portal mode, only show user's own tickets (even for admins)
+  const showOnlyMyTickets = cameFromPortal || !isAdmin;
 
   // Fetch tickets from API
   useEffect(() => {
     fetchTickets();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showOnlyMyTickets]);
 
   const fetchTickets = async () => {
     setLoading(true);
     setError('');
     
     try {
-      const response = await ticketsAPI.getAll();
+      // Pass myTicketsOnly flag - true for user portal mode, false for admin view
+      const response = await ticketsAPI.getAll({ myTicketsOnly: showOnlyMyTickets });
       
       if (response.success) {
         // Convert API data to display format
@@ -143,10 +148,10 @@ const ViewTickets: React.FC = () => {
         {user && (
           <div className="user-info">
             <small>
-              {isAdmin ? (
-                <span className="admin-badge">👑 Admin View - Showing all tickets</span>
+              {showOnlyMyTickets ? (
+                <span className="user-badge">👤 Showing your tickets only</span>
               ) : (
-                <span className="user-badge">👤 User View - Showing your tickets only</span>
+                <span className="admin-badge">👑 Admin View - Showing all tickets</span>
               )}
             </small>
           </div>

@@ -58,6 +58,7 @@ async function getIncidents(request: HttpRequest, context: InvocationContext): P
         const status = request.query.get('status');
         const priority = request.query.get('priority');
         const assignedTo = request.query.get('assignedTo');
+        const myTicketsOnly = request.query.get('myTicketsOnly') === 'true';
         
         let query = `
             SELECT 
@@ -105,10 +106,10 @@ async function getIncidents(request: HttpRequest, context: InvocationContext): P
             isAdmin = userRoles.includes('admin');
         }
         
-        context.log('Admin check:', { isAdmin, userId, userRoles, userPrincipal: userPrincipal?.userId });
+        context.log('Admin check:', { isAdmin, userId, userRoles, userPrincipal: userPrincipal?.userId, myTicketsOnly });
         
-        // If user is not admin, only show their own tickets
-        if (!isAdmin) {
+        // If user is not admin OR myTicketsOnly is explicitly requested, only show their own tickets
+        if (!isAdmin || myTicketsOnly) {
             query += ` AND CreatedBy = @userId`;
             params.userId = userId;
         }
