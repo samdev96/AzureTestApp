@@ -197,8 +197,18 @@ app.http('changes-create', {
                 }
             }
             
-            // Helper to convert empty strings to null for dates
-            const parseDate = (val: any) => val && val.trim() !== '' ? val : null;
+            // Helper to convert date strings to ISO format for SQL Server
+            const parseDate = (val: any): string | null => {
+                if (!val || (typeof val === 'string' && val.trim() === '')) return null;
+                try {
+                    // Try to parse the date and convert to ISO string
+                    const date = new Date(val);
+                    if (isNaN(date.getTime())) return null;
+                    return date.toISOString();
+                } catch {
+                    return null;
+                }
+            };
             const parseNumber = (val: any) => val && val !== '' ? parseInt(val, 10) : null;
             
             const result = await pool.request()
@@ -284,8 +294,18 @@ app.http('changes-update', {
                 }
             }
             
-            // Helper to convert empty strings to null for dates
-            const parseDate = (val: any) => val && val.trim && val.trim() !== '' ? val : (val || null);
+            // Helper to convert date strings to ISO format for SQL Server
+            const parseDate = (val: any): string | null => {
+                if (!val || (typeof val === 'string' && val.trim() === '')) return null;
+                try {
+                    // Try to parse the date and convert to ISO string
+                    const date = new Date(val);
+                    if (isNaN(date.getTime())) return null;
+                    return date.toISOString();
+                } catch {
+                    return null;
+                }
+            };
             const parseNumber = (val: any) => val && val !== '' ? parseInt(val, 10) : null;
             
             const result = await pool.request()
