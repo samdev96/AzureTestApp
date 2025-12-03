@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './Sidebar.css';
 
-export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items' | 'cmdb-graph' | 'integrations' | 'external-systems';
+export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items' | 'cmdb-graph' | 'integrations' | 'external-systems' | 'changes';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -15,6 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
   const [adminOpen, setAdminOpen] = useState(false);
   const [cmdbOpen, setCmdbOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [changesOpen, setChangesOpen] = useState(false);
   const getSidebarClass = () => {
     let classes = 'sidebar';
     if (collapsed) classes += ' collapsed';
@@ -119,6 +120,21 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
                 </li>
               </ul>
             )}
+          </li>
+          <li className="nav-section">
+            <button
+              className={`nav-section-toggle ${currentPage === 'changes' ? 'active' : ''}`}
+              onClick={() => {
+                setChangesOpen((open) => !open);
+                onPageChange('changes');
+              }}
+              aria-expanded={changesOpen}
+            >
+              <span className="nav-icon" role="img" aria-label="Changes">
+                📝
+              </span>
+              <span className="nav-text">Change Management</span>
+            </button>
           </li>
           <li className="nav-section">
             <button

@@ -10,6 +10,7 @@ import ConfigurationItems from './ConfigurationItems';
 import CMDBGraph from './CMDBGraph';
 import IntegrationCatalog from './IntegrationCatalog';
 import ExternalSystems from './ExternalSystems';
+import ChangeManagement from './ChangeManagement';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
 import './AdminDashboard.css';
@@ -87,7 +88,8 @@ const AdminDashboard: React.FC = () => {
     'config-items': 'Configuration Items',
     'cmdb-graph': 'CMDB Graph View',
     'integrations': 'Integration Catalog',
-    'external-systems': 'External Systems'
+    'external-systems': 'External Systems',
+    'changes': 'Change Management'
   };
 
   return (
@@ -166,6 +168,8 @@ const AdminDashboard: React.FC = () => {
           <IntegrationCatalog />
         ) : currentPage === 'external-systems' ? (
           <ExternalSystems />
+        ) : currentPage === 'changes' ? (
+          <ChangeManagement />
         ) : (
           <UserManagement />
         )}

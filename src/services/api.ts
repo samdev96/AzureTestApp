@@ -628,3 +628,513 @@ export const integrationDataFieldsAPI = {
     });
   },
 };
+
+// =============================================
+// CMDB API - Services and Configuration Items
+// =============================================
+
+// Service interfaces
+export interface Service {
+  ServiceId: number;
+  ServiceName: string;
+  Description?: string;
+  BusinessOwner?: string;
+  TechnicalOwner?: string;
+  Criticality: string;
+  Status: string;
+  SLA?: string;
+  SupportGroupId?: number;
+  SupportGroup?: string;
+  CreatedDate: string;
+  CreatedBy?: string;
+  ModifiedDate?: string;
+  ModifiedBy?: string;
+  CiCount?: number;
+}
+
+export interface CreateServiceData {
+  serviceName: string;
+  description?: string;
+  businessOwner?: string;
+  technicalOwner?: string;
+  criticality?: string;
+  status?: string;
+  sla?: string;
+  supportGroupId?: number;
+}
+
+// Configuration Item interfaces
+export interface ConfigurationItem {
+  CiId: number;
+  CiName: string;
+  CiType: string;
+  SubType?: string;
+  Status: string;
+  Environment?: string;
+  Location?: string;
+  IpAddress?: string;
+  Hostname?: string;
+  Version?: string;
+  Vendor?: string;
+  SupportGroupId?: number;
+  SupportGroup?: string;
+  Owner?: string;
+  Description?: string;
+  Attributes?: string;
+  SerialNumber?: string;
+  AssetTag?: string;
+  CreatedDate: string;
+  CreatedBy?: string;
+  ModifiedDate?: string;
+  ModifiedBy?: string;
+}
+
+export interface CreateConfigurationItemData {
+  ciName: string;
+  ciType: string;
+  subType?: string;
+  status?: string;
+  environment?: string;
+  location?: string;
+  ipAddress?: string;
+  hostname?: string;
+  version?: string;
+  vendor?: string;
+  supportGroupId?: number;
+  owner?: string;
+  description?: string;
+  attributes?: string;
+  serialNumber?: string;
+  assetTag?: string;
+}
+
+// Services API
+export const servicesAPI = {
+  // Get all services
+  getAll: async (filters?: {
+    status?: string;
+    criticality?: string;
+  }): Promise<ApiResponse<Service[]>> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.criticality) params.append('criticality', filters.criticality);
+    
+    const queryString = params.toString();
+    const endpoint = `/services${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest<Service[]>(endpoint);
+  },
+
+  // Get a single service by ID
+  getById: async (id: number): Promise<ApiResponse<Service>> => {
+    return apiRequest<Service>(`/services?id=${id}`);
+  },
+
+  // Create a new service
+  create: async (data: CreateServiceData): Promise<ApiResponse<Service>> => {
+    return apiRequest<Service>('/services', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update a service
+  update: async (id: number, data: Partial<CreateServiceData>): Promise<ApiResponse<Service>> => {
+    return apiRequest<Service>('/services', {
+      method: 'PUT',
+      body: JSON.stringify({ serviceId: id, ...data }),
+    });
+  },
+
+  // Delete a service
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/services?id=${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Configuration Items API
+export const configurationItemsAPI = {
+  // Get all configuration items
+  getAll: async (filters?: {
+    status?: string;
+    type?: string;
+    environment?: string;
+  }): Promise<ApiResponse<ConfigurationItem[]>> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.type) params.append('type', filters.type);
+    if (filters?.environment) params.append('environment', filters.environment);
+    
+    const queryString = params.toString();
+    const endpoint = `/configuration-items${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest<ConfigurationItem[]>(endpoint);
+  },
+
+  // Get a single CI by ID
+  getById: async (id: number): Promise<ApiResponse<ConfigurationItem>> => {
+    return apiRequest<ConfigurationItem>(`/configuration-items?id=${id}`);
+  },
+
+  // Create a new CI
+  create: async (data: CreateConfigurationItemData): Promise<ApiResponse<ConfigurationItem>> => {
+    return apiRequest<ConfigurationItem>('/configuration-items', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update a CI
+  update: async (id: number, data: Partial<CreateConfigurationItemData>): Promise<ApiResponse<ConfigurationItem>> => {
+    return apiRequest<ConfigurationItem>('/configuration-items', {
+      method: 'PUT',
+      body: JSON.stringify({ ciId: id, ...data }),
+    });
+  },
+
+  // Delete a CI
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/configuration-items?id=${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// =============================================
+// CHANGE MANAGEMENT API
+// =============================================
+
+// Change Request interfaces
+export interface ChangeRequest {
+  ChangeId: number;
+  ChangeNumber: string;
+  Title: string;
+  Description?: string;
+  Justification?: string;
+  ChangeType: 'Normal' | 'Standard' | 'Emergency' | 'Expedited';
+  Category: string;
+  Priority: 'Low' | 'Medium' | 'High' | 'Critical';
+  RiskLevel: 'Low' | 'Medium' | 'High' | 'Critical';
+  Impact: 'Low' | 'Medium' | 'High' | 'Critical';
+  Status: 'Draft' | 'Submitted' | 'Pending Approval' | 'Approved' | 'Scheduled' | 'In Progress' | 'Completed' | 'Failed' | 'Cancelled' | 'Rejected' | 'Rolled Back';
+  Environment: string;
+  RequestedBy: string;
+  AssignedTo?: string;
+  AssignmentGroupId?: number;
+  AssignmentGroupName?: string;
+  ChangeManager?: string;
+  RequiresCAB: boolean;
+  CABDate?: string;
+  CABNotes?: string;
+  RequestedStartDate?: string;
+  RequestedEndDate?: string;
+  ScheduledStartDate?: string;
+  ScheduledEndDate?: string;
+  ActualStartDate?: string;
+  ActualEndDate?: string;
+  ImplementationPlan?: string;
+  BackoutPlan?: string;
+  TestPlan?: string;
+  CommunicationPlan?: string;
+  PrimaryServiceId?: number;
+  PrimaryServiceName?: string;
+  ClosureCode?: string;
+  ClosureNotes?: string;
+  CreatedDate: string;
+  ModifiedDate?: string;
+  CreatedBy: string;
+  ModifiedBy?: string;
+  // Expanded fields from view
+  ImpactedCICount?: number;
+  ImpactedIntegrationCount?: number;
+  TaskCount?: number;
+  CompletedTaskCount?: number;
+  PendingApprovalCount?: number;
+  // Detail fields
+  impactedCIs?: ChangeImpactedCI[];
+  impactedIntegrations?: ChangeImpactedIntegration[];
+  approvals?: ChangeApproval[];
+  tasks?: ChangeTask[];
+}
+
+export interface CreateChangeRequestData {
+  title: string;
+  description?: string;
+  justification?: string;
+  changeType?: 'Normal' | 'Standard' | 'Emergency' | 'Expedited';
+  category?: string;
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical';
+  riskLevel?: 'Low' | 'Medium' | 'High' | 'Critical';
+  impact?: 'Low' | 'Medium' | 'High' | 'Critical';
+  status?: string;
+  environment?: string;
+  requestedStartDate?: string;
+  requestedEndDate?: string;
+  implementationPlan?: string;
+  backoutPlan?: string;
+  testPlan?: string;
+  communicationPlan?: string;
+  primaryServiceId?: number;
+  assignedTo?: string;
+  assignmentGroupId?: number;
+  changeManager?: string;
+  requiresCAB?: boolean;
+}
+
+// Change Impacted CI interfaces
+export interface ChangeImpactedCI {
+  ImpactId: number;
+  ChangeId: number;
+  ServiceId?: number;
+  CiId?: number;
+  ImpactType: string;
+  RiskLevel?: string;
+  NotificationRequired: boolean;
+  NotificationSent: boolean;
+  ServiceName?: string;
+  CiName?: string;
+  CiType?: string;
+}
+
+// Change Impacted Integration interfaces
+export interface ChangeImpactedIntegration {
+  ImpactId: number;
+  ChangeId: number;
+  IntegrationId: number;
+  ImpactType: string;
+  NotificationRequired: boolean;
+  NotificationSent: boolean;
+  IntegrationName?: string;
+  IntegrationType?: string;
+  Direction?: string;
+}
+
+// Change Approval interfaces
+export interface ChangeApproval {
+  ApprovalId: number;
+  ChangeId: number;
+  ApproverEmail: string;
+  ApprovalStatus: 'Pending' | 'Approved' | 'Rejected';
+  ApprovalDate?: string;
+  RequestedDate: string;
+  Comments?: string;
+}
+
+// Change Task interfaces
+export interface ChangeTask {
+  TaskId: number;
+  ChangeId: number;
+  TaskNumber: string;
+  Title: string;
+  Description?: string;
+  TaskType: string;
+  Sequence: number;
+  Status: 'Not Started' | 'In Progress' | 'Completed' | 'Failed' | 'Skipped';
+  AssignedTo?: string;
+  StartDate?: string;
+  EndDate?: string;
+  Notes?: string;
+}
+
+// Impact Analysis interfaces
+export interface ChangeImpactAnalysis {
+  dependentServices: any[];
+  downstreamCIs: any[];
+  potentiallyAffectedIntegrations: any[];
+}
+
+// Changes API
+export const changesAPI = {
+  // Get all changes with optional filtering
+  getAll: async (filters?: {
+    status?: string;
+    changeType?: string;
+    priority?: string;
+    environment?: string;
+    assignedTo?: string;
+    myChangesOnly?: boolean;
+  }): Promise<ApiResponse<ChangeRequest[]>> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.changeType) params.append('changeType', filters.changeType);
+    if (filters?.priority) params.append('priority', filters.priority);
+    if (filters?.environment) params.append('environment', filters.environment);
+    if (filters?.assignedTo) params.append('assignedTo', filters.assignedTo);
+    if (filters?.myChangesOnly) params.append('myChangesOnly', 'true');
+    
+    const queryString = params.toString();
+    const endpoint = `/changes${queryString ? `?${queryString}` : ''}`;
+    
+    return apiRequest<ChangeRequest[]>(endpoint);
+  },
+
+  // Get a single change by ID (includes details)
+  getById: async (id: number): Promise<ApiResponse<ChangeRequest>> => {
+    return apiRequest<ChangeRequest>(`/changes/${id}`);
+  },
+
+  // Create a new change request
+  create: async (data: CreateChangeRequestData): Promise<ApiResponse<ChangeRequest>> => {
+    return apiRequest<ChangeRequest>('/changes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update a change request
+  update: async (id: number, data: Partial<CreateChangeRequestData> & { 
+    status?: string;
+    scheduledStartDate?: string;
+    scheduledEndDate?: string;
+    actualStartDate?: string;
+    actualEndDate?: string;
+    closureCode?: string;
+    closureNotes?: string;
+    cabDate?: string;
+    cabNotes?: string;
+  }): Promise<ApiResponse<ChangeRequest>> => {
+    return apiRequest<ChangeRequest>(`/changes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Delete a change request
+  delete: async (id: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/changes/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Impact Assessment
+  getImpactAnalysis: async (changeId: number): Promise<ApiResponse<ChangeImpactAnalysis>> => {
+    return apiRequest<ChangeImpactAnalysis>(`/changes/${changeId}/impact-analysis`);
+  },
+
+  // Add impacted CI
+  addImpactedCI: async (changeId: number, data: {
+    serviceId?: number;
+    ciId?: number;
+    impactType: string;
+    riskLevel?: string;
+    notificationRequired?: boolean;
+  }): Promise<ApiResponse<ChangeImpactedCI>> => {
+    return apiRequest<ChangeImpactedCI>(`/changes/${changeId}/impacted-cis`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Remove impacted CI
+  removeImpactedCI: async (changeId: number, impactId: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/changes/${changeId}/impacted-cis/${impactId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Add impacted integration
+  addImpactedIntegration: async (changeId: number, data: {
+    integrationId: number;
+    impactType: string;
+    notificationRequired?: boolean;
+  }): Promise<ApiResponse<ChangeImpactedIntegration>> => {
+    return apiRequest<ChangeImpactedIntegration>(`/changes/${changeId}/impacted-integrations`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Remove impacted integration
+  removeImpactedIntegration: async (changeId: number, impactId: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/changes/${changeId}/impacted-integrations/${impactId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Approvals
+  approve: async (changeId: number, data: { approved: boolean; comments?: string }): Promise<ApiResponse<ChangeApproval>> => {
+    return apiRequest<ChangeApproval>(`/changes/${changeId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Tasks
+  addTask: async (changeId: number, data: {
+    title: string;
+    description?: string;
+    taskType: string;
+    sequence?: number;
+    assignedTo?: string;
+  }): Promise<ApiResponse<ChangeTask>> => {
+    return apiRequest<ChangeTask>(`/changes/${changeId}/tasks`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateTask: async (changeId: number, taskId: number, data: Partial<ChangeTask>): Promise<ApiResponse<ChangeTask>> => {
+    return apiRequest<ChangeTask>(`/changes/${changeId}/tasks/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteTask: async (changeId: number, taskId: number): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/changes/${changeId}/tasks/${taskId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Lifecycle transitions
+  submitForApproval: async (id: number): Promise<ApiResponse<ChangeRequest>> => {
+    return apiRequest<ChangeRequest>(`/changes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'Submitted' }),
+    });
+  },
+
+  schedule: async (id: number, scheduledStartDate: string, scheduledEndDate: string): Promise<ApiResponse<ChangeRequest>> => {
+    return apiRequest<ChangeRequest>(`/changes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'Scheduled', scheduledStartDate, scheduledEndDate }),
+    });
+  },
+
+  startImplementation: async (id: number): Promise<ApiResponse<ChangeRequest>> => {
+    return apiRequest<ChangeRequest>(`/changes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'In Progress', actualStartDate: new Date().toISOString() }),
+    });
+  },
+
+  complete: async (id: number, closureCode?: string, closureNotes?: string): Promise<ApiResponse<ChangeRequest>> => {
+    return apiRequest<ChangeRequest>(`/changes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'Completed', actualEndDate: new Date().toISOString(), closureCode, closureNotes }),
+    });
+  },
+
+  fail: async (id: number, closureNotes?: string): Promise<ApiResponse<ChangeRequest>> => {
+    return apiRequest<ChangeRequest>(`/changes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'Failed', actualEndDate: new Date().toISOString(), closureCode: 'Failed', closureNotes }),
+    });
+  },
+
+  rollback: async (id: number, closureNotes?: string): Promise<ApiResponse<ChangeRequest>> => {
+    return apiRequest<ChangeRequest>(`/changes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'Rolled Back', actualEndDate: new Date().toISOString(), closureCode: 'Rolled Back', closureNotes }),
+    });
+  },
+
+  cancel: async (id: number, closureNotes?: string): Promise<ApiResponse<ChangeRequest>> => {
+    return apiRequest<ChangeRequest>(`/changes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ status: 'Cancelled', closureCode: 'Cancelled', closureNotes }),
+    });
+  },
+};
