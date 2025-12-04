@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { incidentsAPI, CreateIncidentData, assignmentGroupsAPI, AssignmentGroup } from '../services/api';
 import './Forms.css';
 
@@ -15,6 +15,9 @@ interface IncidentFormData {
 
 const CreateIncident: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Check if we came from the user portal
+  const cameFromPortal = location.state?.fromPortal === true;
   const [formData, setFormData] = useState<IncidentFormData>({
     title: '',
     description: '',
@@ -165,7 +168,7 @@ const CreateIncident: React.FC = () => {
   return (
     <div className="form-container">
       <div className="form-header">
-        <Link to="/" className="back-link">← Back to Home</Link>
+        <Link to={cameFromPortal ? "/portal" : "/"} className="back-link">← Back to Home</Link>
         <h1>🚨 Create Incident</h1>
         <p>Report a system issue, outage, or technical problem</p>
       </div>

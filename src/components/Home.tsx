@@ -27,15 +27,15 @@ const Home: React.FC = () => {
   const isPortalRoute = location.pathname === '/portal';
 
   const handleCreateIncident = () => {
-    navigate('/create-incident');
+    navigate('/create-incident', { state: { fromPortal: isPortalRoute } });
   };
 
   const handleCreateRequest = () => {
-    navigate('/create-request');
+    navigate('/create-request', { state: { fromPortal: isPortalRoute } });
   };
 
   const handleViewTickets = () => {
-    navigate('/view-tickets', { state: { from: isPortalRoute ? 'portal' : 'home' } });
+    navigate('/view-tickets', { state: { from: isPortalRoute ? 'portal' : 'home', fromPortal: isPortalRoute } });
   };
 
   useEffect(() => {
