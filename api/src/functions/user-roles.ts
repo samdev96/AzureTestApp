@@ -107,7 +107,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                             SELECT RoleName 
                             FROM UserRoles 
                             WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                                AND RoleName = 'admin' 
+                                AND LOWER(RoleName) = 'admin' 
                                 AND IsActive = 1
                         `);
                         
@@ -171,7 +171,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                             COALESCE(ur.RoleName, 'user') as RoleName,
                             ur.AssignedDate,
                             ur.AssignedBy,
-                            CASE WHEN ur.RoleName = 'admin' THEN 1 ELSE 0 END as IsAdmin
+                            CASE WHEN LOWER(ur.RoleName) = 'admin' THEN 1 ELSE 0 END as IsAdmin
                         FROM UserRoles ur
                         WHERE ur.IsActive = 1
                         ORDER BY ur.UserEmail, ur.AssignedDate DESC
@@ -285,7 +285,8 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                 `);
                 
                 const roles = rolesResult.recordset.map(row => row.RoleName);
-                const isAdmin = roles.includes('admin');
+                // Case-insensitive check for admin role
+                const isAdmin = roles.some(role => role.toLowerCase() === 'admin');
                 
                 context.log('User roles found:', { currentUserEmail, roles, isAdmin });
                 
@@ -317,7 +318,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         SELECT RoleName 
                         FROM UserRoles 
                         WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                            AND RoleName = 'admin' 
+                            AND LOWER(RoleName) = 'admin' 
                             AND IsActive = 1
                     `);
                     
@@ -499,7 +500,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         SELECT RoleName 
                         FROM UserRoles 
                         WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                            AND RoleName = 'admin' 
+                            AND LOWER(RoleName) = 'admin' 
                             AND IsActive = 1
                     `);
                     

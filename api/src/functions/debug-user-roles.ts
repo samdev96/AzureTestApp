@@ -39,7 +39,7 @@ export async function debugUserRoles(request: HttpRequest, context: InvocationCo
             .query(`
                 SELECT UserEmail, RoleName, IsActive
                 FROM UserRoles 
-                WHERE RoleName = 'Admin' AND IsActive = 1
+                WHERE LOWER(RoleName) = 'admin' AND IsActive = 1
             `);
         
         return {
