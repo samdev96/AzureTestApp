@@ -1,11 +1,11 @@
-.admin-dashboard {
+.agent-dashboard {
   display: flex;
   min-height: 100vh;
   background-color: #f8f9fa;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
-.admin-content {
+.agent-content {
   flex: 1;
   margin-left: 250px;
   padding: 20px;
@@ -13,12 +13,12 @@
   max-width: calc(100vw - 250px);
 }
 
-.admin-content.sidebar-collapsed {
+.agent-content.sidebar-collapsed {
   margin-left: 60px;
   max-width: calc(100vw - 60px);
 }
 
-.admin-header {
+.agent-header {
   margin-bottom: 40px;
   padding: 40px 20px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -30,11 +30,11 @@
   align-items: center;
 }
 
-.admin-header-content {
+.agent-header-content {
   flex: 1;
 }
 
-.admin-header h1 {
+.agent-header h1 {
   margin: 0 0 10px 0;
   font-size: 2.5rem;
   font-weight: 600;
@@ -145,7 +145,7 @@
 
 /* Medium screens: account for 60px sidebar */
 @media (max-width: 1024px) {
-  .admin-content {
+  .agent-content {
     margin-left: 60px;
     max-width: calc(100vw - 60px);
     padding: 15px;
@@ -154,13 +154,13 @@
 
 /* Mobile screens: full width content, no margin */
 @media (max-width: 768px) {
-  .admin-content {
+  .agent-content {
     margin-left: 0;
     max-width: 100vw;
     padding: 10px;
   }
 
-  .admin-header {
+  .agent-header {
     display: none; /* Hide the big header on mobile */
   }
 

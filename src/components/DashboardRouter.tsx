@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import Home from './Home';
-import AdminDashboard from './AdminDashboard';
+import AgentDashboard from './AgentDashboard';
 
 interface DashboardRouterProps {
   forceUserPortal?: boolean;
@@ -50,7 +50,7 @@ const DashboardRouter: React.FC<DashboardRouterProps> = ({ forceUserPortal = fal
 
   // If user is agent, show agent dashboard; otherwise show regular home
   if (user?.isAgent) {
-    return <AdminDashboard />;
+    return <AgentDashboard />;
   }
 
   return <Home />;

@@ -13,7 +13,7 @@ import ExternalSystems from './ExternalSystems';
 import ChangeManagement from './ChangeManagement';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
-import './AdminDashboard.css';
+import './AgentDashboard.css';
 
 interface TicketStats {
   totalIncidents: number;
@@ -23,7 +23,7 @@ interface TicketStats {
   loading?: boolean;
 }
 
-const AdminDashboard: React.FC = () => {
+const AgentDashboard: React.FC = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<TicketStats>({
     totalIncidents: 0,
@@ -93,7 +93,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="admin-dashboard">
+    <div className="agent-dashboard">
       <Sidebar 
         collapsed={sidebarCollapsed} 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -102,7 +102,7 @@ const AdminDashboard: React.FC = () => {
         isMobileOpen={isMobileSidebarOpen}
       />
       
-      <div className={`admin-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <div className={`agent-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         <div className="mobile-header">
           <button className="hamburger-menu" onClick={() => setMobileSidebarOpen(true)}>
             &#9776;
@@ -112,8 +112,8 @@ const AdminDashboard: React.FC = () => {
 
         {currentPage === 'home' ? (
           <>
-            <div className="admin-header">
-              <div className="admin-header-content">
+            <div className="agent-header">
+              <div className="agent-header-content">
                 <h1>VibeNow ITSM Dashboard</h1>
                 <p className="welcome-text">Welcome back, {user?.userDetails?.split('@')[0]}</p>
               </div>
@@ -183,4 +183,4 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-export default AdminDashboard;
+export default AgentDashboard;
