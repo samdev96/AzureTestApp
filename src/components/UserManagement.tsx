@@ -466,8 +466,8 @@ const UserManagement: React.FC = () => {
                     </td>
                     <td className="actions-cell">
                       <div className="action-buttons">
-                        {/* Impersonate button - only for non-admin users, and not yourself */}
-                        {user.role !== 'admin' && user.userEmail.toLowerCase() !== (currentUser?.userDetails?.toLowerCase() || '') && (
+                        {/* Impersonate button - only for admins, only for non-admin users, and not yourself */}
+                        {currentUser?.isAdmin && user.role !== 'admin' && user.userEmail.toLowerCase() !== (currentUser?.userDetails?.toLowerCase() || '') && (
                           <button
                             onClick={async (e) => {
                               e.stopPropagation();
