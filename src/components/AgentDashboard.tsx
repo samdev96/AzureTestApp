@@ -13,6 +13,7 @@ import ExternalSystems from './ExternalSystems';
 import ChangeManagement from './ChangeManagement';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
+import ImpersonationBanner from './ImpersonationBanner';
 import './AgentDashboard.css';
 
 interface TicketStats {
@@ -24,7 +25,7 @@ interface TicketStats {
 }
 
 const AgentDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isImpersonating } = useAuth();
   const [stats, setStats] = useState<TicketStats>({
     totalIncidents: 0,
     totalRequests: 0,
@@ -93,7 +94,8 @@ const AgentDashboard: React.FC = () => {
   };
 
   return (
-    <div className="agent-dashboard">
+    <div className={`agent-dashboard ${isImpersonating ? 'impersonation-active' : ''}`}>
+      <ImpersonationBanner />
       <Sidebar 
         collapsed={sidebarCollapsed} 
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}

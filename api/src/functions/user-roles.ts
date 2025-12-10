@@ -718,3 +718,168 @@ app.http('user-roles', {
     authLevel: 'anonymous',
     handler: userRoles
 });
+
+// Impersonation endpoint - allows admins to get another user's role info
+export async function impersonateUser(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    context.log(`HTTP trigger function processed a ${request.method} request for impersonate-user.`);
+
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+        return {
+            status: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type'
+            }
+        };
+    }
+
+    try {
+        // Get user info from Static Web Apps authentication
+        const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+        let currentUserEmail = '';
+        let currentUserObjectId = '';
+        
+        const isDevelopment = !userPrincipalHeader && request.url.includes('localhost');
+        
+        if (userPrincipalHeader) {
+            try {
+                const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
+                currentUserEmail = userPrincipal.userDetails || '';
+                currentUserObjectId = userPrincipal.userId || '';
+            } catch (e) {
+                return {
+                    status: 401,
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                    body: JSON.stringify({ success: false, error: 'Invalid authentication' })
+                };
+            }
+        } else if (isDevelopment) {
+            currentUserEmail = 'admin@test.com';
+            currentUserObjectId = 'test-admin-id';
+        } else {
+            return {
+                status: 401,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ success: false, error: 'Authentication required' })
+            };
+        }
+
+        const pool = await getDbConnection();
+
+        // Verify current user is admin
+        if (!isDevelopment) {
+            const adminCheckRequest = pool.request();
+            adminCheckRequest.input('userEmail', currentUserEmail);
+            adminCheckRequest.input('userObjectId', currentUserObjectId);
+            
+            const adminResult = await adminCheckRequest.query(`
+                SELECT RoleName 
+                FROM UserRoles 
+                WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
+                    AND LOWER(RoleName) = 'admin' 
+                    AND IsActive = 1
+            `);
+            
+            if (adminResult.recordset.length === 0) {
+                return {
+                    status: 403,
+                    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                    body: JSON.stringify({ success: false, error: 'Admin access required for impersonation' })
+                };
+            }
+        }
+
+        // Get target user email from route parameter
+        const targetEmail = request.params.email;
+        
+        if (!targetEmail) {
+            return {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ success: false, error: 'Target user email is required' })
+            };
+        }
+
+        // Get target user's roles
+        const targetRequest = pool.request();
+        targetRequest.input('targetEmail', decodeURIComponent(targetEmail));
+        
+        const targetResult = await targetRequest.query(`
+            SELECT 
+                UserEmail,
+                UserObjectID,
+                DisplayName,
+                RoleName,
+                AssignedDate,
+                AssignedBy
+            FROM UserRoles 
+            WHERE LOWER(UserEmail) = LOWER(@targetEmail) 
+                AND IsActive = 1
+            ORDER BY AssignedDate DESC
+        `);
+        
+        if (targetResult.recordset.length === 0) {
+            return {
+                status: 404,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ success: false, error: 'User not found' })
+            };
+        }
+
+        const targetUser = targetResult.recordset[0];
+        const roles = targetResult.recordset.map(row => row.RoleName);
+        const isAdmin = roles.some(role => role.toLowerCase() === 'admin');
+        const isAgent = isAdmin || roles.some(role => role.toLowerCase() === 'agent');
+
+        // Prevent impersonating other admins (optional security measure)
+        if (isAdmin) {
+            return {
+                status: 403,
+                headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+                body: JSON.stringify({ success: false, error: 'Cannot impersonate admin users' })
+            };
+        }
+
+        // Log the impersonation for audit purposes
+        context.log(`IMPERSONATION: Admin ${currentUserEmail} impersonating user ${targetEmail}`);
+
+        return {
+            status: 200,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({
+                success: true,
+                impersonatedUser: {
+                    userEmail: targetUser.UserEmail,
+                    userObjectId: targetUser.UserObjectID,
+                    displayName: targetUser.DisplayName || '',
+                    roles,
+                    isAgent,
+                    isAdmin,
+                    role: targetUser.RoleName
+                },
+                adminUser: currentUserEmail,
+                timestamp: new Date().toISOString()
+            })
+        };
+
+    } catch (error) {
+        context.log('Error in impersonate-user:', error);
+        const errorInfo = handleDbError(error);
+        
+        return {
+            status: errorInfo.status,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+            body: JSON.stringify({ success: false, error: errorInfo.message })
+        };
+    }
+}
+
+// Register the impersonation function
+app.http('impersonate-user', {
+    methods: ['GET', 'OPTIONS'],
+    route: 'user-roles/impersonate/{email}',
+    authLevel: 'anonymous',
+    handler: impersonateUser
+});

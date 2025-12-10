@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 // Azure Static Web Apps user interface
 export interface StaticWebAppsUser {
@@ -14,12 +14,32 @@ export interface StaticWebAppsUser {
   isAdmin?: boolean; // Computed property for admin-only features (user management, assignment groups)
 }
 
+// Impersonated user data
+export interface ImpersonatedUser {
+  userEmail: string;
+  userObjectId: string;
+  displayName: string;
+  roles: string[];
+  isAgent: boolean;
+  isAdmin: boolean;
+  role: string;
+}
+
 interface AuthContextType {
   user: StaticWebAppsUser | null;
   loading: boolean;
   login: () => void;
   logout: () => void;
   isAuthenticated: boolean;
+  // Impersonation
+  impersonatedUser: ImpersonatedUser | null;
+  isImpersonating: boolean;
+  startImpersonation: (email: string) => Promise<boolean>;
+  stopImpersonation: () => void;
+  // Effective user info (impersonated or real)
+  effectiveIsAgent: boolean;
+  effectiveIsAdmin: boolean;
+  effectiveUserEmail: string;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -35,6 +55,19 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<StaticWebAppsUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [impersonatedUser, setImpersonatedUser] = useState<ImpersonatedUser | null>(null);
+
+  // Check for stored impersonation on mount
+  useEffect(() => {
+    const storedImpersonation = sessionStorage.getItem('impersonatedUser');
+    if (storedImpersonation) {
+      try {
+        setImpersonatedUser(JSON.parse(storedImpersonation));
+      } catch (e) {
+        sessionStorage.removeItem('impersonatedUser');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     // Fetch user information from Azure Static Web Apps and check database roles
@@ -115,10 +148,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    // Clear impersonation on logout
+    sessionStorage.removeItem('impersonatedUser');
+    setImpersonatedUser(null);
     window.location.href = '/.auth/logout';
   };
 
+  const startImpersonation = useCallback(async (email: string): Promise<boolean> => {
+    try {
+      console.log('🎭 Starting impersonation for:', email);
+      const response = await fetch(`/api/user-roles/impersonate/${encodeURIComponent(email)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.impersonatedUser) {
+          setImpersonatedUser(data.impersonatedUser);
+          sessionStorage.setItem('impersonatedUser', JSON.stringify(data.impersonatedUser));
+          console.log('✅ Impersonation started:', data.impersonatedUser);
+          return true;
+        }
+      }
+      
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.error('❌ Impersonation failed:', errorData.error);
+      return false;
+    } catch (error) {
+      console.error('❌ Error starting impersonation:', error);
+      return false;
+    }
+  }, []);
+
+  const stopImpersonation = useCallback(() => {
+    console.log('🎭 Stopping impersonation');
+    setImpersonatedUser(null);
+    sessionStorage.removeItem('impersonatedUser');
+  }, []);
+
   const isAuthenticated = user !== null;
+  const isImpersonating = impersonatedUser !== null;
+  
+  // Effective values - use impersonated user's permissions when impersonating
+  const effectiveIsAgent = isImpersonating ? impersonatedUser.isAgent : (user?.isAgent || false);
+  const effectiveIsAdmin = isImpersonating ? impersonatedUser.isAdmin : (user?.isAdmin || false);
+  const effectiveUserEmail = isImpersonating ? impersonatedUser.userEmail : (user?.userDetails || '');
 
   return (
     <AuthContext.Provider value={{
@@ -126,7 +198,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       login,
       logout,
-      isAuthenticated
+      isAuthenticated,
+      impersonatedUser,
+      isImpersonating,
+      startImpersonation,
+      stopImpersonation,
+      effectiveIsAgent,
+      effectiveIsAdmin,
+      effectiveUserEmail
     }}>
       {children}
     </AuthContext.Provider>

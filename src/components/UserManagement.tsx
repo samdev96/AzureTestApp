@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userManagementAPI, assignmentGroupsAPI, User, AssignmentGroup } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './UserManagement.css';
 
 interface NewUserForm {
@@ -17,11 +18,13 @@ interface EditUserForm {
 }
 
 const UserManagement: React.FC = () => {
+  const { user: currentUser, startImpersonation } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+  const [impersonatingUser, setImpersonatingUser] = useState<string | null>(null);
   
   // Add User Modal State
   const [showAddUserModal, setShowAddUserModal] = useState(false);
@@ -463,6 +466,27 @@ const UserManagement: React.FC = () => {
                     </td>
                     <td className="actions-cell">
                       <div className="action-buttons">
+                        {/* Impersonate button - only for non-admin users, and not yourself */}
+                        {user.role !== 'admin' && user.userEmail.toLowerCase() !== (currentUser?.userDetails?.toLowerCase() || '') && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              setImpersonatingUser(user.userEmail);
+                              const success = await startImpersonation(user.userEmail);
+                              setImpersonatingUser(null);
+                              if (success) {
+                                setSuccessMessage(`Now impersonating ${user.userEmail}`);
+                              } else {
+                                setError('Failed to start impersonation');
+                              }
+                            }}
+                            disabled={impersonatingUser === user.userEmail}
+                            className="btn btn-impersonate"
+                            title={`View app as ${user.userEmail}`}
+                          >
+                            {impersonatingUser === user.userEmail ? '🎭...' : '🎭'}
+                          </button>
+                        )}
                         {user.role === 'user' && (
                           <button
                             onClick={(e) => {
