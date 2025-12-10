@@ -48,8 +48,8 @@ const DashboardRouter: React.FC<DashboardRouterProps> = ({ forceUserPortal = fal
     return <Home />;
   }
 
-  // If user is admin, show admin dashboard; otherwise show regular home
-  if (user?.isAdmin) {
+  // If user is agent, show agent dashboard; otherwise show regular home
+  if (user?.isAgent) {
     return <AdminDashboard />;
   }
 

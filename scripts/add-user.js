@@ -21,13 +21,13 @@ const [,, email, role, displayName] = process.argv;
 
 if (!email || !role) {
     error('Usage: node add-user.js <email> <role> [displayName]');
-    error('Roles: admin, user, moderator');
-    error('Example: node add-user.js john@external.com admin "John Smith"');
+    error('Roles: agent, user, moderator');
+    error('Example: node add-user.js john@external.com agent "John Smith"');
     process.exit(1);
 }
 
 // Validate role
-const validRoles = ['admin', 'user', 'moderator'];
+const validRoles = ['agent', 'user', 'moderator'];
 if (!validRoles.includes(role)) {
     error(`Invalid role: ${role}`);
     error(`Valid roles: ${validRoles.join(', ')}`);

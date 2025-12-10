@@ -36,7 +36,7 @@ export async function authTest(request: HttpRequest, context: InvocationContext)
                     userPrincipal: userPrincipal,
                     decodedHeader: decodedHeader,
                     rawHeader: userPrincipalHeader,
-                    isAdmin: (userPrincipal.roles || []).includes('admin')
+                    isAgent: (userPrincipal.roles || []).some(r => r.toLowerCase() === 'agent')
                 }, null, 2)
             };
         } catch (parseError) {

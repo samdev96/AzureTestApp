@@ -5,14 +5,14 @@ import './UserManagement.css';
 interface NewUserForm {
   email: string;
   displayName: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'agent';
   assignmentGroups: number[];
 }
 
 interface EditUserForm {
   email: string;
   displayName: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'agent';
   assignmentGroups: number[];
 }
 
@@ -91,9 +91,9 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const updateUserRole = async (userEmail: string, newRole: 'user' | 'admin') => {
-    const confirmMessage = newRole === 'admin' 
-      ? `Are you sure you want to promote ${userEmail} to Admin?`
+  const updateUserRole = async (userEmail: string, newRole: 'user' | 'agent') => {
+    const confirmMessage = newRole === 'agent' 
+      ? `Are you sure you want to promote ${userEmail} to Agent?`
       : `Are you sure you want to demote ${userEmail} to User?`;
     
     if (!window.confirm(confirmMessage)) {
@@ -108,7 +108,7 @@ const UserManagement: React.FC = () => {
       const response = await userManagementAPI.updateRole(userEmail, newRole);
 
       if (response.success) {
-        setSuccessMessage(`User role updated successfully to ${newRole === 'admin' ? 'Admin' : 'User'}`);
+        setSuccessMessage(`User role updated successfully to ${newRole === 'agent' ? 'Agent' : 'User'}`);
         await loadUsers(); // Reload the users list
       } else {
         throw new Error(response.error || 'Failed to update user role');
@@ -381,10 +381,10 @@ const UserManagement: React.FC = () => {
           <div className="stat-number">{users.length}</div>
         </div>
         <div className="stat-card">
-          <h3>Administrators</h3>
+          <h3>Agents</h3>
           <div className="stat-number admin">
             <div className="stat-badge">
-              {users.filter(user => user.role === 'admin').length}
+              {users.filter(user => user.role === 'agent').length}
             </div>
           </div>
         </div>
@@ -444,7 +444,7 @@ const UserManagement: React.FC = () => {
                     </td>
                     <td>
                       <span className={getRoleBadgeClass(user.role)}>
-                        {user.role === 'admin' ? 'Admin' : 'User'}
+                        {user.role === 'agent' ? 'Agent' : 'User'}
                       </span>
                     </td>
                     <td className="date-cell">
@@ -459,12 +459,12 @@ const UserManagement: React.FC = () => {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              updateUserRole(user.userEmail, 'admin');
+                              updateUserRole(user.userEmail, 'agent');
                             }}
                             disabled={updatingUser === user.userEmail}
                             className="btn btn-promote"
                           >
-                            {updatingUser === user.userEmail ? 'Promoting...' : 'Make Admin'}
+                            {updatingUser === user.userEmail ? 'Promoting...' : 'Make Agent'}
                           </button>
                         ) : (
                           <button
@@ -545,18 +545,18 @@ const UserManagement: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      className={`role-option ${newUserForm.role === 'admin' ? 'selected' : ''}`}
-                      onClick={() => handleFormChange('role', 'admin')}
+                      className={`role-option ${newUserForm.role === 'agent' ? 'selected' : ''}`}
+                      onClick={() => handleFormChange('role', 'agent')}
                     >
                       <span className="role-icon">🛡️</span>
-                      <span className="role-name">Administrator</span>
+                      <span className="role-name">Agent</span>
                       <span className="role-desc">Full access including user management</span>
                     </button>
                   </div>
                 </div>
               </div>
               
-              {newUserForm.role === 'admin' && (
+              {newUserForm.role === 'agent' && (
                 <div className="form-section">
                   <h3>Assignment Groups</h3>
                   <p className="section-desc">Select the groups this user should be a member of</p>
@@ -657,18 +657,18 @@ const UserManagement: React.FC = () => {
                     </button>
                     <button
                       type="button"
-                      className={`role-option ${editUserForm.role === 'admin' ? 'selected' : ''}`}
-                      onClick={() => handleEditFormChange('role', 'admin')}
+                      className={`role-option ${editUserForm.role === 'agent' ? 'selected' : ''}`}
+                      onClick={() => handleEditFormChange('role', 'agent')}
                     >
                       <span className="role-icon">🛡️</span>
-                      <span className="role-name">Administrator</span>
+                      <span className="role-name">Agent</span>
                       <span className="role-desc">Full access including user management</span>
                     </button>
                   </div>
                 </div>
               </div>
               
-              {editUserForm.role === 'admin' && (
+              {editUserForm.role === 'agent' && (
                 <div className="form-section">
                   <h3>Assignment Groups</h3>
                   <p className="section-desc">Select the groups this user should be a member of</p>

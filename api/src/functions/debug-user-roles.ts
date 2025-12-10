@@ -34,12 +34,12 @@ export async function debugUserRoles(request: HttpRequest, context: InvocationCo
         
         context.log('Query result:', result.recordset);
         
-        // Also get all active admin users for comparison
-        const allAdmins = await pool.request()
+        // Also get all active agent users for comparison
+        const allAgents = await pool.request()
             .query(`
                 SELECT UserEmail, RoleName, IsActive
                 FROM UserRoles 
-                WHERE LOWER(RoleName) = 'admin' AND IsActive = 1
+                WHERE LOWER(RoleName) = 'agent' AND IsActive = 1
             `);
         
         return {
@@ -53,8 +53,8 @@ export async function debugUserRoles(request: HttpRequest, context: InvocationCo
                 searchedEmail: email,
                 foundRecord: result.recordset.length > 0,
                 record: result.recordset[0] || null,
-                allActiveAdmins: allAdmins.recordset,
-                totalAdmins: allAdmins.recordset.length
+                allActiveAgents: allAgents.recordset,
+                totalAgents: allAgents.recordset.length
             })
         };
     } catch (error) {

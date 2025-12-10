@@ -89,33 +89,33 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
         
         const params: any = {};
         
-        // Check if user is admin from database
-        let isAdmin = false;
+        // Check if user is agent from database
+        let isAgent = false;
         try {
-            const adminCheckRequest = pool.request();
-            adminCheckRequest.input('userEmail', userId);
-            adminCheckRequest.input('userObjectId', userPrincipal?.userId || '');
+            const agentCheckRequest = pool.request();
+            agentCheckRequest.input('userEmail', userId);
+            agentCheckRequest.input('userObjectId', userPrincipal?.userId || '');
             
-            const adminResult = await adminCheckRequest.query(`
-                SELECT COUNT(*) as AdminCount 
+            const agentResult = await agentCheckRequest.query(`
+                SELECT COUNT(*) as AgentCount 
                 FROM UserRoles 
                 WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                    AND RoleName = 'admin' 
+                    AND LOWER(RoleName) = 'agent' 
                     AND IsActive = 1
             `);
             
-            isAdmin = adminResult.recordset[0].AdminCount > 0;
-            context.log('Database admin check:', { userId, isAdmin, adminCount: adminResult.recordset[0].AdminCount });
-        } catch (adminError) {
-            context.log('Error checking admin status from database:', adminError);
+            isAgent = agentResult.recordset[0].AgentCount > 0;
+            context.log('Database agent check:', { userId, isAgent, agentCount: agentResult.recordset[0].AgentCount });
+        } catch (agentError) {
+            context.log('Error checking agent status from database:', agentError);
             // Fallback to role-based check
-            isAdmin = userRoles.includes('admin');
+            isAgent = userRoles.some(r => r.toLowerCase() === 'agent');
         }
         
-        context.log('Admin check:', { isAdmin, userId, userRoles, userPrincipalId: userPrincipal?.userId, myTicketsOnly });
+        context.log('Agent check:', { isAgent, userId, userRoles, userPrincipalId: userPrincipal?.userId, myTicketsOnly });
         
-        // If user is not admin OR myTicketsOnly is explicitly requested, only show their own tickets
-        if (!isAdmin || myTicketsOnly) {
+        // If user is not agent OR myTicketsOnly is explicitly requested, only show their own tickets
+        if (!isAgent || myTicketsOnly) {
             query += ` AND CreatedBy = @userId`;
             params.userId = userId;
         }

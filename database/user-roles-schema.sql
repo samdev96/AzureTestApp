@@ -7,7 +7,7 @@ CREATE TABLE UserRoles (
     UserEmail NVARCHAR(255) NOT NULL,
     UserObjectID NVARCHAR(255) NULL, -- Azure AD Object ID
     DisplayName NVARCHAR(255) NULL, -- User's display name
-    RoleName NVARCHAR(50) NOT NULL, -- 'admin' or 'user'
+    RoleName NVARCHAR(50) NOT NULL, -- 'agent' or 'user'
     IsActive BIT DEFAULT 1,
     AssignedDate DATETIME2 DEFAULT GETUTCDATE(),
     AssignedBy NVARCHAR(255) NOT NULL,
@@ -25,10 +25,10 @@ CREATE INDEX IX_UserRoles_IsActive ON UserRoles(IsActive);
 CREATE UNIQUE INDEX UQ_UserRoles_ActiveUser ON UserRoles(UserEmail, RoleName) 
 WHERE IsActive = 1;
 
--- Insert sample admin user for testing (replace with your actual email)
+-- Insert sample agent user for testing (replace with your actual email)
 INSERT INTO UserRoles (UserEmail, RoleName, AssignedBy) 
 VALUES 
-    ('admin@yourdomain.com', 'admin', 'system'),
+    ('agent@yourdomain.com', 'agent', 'system'),
     ('user@yourdomain.com', 'user', 'system');
 
 PRINT 'UserRoles table created successfully with sample data!';

@@ -30,7 +30,7 @@ const AssignmentGroupManagement: React.FC = () => {
       const searchTerm = newMemberEmail.toLowerCase();
       const filtered = allUsers.filter(user => 
         user.userEmail.toLowerCase().includes(searchTerm) &&
-        user.isAdmin && // Only show admin users
+        user.isAgent && // Only show agent users
         !selectedGroup?.Members?.some(member => member.UserEmail === user.userEmail) // Exclude already assigned users
       );
       setFilteredUsers(filtered);

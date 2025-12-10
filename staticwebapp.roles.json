@@ -1,7 +1,7 @@
 {
   "roles": [
     {
-      "role": "admin",
+      "role": "agent",
       "groups": [
         "2f1df14c-db28-4f6b-a0dd-d9a2be9cc0c6"
       ]

@@ -5,7 +5,7 @@ import { StaticWebAppsUser } from './AuthContext';
 const mockUser: StaticWebAppsUser = {
   userId: 'local-user-123',
   userDetails: 'duffydev96@gmail.com',
-  userRoles: ['admin', 'authenticated'], // You have admin role locally
+  userRoles: ['agent', 'authenticated'], // You have agent role locally
   identityProvider: 'aad',
   claims: [
     {

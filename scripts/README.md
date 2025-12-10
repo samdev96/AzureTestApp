@@ -110,13 +110,13 @@ SELECT * FROM UserRoles WHERE IsActive = 1 ORDER BY AssignedDate DESC;
 ```sql
 UPDATE UserRoles 
 SET IsActive = 0 
-WHERE UserEmail = 'user@example.com' AND RoleName = 'admin';
+WHERE UserEmail = 'user@example.com' AND RoleName = 'agent';
 ```
 
 ### Add role manually
 ```sql
 INSERT INTO UserRoles (UserEmail, RoleName, AssignedBy) 
-VALUES ('user@example.com', 'admin', 'admin@company.com');
+VALUES ('user@example.com', 'agent', 'admin@company.com');
 ```
 
 ## Troubleshooting

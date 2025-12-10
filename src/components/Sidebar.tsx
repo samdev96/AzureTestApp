@@ -142,7 +142,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
               onClick={() => setAdminOpen((open) => !open)}
               aria-expanded={adminOpen}
             >
-              <span className="nav-icon" role="img" aria-label="Admin">
+              <span className="nav-icon" role="img" aria-label="Agent">
                 🛡️
               </span>
               <span className="nav-text">Admin</span>

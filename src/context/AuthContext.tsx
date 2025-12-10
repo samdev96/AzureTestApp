@@ -10,7 +10,7 @@ export interface StaticWebAppsUser {
     typ: string;
     val: string;
   }>;
-  isAdmin?: boolean; // Computed property for admin access
+  isAgent?: boolean; // Computed property for agent access
 }
 
 interface AuthContextType {
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('✅ User authenticated:', clientPrincipal);
             
             // Check database for user roles - MUST complete before setting user
-            let isAdmin = false;
+            let isAgent = false;
             let dbRoles: string[] = [];
             
             try {
@@ -60,8 +60,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 console.log('📋 Database roles:', rolesData);
                 if (rolesData.success) {
                   dbRoles = rolesData.roles || [];
-                  isAdmin = rolesData.isAdmin || false;
-                  console.log('✅ Database roles loaded:', { dbRoles, isAdmin });
+                  isAgent = rolesData.isAgent || false;
+                  console.log('✅ Database roles loaded:', { dbRoles, isAgent });
                 } else {
                   console.log('⚠️ Database roles check failed:', rolesData.error);
                 }
@@ -83,9 +83,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               userRoles: uniqueRoles,
               identityProvider: clientPrincipal.identityProvider,
               claims: clientPrincipal.claims || [],
-              isAdmin: isAdmin
+              isAgent: isAgent
             });
-            console.log('✅ User state set with isAdmin:', isAdmin);
+            console.log('✅ User state set with isAgent:', isAgent);
           } else {
             console.log('❌ No client principal found');
             setUser(null);

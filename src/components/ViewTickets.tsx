@@ -29,14 +29,14 @@ const ViewTickets: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Check if user is admin using the computed property from AuthContext
-  const isAdmin = user?.isAdmin || false;
+  // Check if user is agent using the computed property from AuthContext
+  const isAgent = user?.isAgent || false;
   
-  // Check if user came from the portal (user portal for admins)
+  // Check if user came from the portal (user portal for agents)
   const cameFromPortal = location.state?.from === 'portal';
   
-  // In user portal mode, only show user's own tickets (even for admins)
-  const showOnlyMyTickets = cameFromPortal || !isAdmin;
+  // In user portal mode, only show user's own tickets (even for agents)
+  const showOnlyMyTickets = cameFromPortal || !isAgent;
 
   // Fetch tickets from API
   useEffect(() => {
