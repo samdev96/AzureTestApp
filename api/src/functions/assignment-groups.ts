@@ -265,7 +265,7 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
             };
         }
         
-        if ((adminCheck.recordset[0].RoleName || '').toLowerCase() !== 'agent') {
+        if ((adminCheck.recordset[0].RoleName || '').toLowerCase() !== 'admin') {
             return {
                 status: 403,
                 headers: {
@@ -274,7 +274,7 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
                 },
                 body: JSON.stringify({ 
                     success: false, 
-                    error: `Agent access required. Current role: ${adminCheck.recordset[0].RoleName}` 
+                    error: `Admin access required. Current role: ${adminCheck.recordset[0].RoleName}` 
                 })
             };
         }
@@ -289,13 +289,13 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
             };
         }
 
-        // Check if the target user is an agent
+        // Check if the target user is an agent or admin
         const userRoleCheck = await pool.request()
             .input('targetUserEmail', userEmail)
             .query(`
                 SELECT UserRoleID, RoleName 
                 FROM UserRoles 
-                WHERE UserEmail = @targetUserEmail AND LOWER(RoleName) = 'agent' AND IsActive = 1
+                WHERE UserEmail = @targetUserEmail AND LOWER(RoleName) IN ('agent', 'admin') AND IsActive = 1
             `);
 
         if (userRoleCheck.recordset.length === 0) {
@@ -307,7 +307,7 @@ async function assignUserToGroup(pool: ConnectionPool, request: HttpRequest, con
                 },
                 body: JSON.stringify({ 
                     success: false,
-                    error: 'User must be an Agent to be assigned to an Assignment Group' 
+                    error: 'User must be an Agent or Admin to be assigned to an Assignment Group' 
                 })
             };
         }
@@ -430,7 +430,7 @@ async function removeUserFromGroup(pool: ConnectionPool, request: HttpRequest, c
                 WHERE UserEmail = @userEmail AND IsActive = 1
             `);
 
-        if (adminCheck.recordset.length === 0 || adminCheck.recordset[0].RoleName.toLowerCase() !== 'agent') {
+        if (adminCheck.recordset.length === 0 || adminCheck.recordset[0].RoleName.toLowerCase() !== 'admin') {
             return {
                 status: 403,
                 headers: {
@@ -439,7 +439,7 @@ async function removeUserFromGroup(pool: ConnectionPool, request: HttpRequest, c
                 },
                 body: JSON.stringify({ 
                     success: false,
-                    error: 'Agent access required' 
+                    error: 'Admin access required' 
                 })
             };
         }

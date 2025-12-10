@@ -10,7 +10,8 @@ export interface StaticWebAppsUser {
     typ: string;
     val: string;
   }>;
-  isAgent?: boolean; // Computed property for agent access
+  isAgent?: boolean; // Computed property for agent/admin access (can access agent dashboard)
+  isAdmin?: boolean; // Computed property for admin-only features (user management, assignment groups)
 }
 
 interface AuthContextType {
@@ -50,6 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             
             // Check database for user roles - MUST complete before setting user
             let isAgent = false;
+            let isAdmin = false;
             let dbRoles: string[] = [];
             
             try {
@@ -61,7 +63,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (rolesData.success) {
                   dbRoles = rolesData.roles || [];
                   isAgent = rolesData.isAgent || false;
-                  console.log('✅ Database roles loaded:', { dbRoles, isAgent });
+                  isAdmin = rolesData.isAdmin || false;
+                  console.log('✅ Database roles loaded:', { dbRoles, isAgent, isAdmin });
                 } else {
                   console.log('⚠️ Database roles check failed:', rolesData.error);
                 }
@@ -83,9 +86,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               userRoles: uniqueRoles,
               identityProvider: clientPrincipal.identityProvider,
               claims: clientPrincipal.claims || [],
-              isAgent: isAgent
+              isAgent: isAgent,
+              isAdmin: isAdmin
             });
-            console.log('✅ User state set with isAgent:', isAgent);
+            console.log('✅ User state set with isAgent:', isAgent, 'isAdmin:', isAdmin);
           } else {
             console.log('❌ No client principal found');
             setUser(null);

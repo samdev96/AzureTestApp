@@ -100,6 +100,7 @@ const AgentDashboard: React.FC = () => {
         currentPage={currentPage}
         onPageChange={handlePageChange}
         isMobileOpen={isMobileSidebarOpen}
+        isAdmin={user?.isAdmin}
       />
       
       <div className={`agent-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>

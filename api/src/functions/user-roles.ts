@@ -103,20 +103,20 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     });
                     
                     try {
-                        const agentResult = await adminCheckRequest.query(`
+                        const roleResult = await adminCheckRequest.query(`
                             SELECT RoleName 
                             FROM UserRoles 
                             WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                                AND LOWER(RoleName) = 'agent' 
+                                AND LOWER(RoleName) IN ('admin', 'agent') 
                                 AND IsActive = 1
                         `);
                         
-                        context.log('Agent check result:', {
-                            recordCount: agentResult.recordset.length,
-                            records: agentResult.recordset
+                        context.log('Role check result:', {
+                            recordCount: roleResult.recordset.length,
+                            records: roleResult.recordset
                         });
                         
-                        if (agentResult.recordset.length === 0) {
+                        if (roleResult.recordset.length === 0) {
                             return {
                                 status: 403,
                                 headers: {
@@ -285,10 +285,12 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                 `);
                 
                 const roles = rolesResult.recordset.map(row => row.RoleName);
-                // Case-insensitive check for agent role
-                const isAgent = roles.some(role => role.toLowerCase() === 'agent');
+                // Case-insensitive checks for roles
+                // Admin has all agent privileges, so isAgent is true for both admin and agent
+                const isAdmin = roles.some(role => role.toLowerCase() === 'admin');
+                const isAgent = isAdmin || roles.some(role => role.toLowerCase() === 'agent');
                 
-                context.log('User roles found:', { currentUserEmail, roles, isAgent });
+                context.log('User roles found:', { currentUserEmail, roles, isAgent, isAdmin });
                 
                 return {
                     status: 200,
@@ -302,27 +304,28 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         userObjectId: currentUserObjectId,
                         roles,
                         isAgent,
+                        isAdmin,
                         roleDetails: rolesResult.recordset
                     })
                 };
             }
         } else if (request.method === 'PUT') {
-            // Update user role - agent only
+            // Update user role - admin only (not agents)
             if (!isDevelopment) {
-                const agentCheckRequest = pool.request();
-                agentCheckRequest.input('userEmail', currentUserEmail);
-                agentCheckRequest.input('userObjectId', currentUserObjectId);
+                const adminCheckRequest = pool.request();
+                adminCheckRequest.input('userEmail', currentUserEmail);
+                adminCheckRequest.input('userObjectId', currentUserObjectId);
                 
                 try {
-                    const agentResult = await agentCheckRequest.query(`
+                    const adminResult = await adminCheckRequest.query(`
                         SELECT RoleName 
                         FROM UserRoles 
                         WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                            AND LOWER(RoleName) = 'agent' 
+                            AND LOWER(RoleName) = 'admin' 
                             AND IsActive = 1
                     `);
                     
-                    if (agentResult.recordset.length === 0) {
+                    if (adminResult.recordset.length === 0) {
                         return {
                             status: 403,
                             headers: {
@@ -331,19 +334,19 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                             },
                             body: JSON.stringify({
                                 success: false,
-                                error: 'Agent access required'
+                                error: 'Admin access required'
                             })
                         };
                     }
                 } catch (dbError) {
-                    context.log('Agent check error for PUT:', dbError);
+                    context.log('Admin check error for PUT:', dbError);
                     // In development, if table doesn't exist, assume admin access
                     if (!dbError.message?.includes('Invalid object name')) {
                         throw dbError;
                     }
                 }
             } else {
-                context.log('Development mode: skipping agent check for PUT');
+                context.log('Development mode: skipping admin check for PUT');
             }
 
             // Parse request body
@@ -365,7 +368,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
             }
 
             // Validate role if provided
-            if (newRole && !['user', 'agent'].includes(newRole)) {
+            if (newRole && !['user', 'agent', 'admin'].includes(newRole)) {
                 return {
                     status: 400,
                     headers: {
@@ -374,7 +377,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     },
                     body: JSON.stringify({
                         success: false,
-                        error: 'Role must be either "user" or "agent"'
+                        error: 'Role must be "user", "agent", or "admin"'
                     })
                 };
             }
@@ -563,7 +566,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
 
             // Validate role
             const userRole = role || 'user';
-            if (!['user', 'agent'].includes(userRole)) {
+            if (!['user', 'agent', 'admin'].includes(userRole)) {
                 return {
                     status: 400,
                     headers: {
@@ -572,7 +575,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     },
                     body: JSON.stringify({
                         success: false,
-                        error: 'Role must be either "user" or "agent"'
+                        error: 'Role must be "user", "agent", or "admin"'
                     })
                 };
             }

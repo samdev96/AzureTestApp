@@ -9,9 +9,10 @@ interface SidebarProps {
   currentPage: PageType;
   onPageChange: (page: PageType) => void;
   isMobileOpen: boolean;
+  isAdmin?: boolean; // Only show admin features (User Management, Assignment Groups) if true
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange, isMobileOpen }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange, isMobileOpen, isAdmin }) => {
   const [adminOpen, setAdminOpen] = useState(false);
   const [cmdbOpen, setCmdbOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
@@ -136,39 +137,41 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
               <span className="nav-text">Change Management</span>
             </button>
           </li>
-          <li className="nav-section">
-            <button
-              className={`nav-section-toggle ${(currentPage === 'assignment-groups' || currentPage === 'user-management') ? 'active' : ''}`}
-              onClick={() => setAdminOpen((open) => !open)}
-              aria-expanded={adminOpen}
-            >
-              <span className="nav-icon" role="img" aria-label="Agent">
-                🛡️
-              </span>
-              <span className="nav-text">Admin</span>
-              <span className="nav-arrow">
-                {adminOpen ? '▲' : '▼'}
-              </span>
-            </button>
-            {adminOpen && (
-              <ul className="nav-sublist">
-                <li 
-                  className={`nav-item ${currentPage === 'assignment-groups' ? 'active' : ''}`}
-                  onClick={() => onPageChange('assignment-groups')}
-                >
-                  <span className="nav-icon">👥</span>
-                  <span className="nav-text">Assignment Groups</span>
-                </li>
-                <li 
-                  className={`nav-item ${currentPage === 'user-management' ? 'active' : ''}`}
-                  onClick={() => onPageChange('user-management')}
-                >
-                  <span className="nav-icon">🔐</span>
-                  <span className="nav-text">User Management</span>
-                </li>
-              </ul>
-            )}
-          </li>
+          {isAdmin && (
+            <li className="nav-section">
+              <button
+                className={`nav-section-toggle ${(currentPage === 'assignment-groups' || currentPage === 'user-management') ? 'active' : ''}`}
+                onClick={() => setAdminOpen((open) => !open)}
+                aria-expanded={adminOpen}
+              >
+                <span className="nav-icon" role="img" aria-label="Agent">
+                  🛡️
+                </span>
+                <span className="nav-text">Admin</span>
+                <span className="nav-arrow">
+                  {adminOpen ? '▲' : '▼'}
+                </span>
+              </button>
+              {adminOpen && (
+                <ul className="nav-sublist">
+                  <li 
+                    className={`nav-item ${currentPage === 'assignment-groups' ? 'active' : ''}`}
+                    onClick={() => onPageChange('assignment-groups')}
+                  >
+                    <span className="nav-icon">👥</span>
+                    <span className="nav-text">Assignment Groups</span>
+                  </li>
+                  <li 
+                    className={`nav-item ${currentPage === 'user-management' ? 'active' : ''}`}
+                    onClick={() => onPageChange('user-management')}
+                  >
+                    <span className="nav-icon">🔐</span>
+                    <span className="nav-text">User Management</span>
+                  </li>
+                </ul>
+              )}
+            </li>
+          )}
         </ul>
       </nav>
     </div>
