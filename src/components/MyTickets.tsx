@@ -45,7 +45,7 @@ interface ModalTicket {
 }
 
 const MyTickets: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isImpersonating } = useAuth();
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -112,7 +112,7 @@ const MyTickets: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isImpersonating]);
 
   useEffect(() => {
     fetchTickets();

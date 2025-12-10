@@ -78,7 +78,7 @@ const AgentDashboard: React.FC = () => {
     };
 
     fetchStats();
-  }, [user]);
+  }, [user, isImpersonating]);
 
   const pageTitles: Record<PageType, string> = {
     home: 'Dashboard',

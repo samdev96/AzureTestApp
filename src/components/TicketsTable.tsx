@@ -30,7 +30,7 @@ interface Ticket {
 }
 
 const TicketsTable: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isImpersonating } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -107,7 +107,7 @@ const TicketsTable: React.FC = () => {
     };
 
     fetchTickets();
-  }, [user]);
+  }, [user, isImpersonating]);
 
   const filteredTickets = tickets.filter(ticket => {
     if (filter.type !== 'all' && ticket.type.toLowerCase() !== filter.type) return false;
