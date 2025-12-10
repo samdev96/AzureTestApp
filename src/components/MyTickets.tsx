@@ -112,11 +112,13 @@ const MyTickets: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user, isImpersonating]);
+  }, [user]);
 
+  // Refetch when user or impersonation state changes
   useEffect(() => {
     fetchTickets();
-  }, [fetchTickets]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchTickets, isImpersonating]);
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesType = filterType === 'All' || ticket.type === filterType;
