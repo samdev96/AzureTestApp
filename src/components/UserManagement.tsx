@@ -5,14 +5,14 @@ import './UserManagement.css';
 interface NewUserForm {
   email: string;
   displayName: string;
-  role: 'user' | 'agent';
+  role: 'user' | 'agent' | 'admin';
   assignmentGroups: number[];
 }
 
 interface EditUserForm {
   email: string;
   displayName: string;
-  role: 'user' | 'agent';
+  role: 'user' | 'agent' | 'admin';
   assignmentGroups: number[];
 }
 
@@ -91,10 +91,9 @@ const UserManagement: React.FC = () => {
     }
   };
 
-  const updateUserRole = async (userEmail: string, newRole: 'user' | 'agent') => {
-    const confirmMessage = newRole === 'agent' 
-      ? `Are you sure you want to promote ${userEmail} to Agent?`
-      : `Are you sure you want to demote ${userEmail} to User?`;
+  const updateUserRole = async (userEmail: string, newRole: 'user' | 'agent' | 'admin') => {
+    const roleLabels = { user: 'User', agent: 'Agent', admin: 'Admin' };
+    const confirmMessage = `Are you sure you want to change ${userEmail} to ${roleLabels[newRole]}?`;
     
     if (!window.confirm(confirmMessage)) {
       return;
@@ -108,7 +107,8 @@ const UserManagement: React.FC = () => {
       const response = await userManagementAPI.updateRole(userEmail, newRole);
 
       if (response.success) {
-        setSuccessMessage(`User role updated successfully to ${newRole === 'agent' ? 'Agent' : 'User'}`);
+        const roleLabels = { user: 'User', agent: 'Agent', admin: 'Admin' };
+        setSuccessMessage(`User role updated successfully to ${roleLabels[newRole]}`);
         await loadUsers(); // Reload the users list
       } else {
         throw new Error(response.error || 'Failed to update user role');
@@ -381,8 +381,16 @@ const UserManagement: React.FC = () => {
           <div className="stat-number">{users.length}</div>
         </div>
         <div className="stat-card">
-          <h3>Agents</h3>
+          <h3>Admins</h3>
           <div className="stat-number admin">
+            <div className="stat-badge">
+              {users.filter(user => user.role === 'admin').length}
+            </div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <h3>Agents</h3>
+          <div className="stat-number agent">
             <div className="stat-badge">
               {users.filter(user => user.role === 'agent').length}
             </div>
@@ -444,7 +452,7 @@ const UserManagement: React.FC = () => {
                     </td>
                     <td>
                       <span className={getRoleBadgeClass(user.role)}>
-                        {user.role === 'agent' ? 'Agent' : 'User'}
+                        {user.role === 'admin' ? 'Admin' : user.role === 'agent' ? 'Agent' : 'User'}
                       </span>
                     </td>
                     <td className="date-cell">
@@ -455,7 +463,7 @@ const UserManagement: React.FC = () => {
                     </td>
                     <td className="actions-cell">
                       <div className="action-buttons">
-                        {user.role === 'user' ? (
+                        {user.role === 'user' && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -464,18 +472,43 @@ const UserManagement: React.FC = () => {
                             disabled={updatingUser === user.userEmail}
                             className="btn btn-promote"
                           >
-                            {updatingUser === user.userEmail ? 'Promoting...' : 'Make Agent'}
+                            {updatingUser === user.userEmail ? 'Updating...' : 'Make Agent'}
                           </button>
-                        ) : (
+                        )}
+                        {user.role === 'agent' && (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateUserRole(user.userEmail, 'admin');
+                              }}
+                              disabled={updatingUser === user.userEmail}
+                              className="btn btn-promote-admin"
+                            >
+                              {updatingUser === user.userEmail ? 'Updating...' : 'Make Admin'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateUserRole(user.userEmail, 'user');
+                              }}
+                              disabled={updatingUser === user.userEmail}
+                              className="btn btn-demote"
+                            >
+                              {updatingUser === user.userEmail ? 'Updating...' : 'Make User'}
+                            </button>
+                          </>
+                        )}
+                        {user.role === 'admin' && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              updateUserRole(user.userEmail, 'user');
+                              updateUserRole(user.userEmail, 'agent');
                             }}
                             disabled={updatingUser === user.userEmail}
                             className="btn btn-demote"
                           >
-                            {updatingUser === user.userEmail ? 'Demoting...' : 'Make User'}
+                            {updatingUser === user.userEmail ? 'Updating...' : 'Make Agent'}
                           </button>
                         )}
                       </div>

@@ -119,8 +119,9 @@ export interface User {
   userEmail: string;
   userObjectId: string;
   displayName?: string;
-  role: 'user' | 'agent';
+  role: 'user' | 'agent' | 'admin';
   isAgent: boolean;
+  isAdmin?: boolean;
   assignedDate: string;
   assignedBy: string;
 }
@@ -257,11 +258,11 @@ export const userManagementAPI = {
     return apiRequest<User[]>('/user-roles?all=true');
   },
 
-  // Create a new user (agent only)
+  // Create a new user (admin only)
   create: async (userData: {
     email: string;
     displayName: string;
-    role: 'user' | 'agent';
+    role: 'user' | 'agent' | 'admin';
     assignmentGroups: number[];
   }): Promise<ApiResponse<any>> => {
     return apiRequest<any>('/user-roles', {
@@ -270,19 +271,19 @@ export const userManagementAPI = {
     });
   },
 
-  // Update user role (agent only)
-  updateRole: async (targetUserEmail: string, newRole: 'user' | 'agent'): Promise<ApiResponse<any>> => {
+  // Update user role (admin only)
+  updateRole: async (targetUserEmail: string, newRole: 'user' | 'agent' | 'admin'): Promise<ApiResponse<any>> => {
     return apiRequest<any>('/user-roles', {
       method: 'PUT',
       body: JSON.stringify({ targetUserEmail, newRole }),
     });
   },
 
-  // Update user details (agent only)
+  // Update user details (admin only)
   update: async (userData: {
     targetUserEmail: string;
     displayName?: string;
-    newRole?: 'user' | 'agent';
+    newRole?: 'user' | 'agent' | 'admin';
   }): Promise<ApiResponse<any>> => {
     return apiRequest<any>('/user-roles', {
       method: 'PUT',

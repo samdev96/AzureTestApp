@@ -150,11 +150,15 @@
 }
 
 .stat-number.admin {
-  color: #ff6b6b;
+  color: #9b59b6;
+}
+
+.stat-number.agent {
+  color: #27ae60;
 }
 
 .stat-number.user {
-  color: #27ae60;
+  color: #3498db;
 }
 
 .summary-card h3 {
@@ -260,7 +264,12 @@
 }
 
 .role-badge.admin {
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+  color: white;
+}
+
+.role-badge.agent {
+  background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
   color: white;
 }
 
@@ -317,6 +326,16 @@
 .btn-promote:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.btn-promote-admin {
+  background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+  color: white;
+}
+
+.btn-promote-admin:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
 }
 
 .btn-demote {
