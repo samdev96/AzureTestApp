@@ -63,6 +63,7 @@ async function getAssignmentGroups(pool: ConnectionPool, request: HttpRequest): 
     try {
         if (includeMembers) {
             // Get assignment groups with their members
+            // Using direct join instead of view to include both agents and admins (case-insensitive)
             const query = `
                 SELECT 
                     ag.AssignmentGroupID,
@@ -72,15 +73,17 @@ async function getAssignmentGroups(pool: ConnectionPool, request: HttpRequest): 
                     ag.CreatedDate,
                     ag.CreatedBy,
                     agm.AssignmentGroupMemberID,
-                    agm.UserEmail,
-                    agm.UserObjectID,
+                    ur.UserEmail,
+                    ur.UserObjectID,
+                    ur.RoleName,
                     agm.AssignedDate,
                     agm.AssignedBy,
                     agm.IsActive as MemberIsActive
                 FROM AssignmentGroups ag
-                LEFT JOIN vw_AssignmentGroupMembers agm ON ag.AssignmentGroupID = agm.AssignmentGroupID
+                LEFT JOIN AssignmentGroupMembers agm ON ag.AssignmentGroupID = agm.AssignmentGroupID AND agm.IsActive = 1
+                LEFT JOIN UserRoles ur ON agm.UserRoleID = ur.UserRoleID AND ur.IsActive = 1 AND LOWER(ur.RoleName) IN ('agent', 'admin')
                 WHERE ag.IsActive = 1
-                ORDER BY ag.GroupName, agm.UserEmail
+                ORDER BY ag.GroupName, ur.UserEmail
             `;
             
             const result = await pool.request().query(query);

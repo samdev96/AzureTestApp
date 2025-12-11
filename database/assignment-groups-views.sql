@@ -66,6 +66,7 @@ LEFT JOIN AssignmentGroups ag ON r.AssignmentGroupID = ag.AssignmentGroupID;
 GO
 
 -- Create view for Assignment Group Members with user details
+-- NOTE: This view includes both agents AND admins (case-insensitive)
 CREATE VIEW vw_AssignmentGroupMembers AS
 SELECT 
     agm.AssignmentGroupMemberID,
@@ -80,5 +81,5 @@ SELECT
 FROM AssignmentGroupMembers agm
 JOIN AssignmentGroups ag ON agm.AssignmentGroupID = ag.AssignmentGroupID
 JOIN UserRoles ur ON agm.UserRoleID = ur.UserRoleID
-WHERE agm.IsActive = 1 AND ur.IsActive = 1 AND ur.RoleName = 'Admin';
+WHERE agm.IsActive = 1 AND ur.IsActive = 1 AND LOWER(ur.RoleName) IN ('agent', 'admin');
 GO
