@@ -83,8 +83,8 @@ async function getIncidents(request: HttpRequest, context: InvocationContext): P
         
         const params: any = {};
         
-        // Check if user is agent from database
-        let isAgent = false;
+        // Check if user is agent or admin from database
+        let isAgentOrAdmin = false;
         try {
             const agentCheckRequest = pool.request();
             agentCheckRequest.input('userEmail', userId);
@@ -94,22 +94,22 @@ async function getIncidents(request: HttpRequest, context: InvocationContext): P
                 SELECT COUNT(*) as AgentCount 
                 FROM UserRoles 
                 WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                    AND LOWER(RoleName) = 'agent' 
+                    AND LOWER(RoleName) IN ('agent', 'admin') 
                     AND IsActive = 1
             `);
             
-            isAgent = agentResult.recordset[0].AgentCount > 0;
-            context.log('Database agent check:', { userId, isAgent, agentCount: agentResult.recordset[0].AgentCount });
+            isAgentOrAdmin = agentResult.recordset[0].AgentCount > 0;
+            context.log('Database agent/admin check:', { userId, isAgentOrAdmin, agentCount: agentResult.recordset[0].AgentCount });
         } catch (agentError) {
-            context.log('Error checking agent status from database:', agentError);
+            context.log('Error checking agent/admin status from database:', agentError);
             // Fallback to role-based check
-            isAgent = userRoles.some(r => r.toLowerCase() === 'agent');
+            isAgentOrAdmin = userRoles.some(r => r.toLowerCase() === 'agent' || r.toLowerCase() === 'admin');
         }
         
-        context.log('Agent check:', { isAgent, userId, userRoles, userPrincipal: userPrincipal?.userId, myTicketsOnly });
+        context.log('Agent/Admin check:', { isAgentOrAdmin, userId, userRoles, userPrincipal: userPrincipal?.userId, myTicketsOnly });
         
-        // If user is not agent OR myTicketsOnly is explicitly requested, only show their own tickets
-        if (!isAgent || myTicketsOnly) {
+        // If user is not agent/admin OR myTicketsOnly is explicitly requested, only show their own tickets
+        if (!isAgentOrAdmin || myTicketsOnly) {
             query += ` AND CreatedBy = @userId`;
             params.userId = userId;
         }
