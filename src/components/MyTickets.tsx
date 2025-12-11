@@ -45,7 +45,7 @@ interface ModalTicket {
 }
 
 const MyTickets: React.FC = () => {
-  const { user, isImpersonating } = useAuth();
+  const { isImpersonating, effectiveUserEmail } = useAuth();
   const [tickets, setTickets] = useState<DisplayTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -93,8 +93,8 @@ const MyTickets: React.FC = () => {
           }))
         ];
         
-        // Filter tickets assigned to current user
-        const userEmail = user?.userDetails;
+        // Filter tickets assigned to current user (or impersonated user)
+        const userEmail = effectiveUserEmail;
         const myTickets = displayTickets.filter(ticket => 
           ticket.assignee && userEmail && ticket.assignee.toLowerCase() === userEmail.toLowerCase()
         );
@@ -112,7 +112,7 @@ const MyTickets: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [effectiveUserEmail]);
 
   // Refetch when user or impersonation state changes
   useEffect(() => {

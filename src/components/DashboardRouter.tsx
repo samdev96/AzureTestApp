@@ -8,7 +8,7 @@ interface DashboardRouterProps {
 }
 
 const DashboardRouter: React.FC<DashboardRouterProps> = ({ forceUserPortal = false }) => {
-  const { user, loading } = useAuth();
+  const { loading, effectiveIsAgent } = useAuth();
 
   // Wait for auth to complete before deciding which dashboard to show
   if (loading) {
@@ -48,8 +48,8 @@ const DashboardRouter: React.FC<DashboardRouterProps> = ({ forceUserPortal = fal
     return <Home />;
   }
 
-  // If user is agent, show agent dashboard; otherwise show regular home
-  if (user?.isAgent) {
+  // If user is agent/admin (or impersonating one), show agent dashboard; otherwise show regular home
+  if (effectiveIsAgent) {
     return <AgentDashboard />;
   }
 

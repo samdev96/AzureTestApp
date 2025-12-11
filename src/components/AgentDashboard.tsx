@@ -25,7 +25,7 @@ interface TicketStats {
 }
 
 const AgentDashboard: React.FC = () => {
-  const { user, isImpersonating } = useAuth();
+  const { user, isImpersonating, effectiveIsAdmin, effectiveUserEmail, impersonatedUser } = useAuth();
   const [stats, setStats] = useState<TicketStats>({
     totalIncidents: 0,
     totalRequests: 0,
@@ -102,7 +102,7 @@ const AgentDashboard: React.FC = () => {
         currentPage={currentPage}
         onPageChange={handlePageChange}
         isMobileOpen={isMobileSidebarOpen}
-        isAdmin={user?.isAdmin}
+        isAdmin={effectiveIsAdmin}
       />
       
       <div className={`agent-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -118,7 +118,11 @@ const AgentDashboard: React.FC = () => {
             <div className="agent-header">
               <div className="agent-header-content">
                 <h1>VibeNow ITSM Dashboard</h1>
-                <p className="welcome-text">Welcome back, {user?.userDetails?.split('@')[0]}</p>
+                <p className="welcome-text">
+                  Welcome back, {isImpersonating 
+                    ? (impersonatedUser?.displayName || effectiveUserEmail.split('@')[0])
+                    : user?.userDetails?.split('@')[0]}
+                </p>
               </div>
               <UserMenu onSettingsClick={() => setIsSettingsOpen(true)} />
             </div>

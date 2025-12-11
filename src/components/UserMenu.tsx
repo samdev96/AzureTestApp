@@ -7,12 +7,17 @@ interface UserMenuProps {
 }
 
 const UserMenu: React.FC<UserMenuProps> = ({ onSettingsClick }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isImpersonating, impersonatedUser, effectiveUserEmail } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   if (!user) return null;
 
   const getDisplayName = () => {
+    // If impersonating, show the impersonated user's info
+    if (isImpersonating && impersonatedUser) {
+      return impersonatedUser.displayName || impersonatedUser.userEmail;
+    }
+    
     const emailClaim = user.claims.find(claim => 
       claim.typ === 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress' ||
       claim.typ === 'preferred_username' ||
@@ -23,7 +28,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onSettingsClick }) => {
   };
 
   const getUserInitials = () => {
-    const name = getDisplayName();
+    const name = isImpersonating ? effectiveUserEmail : getDisplayName();
     const parts = name.split(/[@\s]/);
     if (parts.length >= 2) {
       return (parts[0].charAt(0) + parts[1].charAt(0)).toUpperCase();
