@@ -8,10 +8,26 @@ interface DashboardRouterProps {
 }
 
 const DashboardRouter: React.FC<DashboardRouterProps> = ({ forceUserPortal = false }) => {
-  const { loading, effectiveIsAgent } = useAuth();
+  const { user, loading, effectiveIsAgent, isImpersonating, impersonatedUser } = useAuth();
+
+  // Debug logging for dashboard routing
+  console.log('🔀 DashboardRouter:', { 
+    loading, 
+    userExists: !!user, 
+    userIsAgent: user?.isAgent, 
+    userIsAdmin: user?.isAdmin,
+    effectiveIsAgent,
+    isImpersonating,
+    impersonatedIsAgent: impersonatedUser?.isAgent,
+    forceUserPortal 
+  });
 
   // Wait for auth to complete before deciding which dashboard to show
-  if (loading) {
+  // Also wait for user object to have the isAgent property set (not just exist)
+  const isRoleLoaded = user !== null && typeof user.isAgent === 'boolean';
+  
+  if (loading || !isRoleLoaded) {
+    console.log('🔀 DashboardRouter: Still loading...', { loading, isRoleLoaded });
     return (
       <div style={{ 
         display: 'flex', 

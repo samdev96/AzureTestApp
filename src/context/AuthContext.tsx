@@ -188,8 +188,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isImpersonating = impersonatedUser !== null;
   
   // Effective values - use impersonated user's permissions when impersonating
-  const effectiveIsAgent = isImpersonating ? impersonatedUser.isAgent : (user?.isAgent || false);
-  const effectiveIsAdmin = isImpersonating ? impersonatedUser.isAdmin : (user?.isAdmin || false);
+  // Important: Only use user values once loading is complete to avoid race conditions
+  const effectiveIsAgent = isImpersonating 
+    ? impersonatedUser.isAgent 
+    : (loading ? false : (user?.isAgent || false));
+  const effectiveIsAdmin = isImpersonating 
+    ? impersonatedUser.isAdmin 
+    : (loading ? false : (user?.isAdmin || false));
   const effectiveUserEmail = isImpersonating ? impersonatedUser.userEmail : (user?.userDetails || '');
 
   return (
