@@ -466,53 +466,25 @@ const UserManagement: React.FC = () => {
                     </td>
                     <td className="actions-cell">
                       <div className="action-buttons">
-                        {user.role === 'user' && (
-                          <button
-                            onClick={(e) => {
+                        {/* Role change dropdown - don't show for yourself */}
+                        {user.userEmail.toLowerCase() !== (currentUser?.userDetails?.toLowerCase() || '') && (
+                          <select
+                            className="role-dropdown"
+                            value={user.role}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) => {
                               e.stopPropagation();
-                              updateUserRole(user.userEmail, 'agent');
+                              const newRole = e.target.value as 'user' | 'agent' | 'admin';
+                              if (newRole !== user.role) {
+                                updateUserRole(user.userEmail, newRole);
+                              }
                             }}
                             disabled={updatingUser === user.userEmail}
-                            className="btn btn-promote"
                           >
-                            {updatingUser === user.userEmail ? 'Updating...' : 'Make Agent'}
-                          </button>
-                        )}
-                        {user.role === 'agent' && (
-                          <>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateUserRole(user.userEmail, 'admin');
-                              }}
-                              disabled={updatingUser === user.userEmail}
-                              className="btn btn-promote-admin"
-                            >
-                              {updatingUser === user.userEmail ? 'Updating...' : 'Make Admin'}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateUserRole(user.userEmail, 'user');
-                              }}
-                              disabled={updatingUser === user.userEmail}
-                              className="btn btn-demote"
-                            >
-                              {updatingUser === user.userEmail ? 'Updating...' : 'Make User'}
-                            </button>
-                          </>
-                        )}
-                        {user.role === 'admin' && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateUserRole(user.userEmail, 'agent');
-                            }}
-                            disabled={updatingUser === user.userEmail}
-                            className="btn btn-demote"
-                          >
-                            {updatingUser === user.userEmail ? 'Updating...' : 'Make Agent'}
-                          </button>
+                            <option value="user">User</option>
+                            <option value="agent">Agent</option>
+                            <option value="admin">Admin</option>
+                          </select>
                         )}
                         {/* Impersonate button - only for admins, only for non-admin users, and not yourself */}
                         {currentUser?.isAdmin && user.role !== 'admin' && user.userEmail.toLowerCase() !== (currentUser?.userDetails?.toLowerCase() || '') && (
@@ -532,7 +504,7 @@ const UserManagement: React.FC = () => {
                             className="btn btn-impersonate"
                             title={`View app as ${user.userEmail}`}
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                             </svg>
                           </button>
