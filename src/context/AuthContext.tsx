@@ -28,6 +28,7 @@ export interface ImpersonatedUser {
 interface AuthContextType {
   user: StaticWebAppsUser | null;
   loading: boolean;
+  rolesLoaded: boolean; // Explicitly track when roles have been fetched
   login: () => void;
   logout: () => void;
   isAuthenticated: boolean;
@@ -55,6 +56,7 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<StaticWebAppsUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rolesLoaded, setRolesLoaded] = useState(false); // Track when roles are fetched
   const [impersonatedUser, setImpersonatedUser] = useState<ImpersonatedUser | null>(null);
 
   // Check for stored impersonation on mount
@@ -112,7 +114,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const combinedRoles = [...(clientPrincipal.userRoles || ['authenticated']), ...dbRoles];
             const uniqueRoles = Array.from(new Set(combinedRoles));
             
-            // Set user AFTER roles are determined
+            // Set user AFTER roles are determined - set rolesLoaded first to avoid race condition
+            console.log('✅ Setting rolesLoaded = true, then setting user');
+            setRolesLoaded(true);
             setUser({
               userId: clientPrincipal.userId,
               userDetails: clientPrincipal.userDetails,
@@ -125,14 +129,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('✅ User state set with isAgent:', isAgent, 'isAdmin:', isAdmin);
           } else {
             console.log('❌ No client principal found');
+            setRolesLoaded(true); // Still mark as loaded even if no user
             setUser(null);
           }
         } else {
           console.log('❌ Auth response not ok:', response.status);
+          setRolesLoaded(true); // Still mark as loaded even if auth fails
           setUser(null);
         }
       } catch (error) {
         console.error('❌ Error fetching user:', error);
+        setRolesLoaded(true); // Still mark as loaded even on error
         setUser(null);
       } finally {
         console.log('✅ Auth loading complete');
@@ -188,19 +195,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isImpersonating = impersonatedUser !== null;
   
   // Effective values - use impersonated user's permissions when impersonating
-  // Important: Only use user values once loading is complete to avoid race conditions
+  // Important: Only use user values once roles are fully loaded to avoid race conditions
   const effectiveIsAgent = isImpersonating 
     ? impersonatedUser.isAgent 
-    : (loading ? false : (user?.isAgent || false));
+    : (rolesLoaded ? (user?.isAgent || false) : false);
   const effectiveIsAdmin = isImpersonating 
     ? impersonatedUser.isAdmin 
-    : (loading ? false : (user?.isAdmin || false));
+    : (rolesLoaded ? (user?.isAdmin || false) : false);
   const effectiveUserEmail = isImpersonating ? impersonatedUser.userEmail : (user?.userDetails || '');
 
   return (
     <AuthContext.Provider value={{
       user,
       loading,
+      rolesLoaded,
       login,
       logout,
       isAuthenticated,
