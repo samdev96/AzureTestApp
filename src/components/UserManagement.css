@@ -341,9 +341,21 @@
 .btn-impersonate {
   background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
   color: white;
-  min-width: 40px;
-  padding: 0.5rem;
-  font-size: 1.1rem;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  margin-left: auto;
+}
+
+.btn-impersonate svg {
+  width: 16px;
+  height: 16px;
 }
 
 .btn-impersonate:hover:not(:disabled) {

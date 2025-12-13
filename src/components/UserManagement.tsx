@@ -466,27 +466,6 @@ const UserManagement: React.FC = () => {
                     </td>
                     <td className="actions-cell">
                       <div className="action-buttons">
-                        {/* Impersonate button - only for admins, only for non-admin users, and not yourself */}
-                        {currentUser?.isAdmin && user.role !== 'admin' && user.userEmail.toLowerCase() !== (currentUser?.userDetails?.toLowerCase() || '') && (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              setImpersonatingUser(user.userEmail);
-                              const success = await startImpersonation(user.userEmail);
-                              setImpersonatingUser(null);
-                              if (success) {
-                                setSuccessMessage(`Now impersonating ${user.userEmail}`);
-                              } else {
-                                setError('Failed to start impersonation');
-                              }
-                            }}
-                            disabled={impersonatingUser === user.userEmail}
-                            className="btn btn-impersonate"
-                            title={`View app as ${user.userEmail}`}
-                          >
-                            {impersonatingUser === user.userEmail ? '🎭...' : '🎭'}
-                          </button>
-                        )}
                         {user.role === 'user' && (
                           <button
                             onClick={(e) => {
@@ -533,6 +512,29 @@ const UserManagement: React.FC = () => {
                             className="btn btn-demote"
                           >
                             {updatingUser === user.userEmail ? 'Updating...' : 'Make Agent'}
+                          </button>
+                        )}
+                        {/* Impersonate button - only for admins, only for non-admin users, and not yourself */}
+                        {currentUser?.isAdmin && user.role !== 'admin' && user.userEmail.toLowerCase() !== (currentUser?.userDetails?.toLowerCase() || '') && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              setImpersonatingUser(user.userEmail);
+                              const success = await startImpersonation(user.userEmail);
+                              setImpersonatingUser(null);
+                              if (success) {
+                                setSuccessMessage(`Now impersonating ${user.userEmail}`);
+                              } else {
+                                setError('Failed to start impersonation');
+                              }
+                            }}
+                            disabled={impersonatingUser === user.userEmail}
+                            className="btn btn-impersonate"
+                            title={`View app as ${user.userEmail}`}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
                           </button>
                         )}
                       </div>
