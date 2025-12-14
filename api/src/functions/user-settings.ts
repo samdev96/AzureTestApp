@@ -109,22 +109,31 @@ async function getUserSettings(request: HttpRequest, context: InvocationContext)
 
 // POST /api/user-settings - Create new setting
 async function createUserSetting(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
+    context.log('createUserSetting: Starting...');
+    
     const user = getCurrentUser(request, context);
     if (!user) {
+        context.log('createUserSetting: No user found');
         return {
             status: 401,
             jsonBody: { success: false, error: 'Authentication required' }
         };
     }
+    context.log('createUserSetting: User found:', user.email);
+
+    let body: any;
+    try {
+        body = await request.json();
+        context.log('createUserSetting: Body parsed:', JSON.stringify(body));
+    } catch (parseError: any) {
+        context.error('createUserSetting: Failed to parse body:', parseError);
+        return {
+            status: 400,
+            jsonBody: { success: false, error: 'Invalid JSON body', details: parseError.message }
+        };
+    }
 
     try {
-        const body = await request.json() as {
-            settingType: 'saved_filter' | 'preference' | 'dashboard_layout';
-            settingKey: string;
-            settingValue: SavedFilter | Record<string, unknown>;
-            displayOrder?: number;
-        };
-
         if (!body.settingType || !body.settingKey || !body.settingValue) {
             return {
                 status: 400,
@@ -132,10 +141,14 @@ async function createUserSetting(request: HttpRequest, context: InvocationContex
             };
         }
 
+        context.log('createUserSetting: Getting container...');
+        context.log('createUserSetting: Getting container...');
         const container = getUserSettingsContainer();
+        context.log('createUserSetting: Got container');
         const now = new Date().toISOString();
 
         // Check if setting with same key already exists
+        context.log('createUserSetting: Checking for existing...');
         const { resources: existing } = await container.items
             .query<UserSetting>({
                 query: 'SELECT * FROM c WHERE c.userEmail = @userEmail AND c.settingType = @settingType AND c.settingKey = @settingKey AND c.isActive = true',
@@ -146,6 +159,7 @@ async function createUserSetting(request: HttpRequest, context: InvocationContex
                 ]
             })
             .fetchAll();
+        context.log('createUserSetting: Existing check done, found:', existing.length);
 
         if (existing.length > 0) {
             return {
@@ -155,6 +169,7 @@ async function createUserSetting(request: HttpRequest, context: InvocationContex
         }
 
         // Get max display order for this user's settings of this type
+        context.log('createUserSetting: Getting max order...');
         const { resources: orderResults } = await container.items
             .query<number>({
                 query: 'SELECT VALUE MAX(c.displayOrder) FROM c WHERE c.userEmail = @userEmail AND c.settingType = @settingType',
@@ -164,6 +179,7 @@ async function createUserSetting(request: HttpRequest, context: InvocationContex
                 ]
             })
             .fetchAll();
+        context.log('createUserSetting: Max order:', orderResults[0]);
 
         const maxOrder = orderResults[0] ?? 0;
 
@@ -178,10 +194,10 @@ async function createUserSetting(request: HttpRequest, context: InvocationContex
             createdDate: now,
             modifiedDate: now
         };
+        context.log('createUserSetting: Creating setting with id:', newSetting.id);
 
         const { resource } = await container.items.create(newSetting);
-
-        context.log('Created user setting:', { id: resource?.id, userEmail: user.email, settingType: body.settingType });
+        context.log('createUserSetting: Created successfully:', resource?.id);
 
         return {
             status: 201,
