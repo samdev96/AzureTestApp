@@ -100,9 +100,15 @@ async function getUserSettings(request: HttpRequest, context: InvocationContext)
         };
     } catch (error) {
         context.error('Error fetching user settings:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
         return {
             status: 500,
-            jsonBody: { success: false, error: 'Failed to fetch user settings' }
+            jsonBody: { 
+                success: false, 
+                error: 'Failed to fetch user settings',
+                details: errorMessage,
+                stack: error instanceof Error ? error.stack : undefined
+            }
         };
     }
 }
