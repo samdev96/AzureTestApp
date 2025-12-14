@@ -2,7 +2,7 @@
   "version": "2.0",
   "languageWorkers": {
     "node": {
-      "supported_versions": ["18", "20"]
+      "supported_versions": ["20"]
     }
   },
   "extensionBundle": {
