@@ -144,7 +144,7 @@ async function createUserSetting(request: HttpRequest, context: InvocationContex
 
         // Get max display order for this user's settings of this type
         const { resources: orderResults } = await container.items
-            .query<{ maxOrder: number }>({
+            .query<number>({
                 query: 'SELECT VALUE MAX(c.displayOrder) FROM c WHERE c.userEmail = @userEmail AND c.settingType = @settingType',
                 parameters: [
                     { name: '@userEmail', value: user.email },
@@ -153,7 +153,7 @@ async function createUserSetting(request: HttpRequest, context: InvocationContex
             })
             .fetchAll();
 
-        const maxOrder = orderResults[0] || 0;
+        const maxOrder = orderResults[0] ?? 0;
 
         const newSetting: UserSetting = {
             id: generateId(),

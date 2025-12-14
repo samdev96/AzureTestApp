@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { userSettingsAPI, UserSetting, SavedFilter } from '../services/api';
 import './Sidebar.css';
 
 export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items' | 'cmdb-graph' | 'integrations' | 'external-systems' | 'changes';
@@ -10,13 +11,41 @@ interface SidebarProps {
   onPageChange: (page: PageType) => void;
   isMobileOpen: boolean;
   isAdmin?: boolean; // Only show admin features (User Management, Assignment Groups) if true
+  onFilterSelect?: (filter: SavedFilter) => void; // Callback when a saved filter is clicked
+  refreshFilters?: number; // Increment to trigger refresh of saved filters
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange, isMobileOpen, isAdmin }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange, isMobileOpen, isAdmin, onFilterSelect, refreshFilters }) => {
   const [adminOpen, setAdminOpen] = useState(false);
   const [cmdbOpen, setCmdbOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [changesOpen, setChangesOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [savedFilters, setSavedFilters] = useState<UserSetting[]>([]);
+  const [loadingFilters, setLoadingFilters] = useState(false);
+
+  // Fetch saved filters on mount and when refreshFilters changes
+  useEffect(() => {
+    const fetchFilters = async () => {
+      setLoadingFilters(true);
+      try {
+        const result = await userSettingsAPI.getSavedFilters();
+        if (result.success && result.data) {
+          // Only show filters marked to show in sidebar
+          const sidebarFilters = result.data.filter(
+            (setting) => (setting.settingValue as SavedFilter).showInSidebar
+          );
+          setSavedFilters(sidebarFilters);
+        }
+      } catch (error) {
+        console.error('Failed to fetch saved filters:', error);
+      } finally {
+        setLoadingFilters(false);
+      }
+    };
+    fetchFilters();
+  }, [refreshFilters]);
+
   const getSidebarClass = () => {
     let classes = 'sidebar';
     if (collapsed) classes += ' collapsed';
@@ -49,6 +78,55 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
             <span className="nav-icon">🎫</span>
             <span className="nav-text">My Tickets</span>
           </li>
+          {/* My Filters Section */}
+          {savedFilters.length > 0 && (
+            <li className="nav-section">
+              <button
+                className="nav-section-toggle"
+                onClick={() => setFiltersOpen((open) => !open)}
+                aria-expanded={filtersOpen}
+              >
+                <span className="nav-icon" role="img" aria-label="My Filters">
+                  💾
+                </span>
+                <span className="nav-text">My Filters</span>
+                <span className="nav-arrow">
+                  {filtersOpen ? '▲' : '▼'}
+                </span>
+              </button>
+              {filtersOpen && (
+                <ul className="nav-sublist">
+                  {loadingFilters ? (
+                    <li className="nav-item loading">
+                      <span className="nav-text">Loading...</span>
+                    </li>
+                  ) : (
+                    savedFilters.map((setting) => {
+                      const filter = setting.settingValue as SavedFilter;
+                      return (
+                        <li
+                          key={setting.id}
+                          className="nav-item saved-filter-item"
+                          onClick={() => {
+                            if (onFilterSelect) {
+                              onFilterSelect(filter);
+                            }
+                            // Close mobile sidebar after selection
+                            if (window.innerWidth <= 768) {
+                              // The onFilterSelect will handle navigation
+                            }
+                          }}
+                        >
+                          <span className="nav-icon">{filter.icon || '📋'}</span>
+                          <span className="nav-text">{filter.name}</span>
+                        </li>
+                      );
+                    })
+                  )}
+                </ul>
+              )}
+            </li>
+          )}
           <li className="nav-section">
             <button
               className={`nav-section-toggle ${(currentPage === 'services' || currentPage === 'config-items' || currentPage === 'cmdb-graph') ? 'active' : ''}`}

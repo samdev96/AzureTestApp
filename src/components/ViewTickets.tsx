@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ticketsAPI, Incident, ServiceRequest } from '../services/api';
+import { ticketsAPI, Incident, ServiceRequest, SavedFilter } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import SaveFilterModal from './SaveFilterModal';
 import './ViewTickets.css';
 
 // Combined ticket interface for display
@@ -28,6 +29,8 @@ const ViewTickets: React.FC = () => {
   const [filterType, setFilterType] = useState<'All' | 'Incident' | 'Request'>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSaveFilterModal, setShowSaveFilterModal] = useState(false);
+  const [activeFilterName, setActiveFilterName] = useState<string>('');
 
   // Check if user is agent using the computed property from AuthContext
   const isAgent = user?.isAgent || false;
@@ -37,6 +40,34 @@ const ViewTickets: React.FC = () => {
   
   // In user portal mode, only show user's own tickets (even for agents)
   const showOnlyMyTickets = cameFromPortal || !isAgent;
+
+  // Apply saved filter from navigation state
+  useEffect(() => {
+    const savedFilter = location.state?.savedFilter as SavedFilter | undefined;
+    if (savedFilter) {
+      setActiveFilterName(savedFilter.name);
+      
+      // Apply filter criteria
+      if (savedFilter.filters.ticketType) {
+        if (savedFilter.filters.ticketType === 'incident') {
+          setFilterType('Incident');
+        } else if (savedFilter.filters.ticketType === 'request') {
+          setFilterType('Request');
+        } else {
+          setFilterType('All');
+        }
+      }
+      
+      if (savedFilter.filters.status && savedFilter.filters.status.length > 0) {
+        // For now, take the first status - could enhance to support multiple
+        setFilterStatus(savedFilter.filters.status[0]);
+      }
+      
+      if (savedFilter.filters.searchText) {
+        setSearchTerm(savedFilter.filters.searchText);
+      }
+    }
+  }, [location.state]);
 
   // Fetch tickets from API
   useEffect(() => {
@@ -143,8 +174,8 @@ const ViewTickets: React.FC = () => {
     <div className="tickets-container">
       <div className="tickets-header">
         <Link to={cameFromPortal ? "/portal" : "/"} className="back-link">← Back to Home</Link>
-        <h1>📊 View Tickets</h1>
-        <p>Manage and track your incidents and service requests</p>
+        <h1>📊 {activeFilterName ? activeFilterName : 'View Tickets'}</h1>
+        <p>{activeFilterName ? 'Viewing saved filter' : 'Manage and track your incidents and service requests'}</p>
         {user && (
           <div className="user-info">
             <small>
@@ -202,6 +233,20 @@ const ViewTickets: React.FC = () => {
                 <option value="Closed">Closed</option>
               </select>
             </div>
+
+            {/* Save Filter Button - only show for agents/admins */}
+            {isAgent && (
+              <div className="filter-group save-filter-group">
+                <label>&nbsp;</label>
+                <button
+                  className="save-filter-btn"
+                  onClick={() => setShowSaveFilterModal(true)}
+                  title="Save current filter"
+                >
+                  💾 Save Filter
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="tickets-summary">
@@ -306,6 +351,21 @@ const ViewTickets: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Save Filter Modal */}
+      <SaveFilterModal
+        isOpen={showSaveFilterModal}
+        onClose={() => setShowSaveFilterModal(false)}
+        onSave={() => {
+          // Optionally refresh something or show success message
+          console.log('Filter saved successfully');
+        }}
+        currentFilters={{
+          ticketType: filterType,
+          status: filterStatus,
+          searchText: searchTerm
+        }}
+      />
     </div>
   );
 };
