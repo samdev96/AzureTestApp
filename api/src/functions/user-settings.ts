@@ -2,26 +2,38 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/fu
 import { getUserSettingsContainer, UserSetting, SavedFilter, generateId } from "../utils/cosmosdb";
 
 // Helper to get current user from request headers
-function getCurrentUser(request: HttpRequest): { email: string; objectId: string } | null {
+function getCurrentUser(request: HttpRequest, context: InvocationContext): { email: string; objectId: string } | null {
     const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+    
+    context.log('getCurrentUser - checking headers:', {
+        hasUserPrincipal: !!userPrincipalHeader,
+        url: request.url
+    });
     
     if (userPrincipalHeader) {
         try {
             const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
+            context.log('getCurrentUser - parsed principal:', {
+                userDetails: userPrincipal.userDetails,
+                userId: userPrincipal.userId
+            });
             return {
                 email: userPrincipal.userDetails || '',
                 objectId: userPrincipal.userId || ''
             };
         } catch (e) {
+            context.error('getCurrentUser - failed to parse principal:', e);
             return null;
         }
     }
     
     // Development mode
     if (request.url.includes('localhost')) {
+        context.log('getCurrentUser - using dev mode user');
         return { email: 'admin@test.com', objectId: 'test-admin-id' };
     }
     
+    context.log('getCurrentUser - no user found');
     return null;
 }
 
@@ -29,7 +41,7 @@ function getCurrentUser(request: HttpRequest): { email: string; objectId: string
 // GET /api/user-settings?type=saved_filter - Get settings of specific type
 // GET /api/user-settings/{id} - Get specific setting by ID
 async function getUserSettings(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const user = getCurrentUser(request);
+    const user = getCurrentUser(request, context);
     if (!user) {
         return {
             status: 401,
@@ -97,7 +109,7 @@ async function getUserSettings(request: HttpRequest, context: InvocationContext)
 
 // POST /api/user-settings - Create new setting
 async function createUserSetting(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const user = getCurrentUser(request);
+    const user = getCurrentUser(request, context);
     if (!user) {
         return {
             status: 401,
@@ -191,7 +203,7 @@ async function createUserSetting(request: HttpRequest, context: InvocationContex
 
 // PUT /api/user-settings/{id} - Update setting
 async function updateUserSetting(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const user = getCurrentUser(request);
+    const user = getCurrentUser(request, context);
     if (!user) {
         return {
             status: 401,
@@ -258,7 +270,7 @@ async function updateUserSetting(request: HttpRequest, context: InvocationContex
 
 // DELETE /api/user-settings/{id} - Delete setting (soft delete)
 async function deleteUserSetting(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const user = getCurrentUser(request);
+    const user = getCurrentUser(request, context);
     if (!user) {
         return {
             status: 401,
@@ -316,7 +328,7 @@ async function deleteUserSetting(request: HttpRequest, context: InvocationContex
 
 // PUT /api/user-settings/reorder - Reorder settings
 async function reorderUserSettings(request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> {
-    const user = getCurrentUser(request);
+    const user = getCurrentUser(request, context);
     if (!user) {
         return {
             status: 401,
