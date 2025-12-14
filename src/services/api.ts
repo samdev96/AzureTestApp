@@ -1139,3 +1139,113 @@ export const changesAPI = {
     });
   },
 };
+
+// ==================== User Settings API (Cosmos DB) ====================
+
+// Saved Filter interfaces
+export interface SavedFilterCriteria {
+  ticketType?: 'incident' | 'request' | 'all';
+  status?: string[];
+  priority?: string[];
+  urgency?: string[];
+  assignmentGroup?: string;
+  assignedTo?: string | null; // null = any, "me" = current user, or specific email
+  createdDateRange?: {
+    type: 'relative' | 'absolute';
+    value: string | { start: string; end: string };
+  };
+  searchText?: string;
+}
+
+export interface SavedFilter {
+  name: string;
+  icon?: string;
+  showInSidebar: boolean;
+  filters: SavedFilterCriteria;
+  columns?: string[];
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface UserSetting {
+  id: string;
+  userEmail: string;
+  settingType: 'saved_filter' | 'preference' | 'dashboard_layout';
+  settingKey: string;
+  settingValue: SavedFilter | Record<string, unknown>;
+  displayOrder: number;
+  isActive: boolean;
+  createdDate: string;
+  modifiedDate: string;
+}
+
+export const userSettingsAPI = {
+  // Get all settings for current user, optionally filtered by type
+  getAll: async (type?: string): Promise<ApiResponse<UserSetting[]>> => {
+    const query = type ? `?type=${encodeURIComponent(type)}` : '';
+    return apiRequest<UserSetting[]>(`/user-settings${query}`);
+  },
+
+  // Get all saved filters for current user
+  getSavedFilters: async (): Promise<ApiResponse<UserSetting[]>> => {
+    return apiRequest<UserSetting[]>('/user-settings?type=saved_filter');
+  },
+
+  // Get a specific setting by ID
+  getById: async (id: string): Promise<ApiResponse<UserSetting>> => {
+    return apiRequest<UserSetting>(`/user-settings/${id}`);
+  },
+
+  // Create a new setting
+  create: async (data: {
+    settingType: 'saved_filter' | 'preference' | 'dashboard_layout';
+    settingKey: string;
+    settingValue: SavedFilter | Record<string, unknown>;
+    displayOrder?: number;
+  }): Promise<ApiResponse<UserSetting>> => {
+    return apiRequest<UserSetting>('/user-settings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Create a saved filter (convenience method)
+  createSavedFilter: async (filter: SavedFilter): Promise<ApiResponse<UserSetting>> => {
+    return apiRequest<UserSetting>('/user-settings', {
+      method: 'POST',
+      body: JSON.stringify({
+        settingType: 'saved_filter',
+        settingKey: filter.name.toLowerCase().replace(/\s+/g, '-'),
+        settingValue: filter,
+      }),
+    });
+  },
+
+  // Update a setting
+  update: async (id: string, data: Partial<{
+    settingKey: string;
+    settingValue: SavedFilter | Record<string, unknown>;
+    displayOrder: number;
+    isActive: boolean;
+  }>): Promise<ApiResponse<UserSetting>> => {
+    return apiRequest<UserSetting>(`/user-settings/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Delete a setting
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/user-settings/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Reorder settings
+  reorder: async (settingType: string, order: { id: string; displayOrder: number }[]): Promise<ApiResponse<void>> => {
+    return apiRequest<void>('/user-settings/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ settingType, order }),
+    });
+  },
+};
