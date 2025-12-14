@@ -175,11 +175,16 @@ async function createUserSetting(request: HttpRequest, context: InvocationContex
             status: 201,
             jsonBody: { success: true, data: resource }
         };
-    } catch (error) {
+    } catch (error: any) {
         context.error('Error creating user setting:', error);
+        context.error('Error details:', error.message, error.code, error.body);
         return {
             status: 500,
-            jsonBody: { success: false, error: 'Failed to create user setting' }
+            jsonBody: { 
+                success: false, 
+                error: 'Failed to create user setting',
+                details: error.message || String(error)
+            }
         };
     }
 }

@@ -96,11 +96,13 @@ const SaveFilterModal: React.FC<SaveFilterModalProps> = ({
         setIcon('🔍');
         setShowInSidebar(true);
       } else {
-        setError(response.error || 'Failed to save filter');
+        // Show detailed error if available
+        const errorDetails = (response as any).details;
+        setError(errorDetails ? `${response.error}: ${errorDetails}` : (response.error || 'Failed to save filter'));
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving filter:', err);
-      setError('An unexpected error occurred');
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setSaving(false);
     }
