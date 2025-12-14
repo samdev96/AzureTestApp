@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import TicketEditModal from './TicketEditModal';
+import SaveFilterModal from './SaveFilterModal';
+import { SavedFilter } from '../services/api';
 import './TicketsTable.css';
 
 interface Ticket {
@@ -29,17 +31,49 @@ interface Ticket {
   rejection_notes?: string;
 }
 
-const TicketsTable: React.FC = () => {
+interface TicketsTableProps {
+  appliedFilter?: SavedFilter | null;
+  onFilterSaved?: () => void;
+}
+
+const TicketsTable: React.FC<TicketsTableProps> = ({ appliedFilter, onFilterSaved }) => {
   const { user, isImpersonating } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showSaveFilterModal, setShowSaveFilterModal] = useState(false);
   const [filter, setFilter] = useState({
     type: 'all',
     status: 'Open', // Show all open tickets (smart filter for both incidents and requests)
     priority: 'all'
   });
+  const [activeFilterName, setActiveFilterName] = useState<string>('');
+
+  // Apply saved filter when appliedFilter prop changes
+  useEffect(() => {
+    if (appliedFilter) {
+      setActiveFilterName(appliedFilter.name);
+      
+      // Apply filter criteria
+      const newFilter = { ...filter };
+      
+      if (appliedFilter.filters.ticketType) {
+        newFilter.type = appliedFilter.filters.ticketType === 'all' ? 'all' : appliedFilter.filters.ticketType;
+      }
+      
+      if (appliedFilter.filters.status && appliedFilter.filters.status.length > 0) {
+        newFilter.status = appliedFilter.filters.status[0];
+      }
+      
+      if (appliedFilter.filters.priority && appliedFilter.filters.priority.length > 0) {
+        newFilter.priority = appliedFilter.filters.priority[0];
+      }
+      
+      setFilter(newFilter);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedFilter]);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -263,7 +297,25 @@ const TicketsTable: React.FC = () => {
   return (
     <div className="tickets-table-container">
       <div className="table-header">
-        <h2>All Tickets ({filteredTickets.length})</h2>
+        <h2>
+          {activeFilterName ? (
+            <>
+              {activeFilterName} ({filteredTickets.length})
+              <button 
+                className="clear-filter-btn"
+                onClick={() => {
+                  setActiveFilterName('');
+                  setFilter({ type: 'all', status: 'Open', priority: 'all' });
+                }}
+                title="Clear filter"
+              >
+                ✕
+              </button>
+            </>
+          ) : (
+            <>All Tickets ({filteredTickets.length})</>
+          )}
+        </h2>
         
         <div className="filters">
           <select 
@@ -302,6 +354,14 @@ const TicketsTable: React.FC = () => {
             <option value="Medium">Medium</option>
             <option value="Low">Low</option>
           </select>
+
+          <button
+            className="save-filter-btn"
+            onClick={() => setShowSaveFilterModal(true)}
+            title="Save current filter"
+          >
+            💾 Save Filter
+          </button>
         </div>
       </div>
 
@@ -367,6 +427,22 @@ const TicketsTable: React.FC = () => {
         isOpen={isModalOpen}
         onClose={handleModalClose}
         onSave={handleTicketSave}
+      />
+
+      <SaveFilterModal
+        isOpen={showSaveFilterModal}
+        onClose={() => setShowSaveFilterModal(false)}
+        onSave={() => {
+          if (onFilterSaved) {
+            onFilterSaved();
+          }
+        }}
+        currentFilters={{
+          ticketType: filter.type === 'all' ? 'All' : (filter.type === 'incident' ? 'Incident' : 'Request'),
+          status: filter.status,
+          searchText: '',
+          priority: filter.priority
+        }}
       />
     </div>
   );

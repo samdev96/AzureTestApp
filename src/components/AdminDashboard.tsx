@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { SavedFilter } from '../services/api';
 import Sidebar, { PageType } from './Sidebar';
@@ -21,7 +20,6 @@ interface TicketStats {
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [stats, setStats] = useState<TicketStats>({
     totalIncidents: 0,
     totalRequests: 0,
@@ -34,6 +32,7 @@ const AdminDashboard: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [refreshFilters, setRefreshFilters] = useState(0);
+  const [appliedFilter, setAppliedFilter] = useState<SavedFilter | null>(null);
 
   const handlePageChange = (page: PageType) => {
     setCurrentPage(page);
@@ -43,8 +42,17 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleFilterSelect = (filter: SavedFilter) => {
-    // Navigate to view-tickets with the filter state
-    navigate('/view-tickets', { state: { savedFilter: filter } });
+    // Apply the filter to the TicketsTable and switch to home page
+    setAppliedFilter(filter);
+    setCurrentPage('home');
+    if (window.innerWidth <= 768) {
+      setMobileSidebarOpen(false);
+    }
+  };
+
+  const handleFilterSaved = () => {
+    // Trigger sidebar to refresh its saved filters
+    setRefreshFilters(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -157,7 +165,10 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="tickets-section">
-              <TicketsTable />
+              <TicketsTable 
+                appliedFilter={appliedFilter}
+                onFilterSaved={handleFilterSaved}
+              />
             </div>
           </>
         ) : currentPage === 'my-tickets' ? (
