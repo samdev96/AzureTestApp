@@ -71,15 +71,6 @@ const AdminDashboard: React.FC = () => {
     setRefreshFilters(prev => prev + 1);
   };
 
-  const handleFilterDeleted = () => {
-    // Clear filter and navigate to home
-    setAppliedFilter(null);
-    setActiveFilterId(null);
-    setCurrentPage('home');
-    // Refresh sidebar filters
-    setRefreshFilters(prev => prev + 1);
-  };
-
   useEffect(() => {
     const fetchStats = async () => {
       try {
