@@ -42,9 +42,11 @@ const AdminDashboard: React.FC = () => {
   };
 
   const handleFilterSelect = (filter: SavedFilter) => {
+    console.log('AdminDashboard: handleFilterSelect called with filter:', filter);
     // Apply the filter to the TicketsTable and switch to home page
     setAppliedFilter(filter);
     setCurrentPage('home');
+    console.log('AdminDashboard: Set appliedFilter and switched to home page');
     if (window.innerWidth <= 768) {
       setMobileSidebarOpen(false);
     }

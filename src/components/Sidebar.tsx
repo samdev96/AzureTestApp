@@ -107,13 +107,26 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
                         <li
                           key={setting.id}
                           className="nav-item saved-filter-item"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Filter clicked:', filter.name, filter);
                             if (onFilterSelect) {
+                              console.log('Calling onFilterSelect');
                               onFilterSelect(filter);
+                            } else {
+                              console.warn('onFilterSelect is not defined');
                             }
-                            // Close mobile sidebar after selection
-                            if (window.innerWidth <= 768) {
-                              // The onFilterSelect will handle navigation
+                          }}
+                          style={{ cursor: 'pointer' }}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              if (onFilterSelect) {
+                                onFilterSelect(filter);
+                              }
                             }
                           }}
                         >
