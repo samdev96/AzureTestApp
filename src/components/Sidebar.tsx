@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { userSettingsAPI, UserSetting, SavedFilter } from '../services/api';
 import './Sidebar.css';
 
-export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items' | 'cmdb-graph' | 'integrations' | 'external-systems' | 'changes';
+export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items' | 'cmdb-graph' | 'integrations' | 'external-systems' | 'changes' | 'saved-filter';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -11,11 +11,12 @@ interface SidebarProps {
   onPageChange: (page: PageType) => void;
   isMobileOpen: boolean;
   isAdmin?: boolean; // Only show admin features (User Management, Assignment Groups) if true
-  onFilterSelect?: (filter: SavedFilter) => void; // Callback when a saved filter is clicked
+  onFilterSelect?: (filter: SavedFilter, filterId: string) => void; // Callback when a saved filter is clicked
+  activeFilterId?: string | null; // ID of the currently active filter (for highlighting)
   refreshFilters?: number; // Increment to trigger refresh of saved filters
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange, isMobileOpen, isAdmin, onFilterSelect, refreshFilters }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange, isMobileOpen, isAdmin, onFilterSelect, activeFilterId, refreshFilters }) => {
   const [adminOpen, setAdminOpen] = useState(false);
   const [cmdbOpen, setCmdbOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
@@ -65,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
       <nav className="sidebar-nav">
         <ul>
           <li
-            className={`nav-item ${currentPage === 'home' ? 'active' : ''}`}
+            className={`nav-item ${currentPage === 'home' && !activeFilterId ? 'active' : ''}`}
             onClick={() => onPageChange('home')}
           >
             <span className="nav-icon">🏠</span>
@@ -103,19 +104,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
                   ) : (
                     savedFilters.map((setting) => {
                       const filter = setting.settingValue as SavedFilter;
+                      const isActive = activeFilterId === setting.id;
                       return (
                         <li
                           key={setting.id}
-                          className="nav-item saved-filter-item"
+                          className={`nav-item saved-filter-item ${isActive ? 'active' : ''}`}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            console.log('Filter clicked:', filter.name, filter);
                             if (onFilterSelect) {
-                              console.log('Calling onFilterSelect');
-                              onFilterSelect(filter);
-                            } else {
-                              console.warn('onFilterSelect is not defined');
+                              onFilterSelect(filter, setting.id);
                             }
                           }}
                           style={{ cursor: 'pointer' }}
@@ -125,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
                               if (onFilterSelect) {
-                                onFilterSelect(filter);
+                                onFilterSelect(filter, setting.id);
                               }
                             }
                           }}

@@ -52,9 +52,7 @@ const TicketsTable: React.FC<TicketsTableProps> = ({ appliedFilter, onFilterSave
 
   // Apply saved filter when appliedFilter prop changes
   useEffect(() => {
-    console.log('TicketsTable: appliedFilter changed:', appliedFilter);
     if (appliedFilter) {
-      console.log('TicketsTable: Applying filter:', appliedFilter.name);
       setActiveFilterName(appliedFilter.name);
       
       // Apply filter criteria
@@ -72,8 +70,15 @@ const TicketsTable: React.FC<TicketsTableProps> = ({ appliedFilter, onFilterSave
         newFilter.priority = appliedFilter.filters.priority[0];
       }
       
-      console.log('TicketsTable: New filter state:', newFilter);
       setFilter(newFilter);
+    } else {
+      // Reset to default filter when no filter is applied
+      setActiveFilterName('');
+      setFilter({
+        type: 'all',
+        status: 'Open',
+        priority: 'all'
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliedFilter]);

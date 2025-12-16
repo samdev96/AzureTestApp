@@ -33,20 +33,25 @@ const AdminDashboard: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [refreshFilters, setRefreshFilters] = useState(0);
   const [appliedFilter, setAppliedFilter] = useState<SavedFilter | null>(null);
+  const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
 
   const handlePageChange = (page: PageType) => {
     setCurrentPage(page);
+    // Clear filter when navigating away from saved-filter page
+    if (page !== 'saved-filter') {
+      setAppliedFilter(null);
+      setActiveFilterId(null);
+    }
     if (window.innerWidth <= 768) {
       setMobileSidebarOpen(false); // Close mobile sidebar on navigation
     }
   };
 
-  const handleFilterSelect = (filter: SavedFilter) => {
-    console.log('AdminDashboard: handleFilterSelect called with filter:', filter);
-    // Apply the filter to the TicketsTable and switch to home page
+  const handleFilterSelect = (filter: SavedFilter, filterId: string) => {
+    // Apply the filter and switch to saved-filter page
     setAppliedFilter(filter);
-    setCurrentPage('home');
-    console.log('AdminDashboard: Set appliedFilter and switched to home page');
+    setActiveFilterId(filterId);
+    setCurrentPage('saved-filter');
     if (window.innerWidth <= 768) {
       setMobileSidebarOpen(false);
     }
@@ -102,7 +107,8 @@ const AdminDashboard: React.FC = () => {
     'cmdb-graph': 'CMDB Graph',
     'integrations': 'Integrations',
     'external-systems': 'External Systems',
-    'changes': 'Change Management'
+    'changes': 'Change Management',
+    'saved-filter': appliedFilter?.name || 'Saved Filter'
   };
 
   return (
@@ -115,6 +121,7 @@ const AdminDashboard: React.FC = () => {
         isMobileOpen={isMobileSidebarOpen}
         isAdmin={true}
         onFilterSelect={handleFilterSelect}
+        activeFilterId={activeFilterId}
         refreshFilters={refreshFilters}
       />
       
@@ -136,37 +143,51 @@ const AdminDashboard: React.FC = () => {
               <UserMenu onSettingsClick={() => setIsSettingsOpen(true)} />
             </div>
 
-            {!appliedFilter && (
-              <div className="quick-overview-section">
-                <h2>Quick Overview</h2>
-                <div className="stats-grid">
-                  <div className="stat-card incidents">
-                    <h3>Total Incidents</h3>
-                    <div className="stat-number">
-                      {stats.loading ? '...' : stats.totalIncidents}
-                    </div>
+            <div className="quick-overview-section">
+              <h2>Quick Overview</h2>
+              <div className="stats-grid">
+                <div className="stat-card incidents">
+                  <h3>Total Incidents</h3>
+                  <div className="stat-number">
+                    {stats.loading ? '...' : stats.totalIncidents}
                   </div>
-                  <div className="stat-card requests">
-                    <h3>Total Requests</h3>
-                    <div className="stat-number">
-                      {stats.loading ? '...' : stats.totalRequests}
-                    </div>
+                </div>
+                <div className="stat-card requests">
+                  <h3>Total Requests</h3>
+                  <div className="stat-number">
+                    {stats.loading ? '...' : stats.totalRequests}
                   </div>
-                  <div className="stat-card open-incidents">
-                    <h3>Open Incidents</h3>
-                    <div className="stat-number">
-                      {stats.loading ? '...' : stats.openIncidents}
-                    </div>
+                </div>
+                <div className="stat-card open-incidents">
+                  <h3>Open Incidents</h3>
+                  <div className="stat-number">
+                    {stats.loading ? '...' : stats.openIncidents}
                   </div>
-                  <div className="stat-card open-requests">
-                    <h3>Open Requests</h3>
-                    <div className="stat-number">
-                      {stats.loading ? '...' : stats.openRequests}
-                    </div>
+                </div>
+                <div className="stat-card open-requests">
+                  <h3>Open Requests</h3>
+                  <div className="stat-number">
+                    {stats.loading ? '...' : stats.openRequests}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+
+            <div className="tickets-section">
+              <TicketsTable 
+                onFilterSaved={handleFilterSaved}
+              />
+            </div>
+          </>
+        ) : currentPage === 'saved-filter' ? (
+          <>
+            <div className="admin-header">
+              <div className="admin-header-content">
+                <h1>VibeNow ITSM Dashboard</h1>
+                <p className="welcome-text">Welcome back, {user?.userDetails?.split('@')[0]}</p>
+              </div>
+              <UserMenu onSettingsClick={() => setIsSettingsOpen(true)} />
+            </div>
 
             <div className="tickets-section">
               <TicketsTable 
