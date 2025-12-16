@@ -147,35 +147,37 @@ const AgentDashboard: React.FC = () => {
               <UserMenu onSettingsClick={() => setIsSettingsOpen(true)} />
             </div>
 
-            <div className="quick-overview-section">
-              <h2>Quick Overview</h2>
-              <div className="stats-grid">
-                <div className="stat-card incidents">
-                  <h3>Total Incidents</h3>
-                  <div className="stat-number">
-                    {stats.loading ? '...' : stats.totalIncidents}
+            {!appliedFilter && (
+              <div className="quick-overview-section">
+                <h2>Quick Overview</h2>
+                <div className="stats-grid">
+                  <div className="stat-card incidents">
+                    <h3>Total Incidents</h3>
+                    <div className="stat-number">
+                      {stats.loading ? '...' : stats.totalIncidents}
+                    </div>
                   </div>
-                </div>
-                <div className="stat-card requests">
-                  <h3>Total Requests</h3>
-                  <div className="stat-number">
-                    {stats.loading ? '...' : stats.totalRequests}
+                  <div className="stat-card requests">
+                    <h3>Total Requests</h3>
+                    <div className="stat-number">
+                      {stats.loading ? '...' : stats.totalRequests}
+                    </div>
                   </div>
-                </div>
-                <div className="stat-card open-incidents">
-                  <h3>Open Incidents</h3>
-                  <div className="stat-number">
-                    {stats.loading ? '...' : stats.openIncidents}
+                  <div className="stat-card open-incidents">
+                    <h3>Open Incidents</h3>
+                    <div className="stat-number">
+                      {stats.loading ? '...' : stats.openIncidents}
+                    </div>
                   </div>
-                </div>
-                <div className="stat-card open-requests">
-                  <h3>Open Requests</h3>
-                  <div className="stat-number">
-                    {stats.loading ? '...' : stats.openRequests}
+                  <div className="stat-card open-requests">
+                    <h3>Open Requests</h3>
+                    <div className="stat-number">
+                      {stats.loading ? '...' : stats.openRequests}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="tickets-section">
               <TicketsTable 
