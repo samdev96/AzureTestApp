@@ -38,6 +38,10 @@ const Home: React.FC = () => {
     navigate('/view-tickets', { state: { from: isPortalRoute ? 'portal' : 'home', fromPortal: isPortalRoute } });
   };
 
+  const handleMyApprovals = () => {
+    navigate('/my-approvals');
+  };
+
   useEffect(() => {
     const fetchStats = async () => {
       if (!user) return;
@@ -94,7 +98,13 @@ const Home: React.FC = () => {
             <h1>VibeNow</h1>
             <p>Welcome to VibeNow. Create and manage incidents and service requests.</p>
           </div>
-          <UserMenu onSettingsClick={() => setIsSettingsOpen(true)} />
+          <div className="header-actions">
+            <button className="my-approvals-button" onClick={handleMyApprovals}>
+              <span className="approval-icon">✓</span>
+              My Approvals
+            </button>
+            <UserMenu onSettingsClick={() => setIsSettingsOpen(true)} />
+          </div>
         </div>
       </header>
 

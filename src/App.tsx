@@ -5,6 +5,7 @@ import DashboardRouter from './components/DashboardRouter';
 import CreateIncident from './components/CreateIncident';
 import CreateRequest from './components/CreateRequest';
 import ViewTickets from './components/ViewTickets';
+import MyApprovals from './components/MyApprovals';
 import Login from './components/Login';
 import TestPage from './components/TestPage';
 import AuthDebug from './components/AuthDebug';
@@ -57,6 +58,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ViewTickets />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-approvals"
+              element={
+                <ProtectedRoute>
+                  <MyApprovals />
                 </ProtectedRoute>
               }
             />
