@@ -69,6 +69,15 @@ const AgentDashboard: React.FC = () => {
     setRefreshFilters(prev => prev + 1);
   };
 
+  const handleFilterDeleted = () => {
+    // Clear filter and navigate to home
+    setAppliedFilter(null);
+    setActiveFilterId(null);
+    setCurrentPage('home');
+    // Refresh sidebar filters
+    setRefreshFilters(prev => prev + 1);
+  };
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -208,7 +217,9 @@ const AgentDashboard: React.FC = () => {
             <div className="tickets-section">
               <TicketsTable 
                 appliedFilter={appliedFilter}
+                activeFilterId={activeFilterId}
                 onFilterSaved={handleFilterSaved}
+                onFilterDeleted={handleFilterDeleted}
               />
             </div>
           </>

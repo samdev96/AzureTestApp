@@ -24,8 +24,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [savedFilters, setSavedFilters] = useState<UserSetting[]>([]);
   const [loadingFilters, setLoadingFilters] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
   // Fetch saved filters on mount and when refreshFilters changes
   useEffect(() => {
@@ -48,30 +46,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
     };
     fetchFilters();
   }, [refreshFilters]);
-
-  const handleDeleteFilter = async () => {
-    if (!deleteConfirm) return;
-    
-    setDeleting(true);
-    try {
-      const result = await userSettingsAPI.delete(deleteConfirm.id);
-      if (result.success) {
-        // Remove from local state
-        setSavedFilters(prev => prev.filter(f => f.id !== deleteConfirm.id));
-        // If the deleted filter was active, navigate to home
-        if (activeFilterId === deleteConfirm.id) {
-          onPageChange('home');
-        }
-      } else {
-        console.error('Failed to delete filter:', result.error);
-      }
-    } catch (error) {
-      console.error('Error deleting filter:', error);
-    } finally {
-      setDeleting(false);
-      setDeleteConfirm(null);
-    }
-  };
 
   const getSidebarClass = () => {
     let classes = 'sidebar';
@@ -156,18 +130,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
                         >
                           <span className="nav-icon">{filter.icon || '📋'}</span>
                           <span className="nav-text">{filter.name}</span>
-                          <button
-                            className="filter-delete-btn"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setDeleteConfirm({ id: setting.id, name: filter.name });
-                            }}
-                            title="Delete filter"
-                            aria-label={`Delete ${filter.name} filter`}
-                          >
-                            🗑️
-                          </button>
                         </li>
                       );
                     })
@@ -301,33 +263,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
           )}
         </ul>
       </nav>
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="delete-filter-modal-overlay" onClick={() => !deleting && setDeleteConfirm(null)}>
-          <div className="delete-filter-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Delete Filter</h3>
-            <p>Are you sure you want to delete "<strong>{deleteConfirm.name}</strong>"?</p>
-            <p className="delete-warning">This action cannot be undone.</p>
-            <div className="delete-filter-modal-actions">
-              <button 
-                className="btn-cancel" 
-                onClick={() => setDeleteConfirm(null)}
-                disabled={deleting}
-              >
-                Cancel
-              </button>
-              <button 
-                className="btn-delete" 
-                onClick={handleDeleteFilter}
-                disabled={deleting}
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

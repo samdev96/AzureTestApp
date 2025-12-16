@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import TicketEditModal from './TicketEditModal';
 import SaveFilterModal from './SaveFilterModal';
-import { SavedFilter } from '../services/api';
+import { SavedFilter, userSettingsAPI } from '../services/api';
 import './TicketsTable.css';
 
 interface Ticket {
@@ -33,22 +33,49 @@ interface Ticket {
 
 interface TicketsTableProps {
   appliedFilter?: SavedFilter | null;
+  activeFilterId?: string | null;
   onFilterSaved?: () => void;
+  onFilterDeleted?: () => void;
 }
 
-const TicketsTable: React.FC<TicketsTableProps> = ({ appliedFilter, onFilterSaved }) => {
+const TicketsTable: React.FC<TicketsTableProps> = ({ appliedFilter, activeFilterId, onFilterSaved, onFilterDeleted }) => {
   const { user, isImpersonating } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showSaveFilterModal, setShowSaveFilterModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [filter, setFilter] = useState({
     type: 'all',
     status: 'Open', // Show all open tickets (smart filter for both incidents and requests)
     priority: 'all'
   });
   const [activeFilterName, setActiveFilterName] = useState<string>('');
+
+  const handleDeleteFilter = async () => {
+    if (!activeFilterId) return;
+    
+    setDeleting(true);
+    try {
+      const result = await userSettingsAPI.delete(activeFilterId);
+      if (result.success) {
+        setShowDeleteConfirm(false);
+        if (onFilterDeleted) {
+          onFilterDeleted();
+        }
+      } else {
+        console.error('Failed to delete filter:', result.error);
+        alert('Failed to delete filter. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error deleting filter:', error);
+      alert('An error occurred while deleting the filter.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // Apply saved filter when appliedFilter prop changes
   useEffect(() => {
@@ -370,6 +397,15 @@ const TicketsTable: React.FC<TicketsTableProps> = ({ appliedFilter, onFilterSave
           >
             💾 Save Filter
           </button>
+          {appliedFilter && activeFilterId && (
+            <button
+              className="delete-filter-btn"
+              onClick={() => setShowDeleteConfirm(true)}
+              title="Delete this saved filter"
+            >
+              🗑️ Delete Filter
+            </button>
+          )}
         </div>
       </div>
 
@@ -452,6 +488,33 @@ const TicketsTable: React.FC<TicketsTableProps> = ({ appliedFilter, onFilterSave
           priority: filter.priority
         }}
       />
+
+      {/* Delete Filter Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="delete-filter-modal-overlay" onClick={() => !deleting && setShowDeleteConfirm(false)}>
+          <div className="delete-filter-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Delete Filter</h3>
+            <p>Are you sure you want to delete "<strong>{appliedFilter?.name}</strong>"?</p>
+            <p className="delete-warning">This action cannot be undone.</p>
+            <div className="delete-filter-modal-actions">
+              <button 
+                className="btn-cancel" 
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn-delete" 
+                onClick={handleDeleteFilter}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
