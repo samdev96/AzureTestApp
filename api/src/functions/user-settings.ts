@@ -73,7 +73,8 @@ async function getUserSettings(request: HttpRequest, context: InvocationContext)
             };
         }
 
-        // Build query
+        // Build query - no ORDER BY to avoid needing composite indexes in Cosmos DB
+        // Sorting is done client-side after fetching
         let query = 'SELECT * FROM c WHERE c.userEmail = @userEmail AND c.isActive = true';
         const parameters: { name: string; value: string }[] = [
             { name: '@userEmail', value: user.email }
@@ -84,18 +85,24 @@ async function getUserSettings(request: HttpRequest, context: InvocationContext)
             parameters.push({ name: '@settingType', value: settingType });
         }
 
-        query += ' ORDER BY c.displayOrder ASC, c.createdDate DESC';
-
         const { resources } = await container.items
             .query<UserSetting>({ query, parameters })
             .fetchAll();
+
+        // Sort client-side: by displayOrder ASC, then by createdDate DESC
+        const sortedResources = resources.sort((a, b) => {
+            if (a.displayOrder !== b.displayOrder) {
+                return a.displayOrder - b.displayOrder;
+            }
+            return new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime();
+        });
 
         return {
             status: 200,
             jsonBody: { 
                 success: true, 
-                data: resources,
-                total: resources.length
+                data: sortedResources,
+                total: sortedResources.length
             }
         };
     } catch (error) {
