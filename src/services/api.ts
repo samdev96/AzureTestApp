@@ -143,12 +143,14 @@ async function apiRequest<T>(
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+      // Log full error details from the API
+      console.error(`API Error (${endpoint}): Full response:`, data);
+      throw new Error(data.details || data.error || `HTTP ${response.status}: ${response.statusText}`);
     }
 
     return data;
   } catch (error) {
-    console.error(`API Error (${endpoint}):`, error);
+    console.error(`API Error (${endpoint}): Error:`, error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred'
