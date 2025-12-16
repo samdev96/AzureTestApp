@@ -24,8 +24,8 @@ const MyApprovals: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const handleBack = () => {
-    // Navigate back to home or portal
-    navigate('/');
+    // Navigate back to user portal home
+    navigate('/portal');
   };
 
   useEffect(() => {
