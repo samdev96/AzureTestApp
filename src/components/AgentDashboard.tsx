@@ -14,6 +14,7 @@ import ChangeManagement from './ChangeManagement';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
 import ImpersonationBanner from './ImpersonationBanner';
+import { SavedFilter } from '../services/api';
 import './AgentDashboard.css';
 
 interface TicketStats {
@@ -37,12 +38,29 @@ const AgentDashboard: React.FC = () => {
   const [isMobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [appliedFilter, setAppliedFilter] = useState<SavedFilter | null>(null);
+  const [refreshFilters, setRefreshFilters] = useState(0);
 
   const handlePageChange = (page: PageType) => {
     setCurrentPage(page);
     if (window.innerWidth <= 768) {
       setMobileSidebarOpen(false); // Close mobile sidebar on navigation
     }
+  };
+
+  const handleFilterSelect = (filter: SavedFilter) => {
+    console.log('AgentDashboard: handleFilterSelect called with filter:', filter);
+    // Apply the filter to the TicketsTable and switch to home page
+    setAppliedFilter(filter);
+    setCurrentPage('home');
+    if (window.innerWidth <= 768) {
+      setMobileSidebarOpen(false);
+    }
+  };
+
+  const handleFilterSaved = () => {
+    // Trigger sidebar to refresh its saved filters
+    setRefreshFilters(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -103,6 +121,8 @@ const AgentDashboard: React.FC = () => {
         onPageChange={handlePageChange}
         isMobileOpen={isMobileSidebarOpen}
         isAdmin={effectiveIsAdmin}
+        onFilterSelect={handleFilterSelect}
+        refreshFilters={refreshFilters}
       />
       
       <div className={`agent-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -158,7 +178,10 @@ const AgentDashboard: React.FC = () => {
             </div>
 
             <div className="tickets-section">
-              <TicketsTable />
+              <TicketsTable 
+                appliedFilter={appliedFilter}
+                onFilterSaved={handleFilterSaved}
+              />
             </div>
           </>
         ) : currentPage === 'my-tickets' ? (
