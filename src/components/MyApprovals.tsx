@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
@@ -18,14 +18,10 @@ interface ApprovalTicket {
 
 const MyApprovals: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
   const [approvals, setApprovals] = useState<ApprovalTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  // Check if we're on the /portal route
-  const isPortalRoute = location.pathname === '/my-approvals';
 
   const handleBack = () => {
     // Navigate back to home or portal
