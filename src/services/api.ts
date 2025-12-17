@@ -1251,3 +1251,147 @@ export const userSettingsAPI = {
     });
   },
 };
+
+// Workflow Types
+export type WorkflowType = 'request' | 'incident' | 'change' | 'cmdb' | 'integration';
+export type StageType = 'initial' | 'intermediate' | 'final';
+export type ActionType = 'status_change' | 'assignment' | 'notification' | 'field_update' | 'integration';
+export type ActionTrigger = 'on_enter' | 'on_exit' | 'manual';
+export type NotificationRecipient = 'requester' | 'assignee' | 'approver' | 'watchers' | 'specific_role';
+export type NotificationTrigger = 'on_enter' | 'on_exit' | 'sla_warning' | 'sla_breach';
+export type ConditionOperator = 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'in';
+
+export interface WorkflowCondition {
+  field: string;
+  operator: ConditionOperator;
+  value: any;
+}
+
+export interface WorkflowAction {
+  id: string;
+  type: ActionType;
+  trigger: ActionTrigger;
+  config: Record<string, any>;
+}
+
+export interface WorkflowNotification {
+  recipient: NotificationRecipient;
+  trigger: NotificationTrigger;
+  template: string;
+}
+
+export interface WorkflowSLA {
+  duration: number;
+  warningThreshold: number;
+}
+
+export interface WorkflowStage {
+  id: string;
+  name: string;
+  type: StageType;
+  color: string;
+  icon?: string;
+  order: number;
+  actions: WorkflowAction[];
+  notifications?: WorkflowNotification[];
+  sla?: WorkflowSLA;
+}
+
+export interface WorkflowTransition {
+  id: string;
+  fromStageId: string;
+  toStageId: string;
+  label: string;
+  conditions?: WorkflowCondition[];
+  requiredRole?: string[];
+  requiresComment?: boolean;
+  requiresApproval?: boolean;
+  approvalRoles?: string[];
+}
+
+export interface WorkflowRule {
+  id: string;
+  name: string;
+  description: string;
+  conditions: WorkflowCondition[];
+  actions: WorkflowAction[];
+  priority: number;
+}
+
+export interface WorkflowDefinition {
+  initialStatus: string;
+  stages: WorkflowStage[];
+  transitions: WorkflowTransition[];
+  rules: WorkflowRule[];
+}
+
+export interface Workflow {
+  id: string;
+  workflowType: WorkflowType;
+  name: string;
+  description: string;
+  isDefault: boolean;
+  isActive: boolean;
+  version: string;
+  createdBy: string;
+  createdDate: string;
+  modifiedBy: string;
+  modifiedDate: string;
+  definition: WorkflowDefinition;
+}
+
+// Workflow API
+export const workflowsAPI = {
+  // Get all workflows
+  getAll: async (workflowType?: WorkflowType, defaultOnly?: boolean): Promise<ApiResponse<Workflow[]>> => {
+    const params = new URLSearchParams();
+    if (workflowType) params.append('type', workflowType);
+    if (defaultOnly) params.append('defaultOnly', 'true');
+    
+    const queryString = params.toString();
+    return apiRequest<Workflow[]>(`/workflows${queryString ? `?${queryString}` : ''}`);
+  },
+
+  // Get a specific workflow by ID
+  getById: async (id: string): Promise<ApiResponse<Workflow>> => {
+    return apiRequest<Workflow>(`/workflows/${id}`);
+  },
+
+  // Get default workflow for a type
+  getDefault: async (workflowType: WorkflowType): Promise<ApiResponse<Workflow>> => {
+    const response = await apiRequest<Workflow[]>(`/workflows?type=${workflowType}&defaultOnly=true`);
+    if (response.success && response.data && response.data.length > 0) {
+      return {
+        success: true,
+        data: response.data[0]
+      };
+    }
+    return {
+      success: false,
+      error: 'No default workflow found for this type'
+    };
+  },
+
+  // Create a new workflow
+  create: async (workflow: Omit<Workflow, 'id' | 'createdBy' | 'createdDate' | 'modifiedBy' | 'modifiedDate'>): Promise<ApiResponse<Workflow>> => {
+    return apiRequest<Workflow>('/workflows', {
+      method: 'POST',
+      body: JSON.stringify(workflow),
+    });
+  },
+
+  // Update an existing workflow
+  update: async (id: string, workflow: Partial<Workflow>): Promise<ApiResponse<Workflow>> => {
+    return apiRequest<Workflow>(`/workflows/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(workflow),
+    });
+  },
+
+  // Delete a workflow (soft delete)
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    return apiRequest<void>(`/workflows/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};

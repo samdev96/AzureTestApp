@@ -29,6 +29,240 @@
   min-height: 400px;
 }
 
+/* Loading State */
+.workflows-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error State */
+.workflows-error {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 1rem;
+  margin-bottom: 16px;
+}
+
+.retry-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.retry-button:hover {
+  transform: translateY(-2px);
+}
+
+/* Empty State */
+.workflows-empty {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.workflows-empty p {
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+/* Table Styles */
+.workflows-table-container {
+  overflow-x: auto;
+}
+
+.workflows-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.workflows-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.workflows-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.workflows-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+}
+
+.workflows-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.workflows-table td {
+  padding: 16px;
+}
+
+.workflow-name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.workflow-name strong {
+  color: #333;
+  font-size: 14px;
+}
+
+.workflow-description {
+  color: #666;
+  font-size: 12px;
+}
+
+.workflow-type-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.workflow-type-badge[data-type="request"] {
+  background: rgba(78, 205, 196, 0.1);
+  color: #4ecdc4;
+}
+
+.workflow-type-badge[data-type="incident"] {
+  background: rgba(255, 107, 107, 0.1);
+  color: #ff6b6b;
+}
+
+.workflow-type-badge[data-type="change"] {
+  background: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+}
+
+.workflow-type-badge[data-type="cmdb"] {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.workflow-type-badge[data-type="integration"] {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.status-badge.inactive {
+  background: rgba(156, 163, 175, 0.1);
+  color: #9ca3af;
+}
+
+.default-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(102, 126, 234, 0.1);
+  color: #667eea;
+}
+
+.version-text {
+  color: #666;
+  font-size: 13px;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.stages-count {
+  color: #666;
+  font-size: 13px;
+}
+
+.date-text {
+  color: #666;
+  font-size: 13px;
+}
+
+.workflow-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-action {
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: background-color 0.2s ease;
+}
+
+.btn-action:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.btn-action.btn-delete:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .workflows-container {
