@@ -118,6 +118,7 @@ const AgentDashboard: React.FC = () => {
     'my-tickets': 'My Tickets',
     'assignment-groups': 'Assignment Groups',
     'user-management': 'User Management',
+    'workflows': 'Workflows',
     'services': 'Services',
     'config-items': 'Configuration Items',
     'cmdb-graph': 'CMDB Graph View',
