@@ -6,6 +6,7 @@ import TicketsTable from './TicketsTable';
 import MyTickets from './MyTickets';
 import AssignmentGroupManagement from './AssignmentGroupManagement';
 import UserManagement from './UserManagement';
+import Workflows from './Workflows';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
 import './AdminDashboard.css';
@@ -111,6 +112,7 @@ const AdminDashboard: React.FC = () => {
     'my-tickets': 'My Tickets',
     'assignment-groups': 'Assignment Groups',
     'user-management': 'User Management',
+    'workflows': 'Workflows',
     'services': 'Services',
     'config-items': 'Configuration Items',
     'cmdb-graph': 'CMDB Graph',
@@ -211,9 +213,11 @@ const AdminDashboard: React.FC = () => {
           <MyTickets />
         ) : currentPage === 'assignment-groups' ? (
           <AssignmentGroupManagement />
-        ) : (
+        ) : currentPage === 'user-management' ? (
           <UserManagement />
-        )}
+        ) : currentPage === 'workflows' ? (
+          <Workflows />
+        ) : null}
       </div>
       
       <Settings 

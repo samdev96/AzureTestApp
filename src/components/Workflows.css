@@ -1,0 +1,49 @@
+.workflows-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.workflows-header {
+  margin-bottom: 32px;
+}
+
+.workflows-header h1 {
+  font-size: 2rem;
+  color: #333;
+  margin: 0 0 8px 0;
+  font-weight: 600;
+}
+
+.workflows-header p {
+  font-size: 1rem;
+  color: #666;
+  margin: 0;
+}
+
+.workflows-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 400px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .workflows-container {
+    padding: 16px;
+  }
+
+  .workflows-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .workflows-header p {
+    font-size: 0.9rem;
+  }
+
+  .workflows-content {
+    padding: 16px;
+  }
+}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { userSettingsAPI, UserSetting, SavedFilter } from '../services/api';
 import './Sidebar.css';
 
-export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'services' | 'config-items' | 'cmdb-graph' | 'integrations' | 'external-systems' | 'changes' | 'saved-filter';
+export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'workflows' | 'services' | 'config-items' | 'cmdb-graph' | 'integrations' | 'external-systems' | 'changes' | 'saved-filter';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -256,6 +256,13 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
                   >
                     <span className="nav-icon">🔐</span>
                     <span className="nav-text">User Management</span>
+                  </li>
+                  <li 
+                    className={`nav-item ${currentPage === 'workflows' ? 'active' : ''}`}
+                    onClick={() => onPageChange('workflows')}
+                  >
+                    <span className="nav-icon">⚙️</span>
+                    <span className="nav-text">Workflows</span>
                   </li>
                 </ul>
               )}
