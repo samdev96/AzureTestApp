@@ -5,6 +5,7 @@ import TicketsTable from './TicketsTable';
 import MyTickets from './MyTickets';
 import AssignmentGroupManagement from './AssignmentGroupManagement';
 import UserManagement from './UserManagement';
+import Workflows from './Workflows';
 import Services from './Services';
 import ConfigurationItems from './ConfigurationItems';
 import CMDBGraph from './CMDBGraph';
@@ -228,6 +229,10 @@ const AgentDashboard: React.FC = () => {
           <MyTickets />
         ) : currentPage === 'assignment-groups' ? (
           <AssignmentGroupManagement />
+        ) : currentPage === 'user-management' ? (
+          <UserManagement />
+        ) : currentPage === 'workflows' ? (
+          <Workflows />
         ) : currentPage === 'services' ? (
           <Services />
         ) : currentPage === 'config-items' ? (
@@ -240,9 +245,7 @@ const AgentDashboard: React.FC = () => {
           <ExternalSystems />
         ) : currentPage === 'changes' ? (
           <ChangeManagement />
-        ) : (
-          <UserManagement />
-        )}
+        ) : null}
       </div>
       
       <Settings 
