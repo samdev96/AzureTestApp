@@ -1,94 +1,23 @@
--- Migrate existing user data from Requests and Incidents
+-- Migrate existing user data from UserRoles table
 -- Run this AFTER creating the Users table
--- This extracts unique users and creates basic user records
+-- UserRoles already has clean user data we can use
 
--- Collect all unique users with their best role (agent > user)
-WITH AllUsers AS (
-    -- Requesters from Requests
-    SELECT DISTINCT
-        r.CreatedBy AS Email,
-        COALESCE(r.RequesterName, r.CreatedBy) AS DisplayName,
-        r.Department,
-        'user' AS Role
-    FROM Requests r
-    WHERE r.CreatedBy IS NOT NULL 
-        AND LTRIM(RTRIM(r.CreatedBy)) <> ''
-        AND r.CreatedBy NOT LIKE '%NULL%'
-    
-    UNION
-    
-    -- Requesters from Incidents
-    SELECT DISTINCT
-        i.CreatedBy,
-        COALESCE(i.AffectedUser, i.CreatedBy),
-        NULL,
-        'user'
-    FROM Incidents i
-    WHERE i.CreatedBy IS NOT NULL 
-        AND LTRIM(RTRIM(i.CreatedBy)) <> ''
-        AND i.CreatedBy NOT LIKE '%NULL%'
-    
-    UNION
-    
-    -- Agents from Requests
-    SELECT DISTINCT
-        r.AssignedTo,
-        r.AssignedTo,
-        NULL,
-        'agent'
-    FROM Requests r
-    WHERE r.AssignedTo IS NOT NULL 
-        AND LTRIM(RTRIM(r.AssignedTo)) <> ''
-        AND r.AssignedTo NOT LIKE '%NULL%'
-    
-    UNION
-    
-    -- Agents from Incidents
-    SELECT DISTINCT
-        i.AssignedTo,
-        i.AssignedTo,
-        NULL,
-        'agent'
-    FROM Incidents i
-    WHERE i.AssignedTo IS NOT NULL 
-        AND LTRIM(RTRIM(i.AssignedTo)) <> ''
-        AND i.AssignedTo NOT LIKE '%NULL%'
-    
-    UNION
-    
-    -- Approvers from Requests
-    SELECT DISTINCT
-        r.ApproverName,
-        r.ApproverName,
-        NULL,
-        'agent'
-    FROM Requests r
-    WHERE r.ApproverName IS NOT NULL 
-        AND LTRIM(RTRIM(r.ApproverName)) <> ''
-        AND r.ApproverName NOT LIKE '%NULL%'
-),
-BestRole AS (
-    SELECT 
-        Email,
-        MAX(DisplayName) AS DisplayName,
-        MAX(Department) AS Department,
-        CASE WHEN MAX(CASE WHEN Role = 'agent' THEN 1 ELSE 0 END) = 1 THEN 'agent' ELSE 'user' END AS Role
-    FROM AllUsers
-    GROUP BY Email
-)
-INSERT INTO Users (Email, Username, DisplayName, FirstName, LastName, Department, Role, CreatedBy, CreatedDate)
-SELECT
-    Email,
-    LEFT(Email, CHARINDEX('@', Email + '@') - 1),
-    DisplayName,
-    DisplayName,
-    '',
-    Department,
-    Role,
-    'System Migration',
-    GETUTCDATE()
-FROM BestRole
-WHERE NOT EXISTS (SELECT 1 FROM Users WHERE Users.Email = BestRole.Email);
+-- Insert users from UserRoles table
+INSERT INTO Users (Email, Username, DisplayName, FirstName, LastName, Role, CreatedBy, CreatedDate)
+SELECT 
+    userEmail AS Email,
+    LEFT(userEmail, CHARINDEX('@', userEmail + '@') - 1) AS Username,
+    COALESCE(userName, userEmail) AS DisplayName,
+    COALESCE(userName, userEmail) AS FirstName,
+    '' AS LastName,
+    role AS Role,
+    'System Migration' AS CreatedBy,
+    GETUTCDATE() AS CreatedDate
+FROM UserRoles
+WHERE userEmail IS NOT NULL 
+    AND LTRIM(RTRIM(userEmail)) <> ''
+    AND NOT EXISTS (SELECT 1 FROM Users WHERE Email = UserRoles.userEmail)
+GROUP BY userEmail, userName, role;
 
 -- Report migration results
 SELECT 
