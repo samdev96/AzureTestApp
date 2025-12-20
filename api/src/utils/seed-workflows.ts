@@ -43,18 +43,19 @@ async function seedDefaultRequestWorkflow() {
                         order: 1,
                         actions: [
                             {
-                                id: 'notify_approver',
+                                id: 'notify_manager',
                                 type: 'notification',
                                 trigger: 'on_enter',
                                 config: {
-                                    recipient: 'approver',
-                                    template: 'request_approval_needed'
+                                    recipient: 'manager',
+                                    template: 'request_approval_needed',
+                                    recipientField: 'requester.ManagerEmail'
                                 }
                             }
                         ],
                         notifications: [
                             {
-                                recipient: 'approver',
+                                recipient: 'manager',
                                 trigger: 'on_enter',
                                 template: 'request_approval_needed'
                             }
