@@ -7,17 +7,17 @@ INSERT INTO Users (Email, Username, DisplayName, FirstName, LastName, Role, Crea
 SELECT 
     UserEmail AS Email,
     LEFT(UserEmail, CHARINDEX('@', UserEmail + '@') - 1) AS Username,
-    COALESCE(UserName, UserEmail) AS DisplayName,
-    COALESCE(UserName, UserEmail) AS FirstName,
+    COALESCE(DisplayName, UserEmail) AS DisplayName,
+    COALESCE(DisplayName, UserEmail) AS FirstName,
     '' AS LastName,
-    Role AS Role,
+    RoleName AS Role,
     'System Migration' AS CreatedBy,
     GETUTCDATE() AS CreatedDate
 FROM UserRoles
 WHERE UserEmail IS NOT NULL 
     AND LTRIM(RTRIM(UserEmail)) <> ''
     AND NOT EXISTS (SELECT 1 FROM Users WHERE Email = UserRoles.UserEmail)
-GROUP BY UserEmail, UserName, Role;
+GROUP BY UserEmail, DisplayName, RoleName;
 
 -- Report migration results
 SELECT 
