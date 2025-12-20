@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { workflowsAPI, Workflow, WorkflowType } from '../services/api';
+import WorkflowDetailsModal from './WorkflowDetailsModal';
 import './Workflows.css';
 
 const Workflows: React.FC = () => {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
 
   useEffect(() => {
     fetchWorkflows();
@@ -40,8 +42,21 @@ const Workflows: React.FC = () => {
     return labels[type] || type;
   };
 
+  const handleViewWorkflow = (workflow: Workflow) => {
+    setSelectedWorkflow(workflow);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedWorkflow(null);
+  };
+
   return (
-    <div className="workflows-container">
+    <div className="workflows-container">{selectedWorkflow && (
+        <WorkflowDetailsModal 
+          workflow={selectedWorkflow} 
+          onClose={handleCloseModal} 
+        />
+      )}
       <div className="workflows-header">
         <h1>Workflows</h1>
         <p>Create and manage automated workflows for your ITSM processes</p>
@@ -82,7 +97,10 @@ const Workflows: React.FC = () => {
                 {workflows.map((workflow) => (
                   <tr key={workflow.id}>
                     <td>
-                      <div className="workflow-name">
+                      <div 
+                        className="workflow-name clickable" 
+                        onClick={() => handleViewWorkflow(workflow)}
+                      >
                         <strong>{workflow.name}</strong>
                         {workflow.description && (
                           <span className="workflow-description">{workflow.description}</span>
@@ -117,7 +135,13 @@ const Workflows: React.FC = () => {
                     </td>
                     <td>
                       <div className="workflow-actions">
-                        <button className="btn-action" title="View Details">👁️</button>
+                        <button 
+                          className="btn-action" 
+                          title="View Details"
+                          onClick={() => handleViewWorkflow(workflow)}
+                        >
+                          👁️
+                        </button>
                         <button className="btn-action" title="Edit">✏️</button>
                         {!workflow.isDefault && (
                           <button className="btn-action btn-delete" title="Delete">🗑️</button>

@@ -152,6 +152,16 @@
   gap: 4px;
 }
 
+.workflow-name.clickable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.workflow-name.clickable:hover strong {
+  color: #667eea;
+  text-decoration: underline;
+}
+
 .workflow-name strong {
   color: #333;
   font-size: 14px;
