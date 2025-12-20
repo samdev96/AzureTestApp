@@ -2,22 +2,30 @@
 -- Run this AFTER creating the Users table
 -- UserRoles already has clean user data we can use
 
--- Insert users from UserRoles table
+-- First, clear existing Users table to avoid conflicts
+DELETE FROM Users;
+
+-- Insert users from UserRoles table (one row per unique email)
+-- For users with multiple roles, pick the highest privilege role
 INSERT INTO Users (Email, Username, DisplayName, FirstName, LastName, Role, CreatedBy, CreatedDate)
 SELECT 
     UserEmail AS Email,
     LEFT(UserEmail, CHARINDEX('@', UserEmail + '@') - 1) AS Username,
-    COALESCE(DisplayName, UserEmail) AS DisplayName,
-    COALESCE(DisplayName, UserEmail) AS FirstName,
+    MAX(COALESCE(DisplayName, UserEmail)) AS DisplayName,
+    MAX(COALESCE(DisplayName, UserEmail)) AS FirstName,
     '' AS LastName,
-    RoleName AS Role,
+    -- Pick highest privilege role: admin > agent > user
+    CASE 
+        WHEN MAX(CASE WHEN RoleName = 'admin' THEN 1 ELSE 0 END) = 1 THEN 'admin'
+        WHEN MAX(CASE WHEN RoleName = 'agent' THEN 1 ELSE 0 END) = 1 THEN 'agent'
+        ELSE 'user'
+    END AS Role,
     'System Migration' AS CreatedBy,
     GETUTCDATE() AS CreatedDate
 FROM UserRoles
 WHERE UserEmail IS NOT NULL 
     AND LTRIM(RTRIM(UserEmail)) <> ''
-    AND NOT EXISTS (SELECT 1 FROM Users WHERE Email = UserRoles.UserEmail)
-GROUP BY UserEmail, DisplayName, RoleName;
+GROUP BY UserEmail;
 
 -- Report migration results
 SELECT 

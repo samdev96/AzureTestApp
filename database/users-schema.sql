@@ -33,7 +33,7 @@ CREATE TABLE Users (
     OfficeLocation NVARCHAR(100) NULL,
     
     -- System Integration
-    ExternalID NVARCHAR(255) NULL UNIQUE, -- Azure AD objectId, Google ID, etc.
+    ExternalID NVARCHAR(255) NULL, -- Azure AD objectId, Google ID, etc. (unique when not null, enforced by filtered index)
     ExternalSource NVARCHAR(50) NULL, -- 'AzureAD', 'Google', 'Okta', 'Manual'
     LastSyncDate DATETIME2 NULL,
     
@@ -59,7 +59,7 @@ CREATE TABLE Users (
 -- Create indexes for performance
 CREATE INDEX IX_Users_Email ON Users(Email);
 CREATE INDEX IX_Users_ManagerEmail ON Users(ManagerEmail);
-CREATE INDEX IX_Users_ExternalID ON Users(ExternalID);
+CREATE UNIQUE INDEX IX_Users_ExternalID ON Users(ExternalID) WHERE ExternalID IS NOT NULL; -- Filtered unique index allows multiple NULLs
 CREATE INDEX IX_Users_Department ON Users(Department);
 CREATE INDEX IX_Users_IsActive ON Users(IsActive);
 CREATE INDEX IX_Users_Role ON Users(Role);
