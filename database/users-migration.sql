@@ -24,22 +24,23 @@ SELECT DISTINCT
         THEN LEFT(r.CreatedBy, CHARINDEX('@', r.CreatedBy) - 1)
         ELSE r.CreatedBy
     END AS Username,
-    MAX(r.RequesterName) AS DisplayName,
+    COALESCE(MAX(r.RequesterName), r.CreatedBy) AS DisplayName,
     CASE 
-        WHEN CHARINDEX(' ', MAX(r.RequesterName)) > 0 
-        THEN LEFT(MAX(r.RequesterName), CHARINDEX(' ', MAX(r.RequesterName)) - 1)
-        ELSE MAX(r.RequesterName)
+        WHEN CHARINDEX(' ', COALESCE(MAX(r.RequesterName), r.CreatedBy)) > 0 
+        THEN LEFT(COALESCE(MAX(r.RequesterName), r.CreatedBy), CHARINDEX(' ', COALESCE(MAX(r.RequesterName), r.CreatedBy)) - 1)
+        ELSE COALESCE(MAX(r.RequesterName), r.CreatedBy)
     END AS FirstName,
     CASE 
-        WHEN CHARINDEX(' ', MAX(r.RequesterName)) > 0 
-        THEN SUBSTRING(MAX(r.RequesterName), CHARINDEX(' ', MAX(r.RequesterName)) + 1, LEN(MAX(r.RequesterName)))
+        WHEN CHARINDEX(' ', COALESCE(MAX(r.RequesterName), r.CreatedBy)) > 0 
+        THEN SUBSTRING(COALESCE(MAX(r.RequesterName), r.CreatedBy), CHARINDEX(' ', COALESCE(MAX(r.RequesterName), r.CreatedBy)) + 1, LEN(COALESCE(MAX(r.RequesterName), r.CreatedBy)))
         ELSE ''
     END AS LastName,
     MAX(r.Department) AS Department,
     'user' AS Role
 FROM Requests r
 WHERE r.CreatedBy IS NOT NULL 
-    AND r.CreatedBy <> ''
+    AND LTRIM(RTRIM(r.CreatedBy)) <> ''
+    AND r.CreatedBy NOT LIKE '%NULL%'
 GROUP BY r.CreatedBy;
 
 -- Insert unique users from Incidents table (requesters)
@@ -66,7 +67,8 @@ SELECT DISTINCT
     'user' AS Role
 FROM Incidents i
 WHERE i.CreatedBy IS NOT NULL 
-    AND i.CreatedBy <> ''
+    AND LTRIM(RTRIM(i.CreatedBy)) <> ''
+    AND i.CreatedBy NOT LIKE '%NULL%'
     AND NOT EXISTS (SELECT 1 FROM #TempUsers WHERE Email = i.CreatedBy)
 GROUP BY i.CreatedBy;
 
@@ -94,7 +96,8 @@ SELECT DISTINCT
     'agent' AS Role
 FROM Requests r
 WHERE r.AssignedTo IS NOT NULL 
-    AND r.AssignedTo <> ''
+    AND LTRIM(RTRIM(r.AssignedTo)) <> ''
+    AND r.AssignedTo NOT LIKE '%NULL%'
     AND NOT EXISTS (SELECT 1 FROM #TempUsers WHERE Email = r.AssignedTo)
 GROUP BY r.AssignedTo;
 
@@ -122,7 +125,8 @@ SELECT DISTINCT
     'agent' AS Role
 FROM Incidents i
 WHERE i.AssignedTo IS NOT NULL 
-    AND i.AssignedTo <> ''
+    AND LTRIM(RTRIM(i.AssignedTo)) <> ''
+    AND i.AssignedTo NOT LIKE '%NULL%'
     AND NOT EXISTS (SELECT 1 FROM #TempUsers WHERE Email = i.AssignedTo)
 GROUP BY i.AssignedTo;
 
@@ -150,7 +154,8 @@ SELECT DISTINCT
     'agent' AS Role
 FROM Requests r
 WHERE r.ApproverName IS NOT NULL 
-    AND r.ApproverName <> ''
+    AND LTRIM(RTRIM(r.ApproverName)) <> ''
+    AND r.ApproverName NOT LIKE '%NULL%'
     AND NOT EXISTS (SELECT 1 FROM #TempUsers WHERE Email = r.ApproverName)
 GROUP BY r.ApproverName;
 
