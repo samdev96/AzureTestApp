@@ -5,19 +5,19 @@
 -- Insert users from UserRoles table
 INSERT INTO Users (Email, Username, DisplayName, FirstName, LastName, Role, CreatedBy, CreatedDate)
 SELECT 
-    userEmail AS Email,
-    LEFT(userEmail, CHARINDEX('@', userEmail + '@') - 1) AS Username,
-    COALESCE(userName, userEmail) AS DisplayName,
-    COALESCE(userName, userEmail) AS FirstName,
+    UserEmail AS Email,
+    LEFT(UserEmail, CHARINDEX('@', UserEmail + '@') - 1) AS Username,
+    COALESCE(UserName, UserEmail) AS DisplayName,
+    COALESCE(UserName, UserEmail) AS FirstName,
     '' AS LastName,
-    role AS Role,
+    Role AS Role,
     'System Migration' AS CreatedBy,
     GETUTCDATE() AS CreatedDate
 FROM UserRoles
-WHERE userEmail IS NOT NULL 
-    AND LTRIM(RTRIM(userEmail)) <> ''
-    AND NOT EXISTS (SELECT 1 FROM Users WHERE Email = UserRoles.userEmail)
-GROUP BY userEmail, userName, role;
+WHERE UserEmail IS NOT NULL 
+    AND LTRIM(RTRIM(UserEmail)) <> ''
+    AND NOT EXISTS (SELECT 1 FROM Users WHERE Email = UserRoles.UserEmail)
+GROUP BY UserEmail, UserName, Role;
 
 -- Report migration results
 SELECT 
