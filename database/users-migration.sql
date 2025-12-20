@@ -178,6 +178,18 @@ WHERE Role = 'user'
       WHERE Role = 'agent'
   );
 
+-- Filter out any remaining NULLs or invalid emails from temp table
+DELETE FROM #TempUsers
+WHERE Email IS NULL 
+   OR LTRIM(RTRIM(Email)) = ''
+   OR Email LIKE '%NULL%'
+   OR Username IS NULL
+   OR LTRIM(RTRIM(Username)) = ''
+   OR DisplayName IS NULL
+   OR LTRIM(RTRIM(DisplayName)) = ''
+   OR FirstName IS NULL
+   OR LastName IS NULL;
+
 -- Now insert all unique users into the actual Users table
 INSERT INTO Users (Email, Username, DisplayName, FirstName, LastName, Department, Role, CreatedBy, CreatedDate)
 SELECT DISTINCT
