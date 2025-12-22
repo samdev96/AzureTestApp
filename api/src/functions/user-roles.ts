@@ -167,17 +167,39 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         SELECT 
                             UserID,
                             Email,
+                            UserPrincipalName,
                             Username,
-                            DisplayName,
                             FirstName,
                             LastName,
-                            Role,
-                            ExternalID,
+                            DisplayName,
+                            PreferredName,
+                            ManagerEmail,
+                            ManagerID,
                             Department,
+                            CostCenter,
+                            Division,
+                            Location,
+                            Country,
                             JobTitle,
+                            EmployeeID,
+                            EmployeeType,
+                            CompanyName,
+                            BusinessPhone,
+                            MobilePhone,
+                            OfficeLocation,
+                            ExternalID,
+                            ExternalSource,
+                            LastSyncDate,
+                            Role,
+                            AssignmentGroupIDs,
+                            TimeZone,
+                            Locale,
                             IsActive,
+                            AccountEnabled,
                             CreatedDate,
                             CreatedBy,
+                            ModifiedBy,
+                            ModifiedDate,
                             CASE WHEN LOWER(Role) IN ('agent', 'admin') THEN 1 ELSE 0 END as IsAgent,
                             CASE WHEN LOWER(Role) = 'admin' THEN 1 ELSE 0 END as IsAdmin
                         FROM Users
@@ -256,16 +278,54 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     userId: row.UserID,
                     userEmail: row.Email,
                     userObjectId: row.ExternalID || '',
+                    username: row.Username || '',
                     displayName: row.DisplayName || '',
                     firstName: row.FirstName || '',
                     lastName: row.LastName || '',
+                    preferredName: row.PreferredName || null,
+                    
+                    // Organizational Hierarchy
+                    managerEmail: row.ManagerEmail || null,
+                    managerId: row.ManagerID || null,
+                    department: row.Department || null,
+                    costCenter: row.CostCenter || null,
+                    division: row.Division || null,
+                    location: row.Location || null,
+                    country: row.Country || null,
+                    
+                    // Job Information
+                    jobTitle: row.JobTitle || null,
+                    employeeId: row.EmployeeID || null,
+                    employeeType: row.EmployeeType || null,
+                    companyName: row.CompanyName || null,
+                    
+                    // Contact Information
+                    businessPhone: row.BusinessPhone || null,
+                    mobilePhone: row.MobilePhone || null,
+                    officeLocation: row.OfficeLocation || null,
+                    
+                    // System Integration
+                    externalId: row.ExternalID || null,
+                    externalSource: row.ExternalSource || null,
+                    lastSyncDate: row.LastSyncDate || null,
+                    
+                    // Application Fields
                     role: row.Role || 'user',
+                    assignmentGroupIds: row.AssignmentGroupIDs || null,
+                    timeZone: row.TimeZone || null,
+                    locale: row.Locale || null,
+                    
+                    // Status
+                    isActive: row.IsActive === 1 || row.IsActive === true,
+                    accountEnabled: row.AccountEnabled === 1 || row.AccountEnabled === true,
                     isAgent: row.IsAgent === 1,
                     isAdmin: row.IsAdmin === 1,
-                    department: row.Department || '',
-                    jobTitle: row.JobTitle || '',
+                    
+                    // Audit
                     createdDate: row.CreatedDate,
-                    createdBy: row.CreatedBy
+                    createdBy: row.CreatedBy || null,
+                    modifiedBy: row.ModifiedBy || null,
+                    modifiedDate: row.ModifiedDate || null
                 }));
                 
                 return {
@@ -388,7 +448,30 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
 
             // Parse request body
             const requestText = await request.text();
-            const { targetUserEmail, newRole, displayName, firstName, lastName, department, jobTitle } = JSON.parse(requestText);
+            const { 
+                targetUserEmail, 
+                newRole, 
+                displayName, 
+                firstName, 
+                lastName,
+                preferredName,
+                username,
+                managerEmail,
+                department, 
+                costCenter,
+                division,
+                location,
+                country,
+                jobTitle,
+                employeeId,
+                employeeType,
+                companyName,
+                businessPhone,
+                mobilePhone,
+                officeLocation,
+                timeZone,
+                locale
+            } = JSON.parse(requestText);
 
             if (!targetUserEmail) {
                 return {
@@ -464,13 +547,73 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     updateFields.push('LastName = @lastName');
                     updateRequest.input('lastName', lastName);
                 }
+                if (preferredName !== undefined) {
+                    updateFields.push('PreferredName = @preferredName');
+                    updateRequest.input('preferredName', preferredName || null);
+                }
+                if (username !== undefined) {
+                    updateFields.push('Username = @username');
+                    updateRequest.input('username', username);
+                }
+                if (managerEmail !== undefined) {
+                    updateFields.push('ManagerEmail = @managerEmail');
+                    updateRequest.input('managerEmail', managerEmail || null);
+                }
                 if (department !== undefined) {
                     updateFields.push('Department = @department');
-                    updateRequest.input('department', department);
+                    updateRequest.input('department', department || null);
+                }
+                if (costCenter !== undefined) {
+                    updateFields.push('CostCenter = @costCenter');
+                    updateRequest.input('costCenter', costCenter || null);
+                }
+                if (division !== undefined) {
+                    updateFields.push('Division = @division');
+                    updateRequest.input('division', division || null);
+                }
+                if (location !== undefined) {
+                    updateFields.push('Location = @location');
+                    updateRequest.input('location', location || null);
+                }
+                if (country !== undefined) {
+                    updateFields.push('Country = @country');
+                    updateRequest.input('country', country || null);
                 }
                 if (jobTitle !== undefined) {
                     updateFields.push('JobTitle = @jobTitle');
-                    updateRequest.input('jobTitle', jobTitle);
+                    updateRequest.input('jobTitle', jobTitle || null);
+                }
+                if (employeeId !== undefined) {
+                    updateFields.push('EmployeeID = @employeeId');
+                    updateRequest.input('employeeId', employeeId || null);
+                }
+                if (employeeType !== undefined) {
+                    updateFields.push('EmployeeType = @employeeType');
+                    updateRequest.input('employeeType', employeeType || null);
+                }
+                if (companyName !== undefined) {
+                    updateFields.push('CompanyName = @companyName');
+                    updateRequest.input('companyName', companyName || null);
+                }
+                if (businessPhone !== undefined) {
+                    updateFields.push('BusinessPhone = @businessPhone');
+                    updateRequest.input('businessPhone', businessPhone || null);
+                }
+                if (mobilePhone !== undefined) {
+                    updateFields.push('MobilePhone = @mobilePhone');
+                    updateRequest.input('mobilePhone', mobilePhone || null);
+                }
+                if (officeLocation !== undefined) {
+                    updateFields.push('OfficeLocation = @officeLocation');
+                    updateRequest.input('officeLocation', officeLocation || null);
+                }
+                if (timeZone !== undefined) {
+                    updateFields.push('TimeZone = @timeZone');
+                    updateRequest.input('timeZone', timeZone || null);
+                }
+                if (locale !== undefined) {
+                    updateFields.push('Locale = @locale');
+                    updateRequest.input('locale', locale || null);
                 }
 
                 if (updateFields.length > 0) {

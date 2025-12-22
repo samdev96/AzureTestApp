@@ -11,9 +11,37 @@ interface NewUserForm {
 }
 
 interface EditUserForm {
+  // Core Identity
   email: string;
+  username: string;
   displayName: string;
+  firstName: string;
+  lastName: string;
+  preferredName: string;
+  
+  // Organizational Hierarchy
+  managerEmail: string;
+  department: string;
+  costCenter: string;
+  division: string;
+  location: string;
+  country: string;
+  
+  // Job Information
+  jobTitle: string;
+  employeeId: string;
+  employeeType: string;
+  companyName: string;
+  
+  // Contact Information
+  businessPhone: string;
+  mobilePhone: string;
+  officeLocation: string;
+  
+  // Application Fields
   role: 'user' | 'agent' | 'admin';
+  timeZone: string;
+  locale: string;
   assignmentGroups: number[];
 }
 
@@ -42,8 +70,27 @@ const UserManagement: React.FC = () => {
   const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [editUserForm, setEditUserForm] = useState<EditUserForm>({
     email: '',
+    username: '',
     displayName: '',
+    firstName: '',
+    lastName: '',
+    preferredName: '',
+    managerEmail: '',
+    department: '',
+    costCenter: '',
+    division: '',
+    location: '',
+    country: '',
+    jobTitle: '',
+    employeeId: '',
+    employeeType: '',
+    companyName: '',
+    businessPhone: '',
+    mobilePhone: '',
+    officeLocation: '',
     role: 'user',
+    timeZone: '',
+    locale: '',
     assignmentGroups: []
   });
   const [editFormErrors, setEditFormErrors] = useState<{ [key: string]: string }>({});
@@ -202,8 +249,27 @@ const UserManagement: React.FC = () => {
   const openEditUserModal = (user: User) => {
     setEditUserForm({
       email: user.userEmail,
+      username: user.username || '',
       displayName: user.displayName || '',
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      preferredName: user.preferredName || '',
+      managerEmail: user.managerEmail || '',
+      department: user.department || '',
+      costCenter: user.costCenter || '',
+      division: user.division || '',
+      location: user.location || '',
+      country: user.country || '',
+      jobTitle: user.jobTitle || '',
+      employeeId: user.employeeId || '',
+      employeeType: user.employeeType || '',
+      companyName: user.companyName || '',
+      businessPhone: user.businessPhone || '',
+      mobilePhone: user.mobilePhone || '',
+      officeLocation: user.officeLocation || '',
       role: user.role,
+      timeZone: user.timeZone || '',
+      locale: user.locale || '',
       assignmentGroups: []  // TODO: Load user's current assignment groups
     });
     setEditFormErrors({});
@@ -214,8 +280,27 @@ const UserManagement: React.FC = () => {
     setShowEditUserModal(false);
     setEditUserForm({
       email: '',
+      username: '',
       displayName: '',
+      firstName: '',
+      lastName: '',
+      preferredName: '',
+      managerEmail: '',
+      department: '',
+      costCenter: '',
+      division: '',
+      location: '',
+      country: '',
+      jobTitle: '',
+      employeeId: '',
+      employeeType: '',
+      companyName: '',
+      businessPhone: '',
+      mobilePhone: '',
+      officeLocation: '',
       role: 'user',
+      timeZone: '',
+      locale: '',
       assignmentGroups: []
     });
     setEditFormErrors({});
@@ -224,6 +309,12 @@ const UserManagement: React.FC = () => {
   const validateEditForm = (): boolean => {
     const errors: { [key: string]: string } = {};
     
+    if (!editUserForm.firstName.trim()) {
+      errors.firstName = 'First name is required';
+    }
+    if (!editUserForm.lastName.trim()) {
+      errors.lastName = 'Last name is required';
+    }
     if (!editUserForm.displayName.trim()) {
       errors.displayName = 'Display name is required';
     }
@@ -278,6 +369,25 @@ const UserManagement: React.FC = () => {
       const response = await userManagementAPI.update({
         targetUserEmail: editUserForm.email,
         displayName: editUserForm.displayName,
+        firstName: editUserForm.firstName,
+        lastName: editUserForm.lastName,
+        preferredName: editUserForm.preferredName || undefined,
+        username: editUserForm.username,
+        managerEmail: editUserForm.managerEmail || undefined,
+        department: editUserForm.department || undefined,
+        costCenter: editUserForm.costCenter || undefined,
+        division: editUserForm.division || undefined,
+        location: editUserForm.location || undefined,
+        country: editUserForm.country || undefined,
+        jobTitle: editUserForm.jobTitle || undefined,
+        employeeId: editUserForm.employeeId || undefined,
+        employeeType: editUserForm.employeeType || undefined,
+        companyName: editUserForm.companyName || undefined,
+        businessPhone: editUserForm.businessPhone || undefined,
+        mobilePhone: editUserForm.mobilePhone || undefined,
+        officeLocation: editUserForm.officeLocation || undefined,
+        timeZone: editUserForm.timeZone || undefined,
+        locale: editUserForm.locale || undefined,
         newRole: editUserForm.role
       });
       
@@ -635,44 +745,320 @@ const UserManagement: React.FC = () => {
       {/* Edit User Modal */}
       {showEditUserModal && (
         <div className="modal-overlay" onClick={closeEditUserModal}>
-          <div className="modal-content edit-user-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content edit-user-modal expanded-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Edit User</h2>
               <button className="close-button" onClick={closeEditUserModal}>×</button>
             </div>
             
             <form onSubmit={handleSaveUser} className="edit-user-form">
+              {/* Core Identity Section */}
               <div className="form-section">
-                <h3>User Information</h3>
+                <h3>🪪 User Identity</h3>
                 
-                <div className="form-group">
-                  <label htmlFor="edit-email">Email Address</label>
-                  <input
-                    type="email"
-                    id="edit-email"
-                    value={editUserForm.email}
-                    disabled
-                    className="disabled-input"
-                  />
-                  <span className="helper-text">Email cannot be changed</span>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-email">Email Address</label>
+                    <input
+                      type="email"
+                      id="edit-email"
+                      value={editUserForm.email}
+                      disabled
+                      className="disabled-input"
+                    />
+                    <span className="helper-text">Email cannot be changed</span>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-username">Username</label>
+                    <input
+                      type="text"
+                      id="edit-username"
+                      value={editUserForm.username}
+                      onChange={(e) => handleEditFormChange('username', e.target.value)}
+                      placeholder="jdoe"
+                    />
+                  </div>
                 </div>
                 
-                <div className="form-group">
-                  <label htmlFor="edit-displayName">Display Name *</label>
-                  <input
-                    type="text"
-                    id="edit-displayName"
-                    value={editUserForm.displayName}
-                    onChange={(e) => handleEditFormChange('displayName', e.target.value)}
-                    placeholder="John Doe"
-                    className={editFormErrors.displayName ? 'error' : ''}
-                  />
-                  {editFormErrors.displayName && <span className="error-text">{editFormErrors.displayName}</span>}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-firstName">First Name *</label>
+                    <input
+                      type="text"
+                      id="edit-firstName"
+                      value={editUserForm.firstName}
+                      onChange={(e) => handleEditFormChange('firstName', e.target.value)}
+                      placeholder="John"
+                      className={editFormErrors.firstName ? 'error' : ''}
+                    />
+                    {editFormErrors.firstName && <span className="error-text">{editFormErrors.firstName}</span>}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-lastName">Last Name *</label>
+                    <input
+                      type="text"
+                      id="edit-lastName"
+                      value={editUserForm.lastName}
+                      onChange={(e) => handleEditFormChange('lastName', e.target.value)}
+                      placeholder="Doe"
+                      className={editFormErrors.lastName ? 'error' : ''}
+                    />
+                    {editFormErrors.lastName && <span className="error-text">{editFormErrors.lastName}</span>}
+                  </div>
+                </div>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-displayName">Display Name *</label>
+                    <input
+                      type="text"
+                      id="edit-displayName"
+                      value={editUserForm.displayName}
+                      onChange={(e) => handleEditFormChange('displayName', e.target.value)}
+                      placeholder="John Doe"
+                      className={editFormErrors.displayName ? 'error' : ''}
+                    />
+                    {editFormErrors.displayName && <span className="error-text">{editFormErrors.displayName}</span>}
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-preferredName">Preferred Name</label>
+                    <input
+                      type="text"
+                      id="edit-preferredName"
+                      value={editUserForm.preferredName}
+                      onChange={(e) => handleEditFormChange('preferredName', e.target.value)}
+                      placeholder="Johnny"
+                    />
+                  </div>
                 </div>
               </div>
               
+              {/* Organizational Hierarchy Section */}
               <div className="form-section">
-                <h3>Role Assignment</h3>
+                <h3>🏢 Organization</h3>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-department">Department</label>
+                    <input
+                      type="text"
+                      id="edit-department"
+                      value={editUserForm.department}
+                      onChange={(e) => handleEditFormChange('department', e.target.value)}
+                      placeholder="IT Services"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-division">Division</label>
+                    <input
+                      type="text"
+                      id="edit-division"
+                      value={editUserForm.division}
+                      onChange={(e) => handleEditFormChange('division', e.target.value)}
+                      placeholder="Technology"
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-costCenter">Cost Center</label>
+                    <input
+                      type="text"
+                      id="edit-costCenter"
+                      value={editUserForm.costCenter}
+                      onChange={(e) => handleEditFormChange('costCenter', e.target.value)}
+                      placeholder="CC-1234"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-managerEmail">Manager Email</label>
+                    <input
+                      type="email"
+                      id="edit-managerEmail"
+                      value={editUserForm.managerEmail}
+                      onChange={(e) => handleEditFormChange('managerEmail', e.target.value)}
+                      placeholder="manager@company.com"
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-location">Location</label>
+                    <input
+                      type="text"
+                      id="edit-location"
+                      value={editUserForm.location}
+                      onChange={(e) => handleEditFormChange('location', e.target.value)}
+                      placeholder="New York"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-country">Country</label>
+                    <input
+                      type="text"
+                      id="edit-country"
+                      value={editUserForm.country}
+                      onChange={(e) => handleEditFormChange('country', e.target.value)}
+                      placeholder="United States"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Job Information Section */}
+              <div className="form-section">
+                <h3>💼 Job Information</h3>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-jobTitle">Job Title</label>
+                    <input
+                      type="text"
+                      id="edit-jobTitle"
+                      value={editUserForm.jobTitle}
+                      onChange={(e) => handleEditFormChange('jobTitle', e.target.value)}
+                      placeholder="Software Engineer"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-employeeId">Employee ID</label>
+                    <input
+                      type="text"
+                      id="edit-employeeId"
+                      value={editUserForm.employeeId}
+                      onChange={(e) => handleEditFormChange('employeeId', e.target.value)}
+                      placeholder="EMP-12345"
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-employeeType">Employee Type</label>
+                    <select
+                      id="edit-employeeType"
+                      value={editUserForm.employeeType}
+                      onChange={(e) => handleEditFormChange('employeeType', e.target.value)}
+                    >
+                      <option value="">Select Type</option>
+                      <option value="Employee">Employee</option>
+                      <option value="Contractor">Contractor</option>
+                      <option value="Vendor">Vendor</option>
+                      <option value="Intern">Intern</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-companyName">Company Name</label>
+                    <input
+                      type="text"
+                      id="edit-companyName"
+                      value={editUserForm.companyName}
+                      onChange={(e) => handleEditFormChange('companyName', e.target.value)}
+                      placeholder="Company Inc."
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Contact Information Section */}
+              <div className="form-section">
+                <h3>📞 Contact Information</h3>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-businessPhone">Business Phone</label>
+                    <input
+                      type="tel"
+                      id="edit-businessPhone"
+                      value={editUserForm.businessPhone}
+                      onChange={(e) => handleEditFormChange('businessPhone', e.target.value)}
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-mobilePhone">Mobile Phone</label>
+                    <input
+                      type="tel"
+                      id="edit-mobilePhone"
+                      value={editUserForm.mobilePhone}
+                      onChange={(e) => handleEditFormChange('mobilePhone', e.target.value)}
+                      placeholder="+1 (555) 987-6543"
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="edit-officeLocation">Office Location</label>
+                  <input
+                    type="text"
+                    id="edit-officeLocation"
+                    value={editUserForm.officeLocation}
+                    onChange={(e) => handleEditFormChange('officeLocation', e.target.value)}
+                    placeholder="Building A, Floor 3, Desk 42"
+                  />
+                </div>
+              </div>
+              
+              {/* Preferences Section */}
+              <div className="form-section">
+                <h3>⚙️ Preferences</h3>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="edit-timeZone">Time Zone</label>
+                    <select
+                      id="edit-timeZone"
+                      value={editUserForm.timeZone}
+                      onChange={(e) => handleEditFormChange('timeZone', e.target.value)}
+                    >
+                      <option value="">Select Time Zone</option>
+                      <option value="UTC">UTC</option>
+                      <option value="America/New_York">Eastern Time (ET)</option>
+                      <option value="America/Chicago">Central Time (CT)</option>
+                      <option value="America/Denver">Mountain Time (MT)</option>
+                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                      <option value="Europe/London">London (GMT)</option>
+                      <option value="Europe/Paris">Paris (CET)</option>
+                      <option value="Asia/Tokyo">Tokyo (JST)</option>
+                      <option value="Asia/Shanghai">Shanghai (CST)</option>
+                      <option value="Australia/Sydney">Sydney (AEST)</option>
+                    </select>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="edit-locale">Locale</label>
+                    <select
+                      id="edit-locale"
+                      value={editUserForm.locale}
+                      onChange={(e) => handleEditFormChange('locale', e.target.value)}
+                    >
+                      <option value="">Select Locale</option>
+                      <option value="en-US">English (US)</option>
+                      <option value="en-GB">English (UK)</option>
+                      <option value="es-ES">Spanish (Spain)</option>
+                      <option value="fr-FR">French (France)</option>
+                      <option value="de-DE">German (Germany)</option>
+                      <option value="ja-JP">Japanese (Japan)</option>
+                      <option value="zh-CN">Chinese (Simplified)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Role Assignment Section */}
+              <div className="form-section">
+                <h3>🔐 Role Assignment</h3>
                 
                 <div className="form-group">
                   <label>User Role</label>
@@ -701,7 +1087,7 @@ const UserManagement: React.FC = () => {
               
               {editUserForm.role === 'agent' && (
                 <div className="form-section">
-                  <h3>Assignment Groups</h3>
+                  <h3>👥 Assignment Groups</h3>
                   <p className="section-desc">Select the groups this user should be a member of</p>
                   
                   {loadingGroups ? (

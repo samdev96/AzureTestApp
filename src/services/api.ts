@@ -116,14 +116,58 @@ export interface AssignmentGroupMember {
 
 // User Management interfaces
 export interface User {
+  // Core Identity
+  userId: number;
   userEmail: string;
-  userObjectId: string;
-  displayName?: string;
+  userObjectId?: string;
+  username: string;
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  preferredName?: string;
+  
+  // Organizational Hierarchy
+  managerEmail?: string;
+  managerId?: number;
+  department?: string;
+  costCenter?: string;
+  division?: string;
+  location?: string;
+  country?: string;
+  
+  // Job Information
+  jobTitle?: string;
+  employeeId?: string;
+  employeeType?: string;
+  companyName?: string;
+  
+  // Contact Information
+  businessPhone?: string;
+  mobilePhone?: string;
+  officeLocation?: string;
+  
+  // System Integration
+  externalId?: string;
+  externalSource?: string;
+  lastSyncDate?: string;
+  
+  // Application Fields
   role: 'user' | 'agent' | 'admin';
+  assignmentGroupIds?: string;
+  timeZone?: string;
+  locale?: string;
+  
+  // Status
+  isActive: boolean;
+  accountEnabled?: boolean;
   isAgent: boolean;
   isAdmin?: boolean;
-  assignedDate: string;
-  assignedBy: string;
+  
+  // Audit
+  createdDate: string;
+  createdBy?: string;
+  modifiedBy?: string;
+  modifiedDate?: string;
 }
 
 // Helper function to get impersonated user from session storage
@@ -308,6 +352,25 @@ export const userManagementAPI = {
   update: async (userData: {
     targetUserEmail: string;
     displayName?: string;
+    firstName?: string;
+    lastName?: string;
+    preferredName?: string;
+    username?: string;
+    managerEmail?: string;
+    department?: string;
+    costCenter?: string;
+    division?: string;
+    location?: string;
+    country?: string;
+    jobTitle?: string;
+    employeeId?: string;
+    employeeType?: string;
+    companyName?: string;
+    businessPhone?: string;
+    mobilePhone?: string;
+    officeLocation?: string;
+    timeZone?: string;
+    locale?: string;
     newRole?: 'user' | 'agent' | 'admin';
   }): Promise<ApiResponse<any>> => {
     return apiRequest<any>('/user-roles', {
