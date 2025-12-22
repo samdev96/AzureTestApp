@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { requestsAPI, CreateRequestData, assignmentGroupsAPI, AssignmentGroup } from '../services/api';
+import { requestsAPI, CreateRequestData, assignmentGroupsAPI, AssignmentGroup, userManagementAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './Forms.css';
 
 interface RequestFormData {
@@ -9,16 +10,20 @@ interface RequestFormData {
   requestType: 'Hardware' | 'Software' | 'Access' | 'Service' | 'Other';
   urgency: 'Low' | 'Medium' | 'High';
   justification: string;
-  requester: string;
+  assignmentGroup: string;
+}
+
+interface UserDetails {
+  displayName: string;
   department: string;
   contactInfo: string;
-  approver: string;
-  assignmentGroup: string;
+  managerEmail: string;
 }
 
 const CreateRequest: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, effectiveUserEmail } = useAuth();
   // Check if we came from the user portal
   const cameFromPortal = location.state?.fromPortal === true;
   const [formData, setFormData] = useState<RequestFormData>({
@@ -27,12 +32,16 @@ const CreateRequest: React.FC = () => {
     requestType: 'Software',
     urgency: 'Medium',
     justification: '',
-    requester: '',
-    department: '',
-    contactInfo: '',
-    approver: '',
     assignmentGroup: ''
   });
+  
+  const [userDetails, setUserDetails] = useState<UserDetails>({
+    displayName: '',
+    department: '',
+    contactInfo: '',
+    managerEmail: ''
+  });
+  const [loadingUserDetails, setLoadingUserDetails] = useState(true);
 
   const [errors, setErrors] = useState<Partial<RequestFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +57,37 @@ const CreateRequest: React.FC = () => {
     { AssignmentGroupID: 3, GroupName: 'Service Desk', Description: 'First-line support and general IT assistance team', IsActive: true, CreatedDate: '', CreatedBy: 'system' },
     { AssignmentGroupID: 4, GroupName: 'Security', Description: 'Information security and compliance team', IsActive: true, CreatedDate: '', CreatedBy: 'system' }
   ], []);
+
+  // Load user details from Users table
+  useEffect(() => {
+    const loadUserDetails = async () => {
+      if (!effectiveUserEmail) return;
+      
+      try {
+        console.log('Loading user details for:', effectiveUserEmail);
+        const response = await userManagementAPI.getAll();
+        
+        if (response.success && response.data) {
+          const currentUser = response.data.find(u => u.userEmail.toLowerCase() === effectiveUserEmail.toLowerCase());
+          
+          if (currentUser) {
+            setUserDetails({
+              displayName: currentUser.displayName || currentUser.userEmail,
+              department: currentUser.department || 'Not specified',
+              contactInfo: currentUser.userEmail,
+              managerEmail: currentUser.managerEmail || 'Not specified'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user details:', error);
+      } finally {
+        setLoadingUserDetails(false);
+      }
+    };
+    
+    loadUserDetails();
+  }, [effectiveUserEmail]);
 
   // Load assignment groups on component mount
   useEffect(() => {
@@ -107,18 +147,6 @@ const CreateRequest: React.FC = () => {
     if (!formData.justification.trim()) {
       newErrors.justification = 'Business justification is required';
     }
-    if (!formData.requester.trim()) {
-      newErrors.requester = 'Requester name is required';
-    }
-    if (!formData.department.trim()) {
-      newErrors.department = 'Department is required';
-    }
-    if (!formData.contactInfo.trim()) {
-      newErrors.contactInfo = 'Contact information is required';
-    }
-    if (!formData.approver.trim()) {
-      newErrors.approver = 'Approver is required';
-    }
     if (!formData.assignmentGroup.trim()) {
       newErrors.assignmentGroup = 'Assignment group is required';
     }
@@ -144,12 +172,12 @@ const CreateRequest: React.FC = () => {
         requestType: formData.requestType,
         urgency: formData.urgency,
         justification: formData.justification,
-        requester: formData.requester,
-        department: formData.department,
-        contactInfo: formData.contactInfo,
-        approver: formData.approver,
+        requester: userDetails.displayName,
+        department: userDetails.department,
+        contactInfo: userDetails.contactInfo,
+        approver: userDetails.managerEmail,
         assignmentGroup: formData.assignmentGroup,
-        createdBy: 'User' // You can update this with actual user info later
+        createdBy: effectiveUserEmail || 'User'
       };
 
       const response = await requestsAPI.create(requestData);
@@ -164,10 +192,6 @@ const CreateRequest: React.FC = () => {
           requestType: 'Software',
           urgency: 'Medium',
           justification: '',
-          requester: '',
-          department: '',
-          contactInfo: '',
-          approver: '',
           assignmentGroup: assignmentGroups.length > 0 ? assignmentGroups[0].GroupName : ''
         });
         
@@ -309,66 +333,28 @@ const CreateRequest: React.FC = () => {
 
         <div className="form-section">
           <h3>Requester Information</h3>
-          
-          <div className="form-row">
-            <div className="form-group half">
-              <label htmlFor="requester">Requester Name *</label>
-              <input
-                type="text"
-                id="requester"
-                name="requester"
-                value={formData.requester}
-                onChange={handleInputChange}
-                placeholder="Full name of person making request"
-                className={errors.requester ? 'error' : ''}
-              />
-              {errors.requester && <span className="error-message">{errors.requester}</span>}
+          {loadingUserDetails ? (
+            <div className="loading-user-details">Loading your information...</div>
+          ) : (
+            <div className="user-details-display">
+              <div className="detail-row">
+                <span className="detail-label">Name:</span>
+                <span className="detail-value">{userDetails.displayName}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Department:</span>
+                <span className="detail-value">{userDetails.department}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Contact:</span>
+                <span className="detail-value">{userDetails.contactInfo}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Manager/Approver:</span>
+                <span className="detail-value">{userDetails.managerEmail}</span>
+              </div>
             </div>
-
-            <div className="form-group half">
-              <label htmlFor="department">Department *</label>
-              <input
-                type="text"
-                id="department"
-                name="department"
-                value={formData.department}
-                onChange={handleInputChange}
-                placeholder="Department or team name"
-                className={errors.department ? 'error' : ''}
-              />
-              {errors.department && <span className="error-message">{errors.department}</span>}
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group half">
-              <label htmlFor="contactInfo">Contact Information *</label>
-              <input
-                type="text"
-                id="contactInfo"
-                name="contactInfo"
-                value={formData.contactInfo}
-                onChange={handleInputChange}
-                placeholder="Email or phone number"
-                className={errors.contactInfo ? 'error' : ''}
-              />
-              {errors.contactInfo && <span className="error-message">{errors.contactInfo}</span>}
-            </div>
-
-            <div className="form-group half">
-              <label htmlFor="approver">Manager/Approver *</label>
-              <input
-                type="text"
-                id="approver"
-                name="approver"
-                value={formData.approver}
-                onChange={handleInputChange}
-                placeholder="Name of manager who can approve this request"
-                className={errors.approver ? 'error' : ''}
-              />
-              {errors.approver && <span className="error-message">{errors.approver}</span>}
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="approval-notice">
