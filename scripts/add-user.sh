@@ -126,29 +126,43 @@ else
     print_success "Using existing user with Object ID: $USER_OBJECT_ID"
 fi
 
-# Add role to database
-print_status "Adding role to database..."
+# Add user to database (using consolidated Users table)
+print_status "Adding user to database..."
 
 ASSIGNED_BY=$(az account show --query 'user.name' --output tsv 2>/dev/null || echo "script")
 
-# Create SQL command to add user role
+# Generate username from email
+USERNAME=$(echo "$EMAIL" | cut -d'@' -f1)
+FIRST_NAME=$(echo "$DISPLAY_NAME" | cut -d' ' -f1)
+LAST_NAME=$(echo "$DISPLAY_NAME" | cut -d' ' -f2-)
+
+# Create SQL command to add/update user
 SQL_COMMAND="
-IF EXISTS (SELECT 1 FROM UserRoles WHERE UserEmail = '$EMAIL' AND RoleName = '$ROLE')
+IF EXISTS (SELECT 1 FROM Users WHERE Email = '$EMAIL')
 BEGIN
-    PRINT 'User $EMAIL already has $ROLE role'
+    -- Update existing user
+    UPDATE Users 
+    SET Role = '$ROLE', 
+        DisplayName = '$DISPLAY_NAME',
+        ExternalID = '$USER_OBJECT_ID',
+        ModifiedBy = '$ASSIGNED_BY',
+        ModifiedDate = GETUTCDATE(),
+        IsActive = 1
+    WHERE Email = '$EMAIL'
+    PRINT 'Updated $ROLE role for $EMAIL'
 END
 ELSE
 BEGIN
-    INSERT INTO UserRoles (UserEmail, UserObjectID, RoleName, AssignedBy) 
-    VALUES ('$EMAIL', '$USER_OBJECT_ID', '$ROLE', '$ASSIGNED_BY')
+    -- Insert new user
+    INSERT INTO Users (Email, Username, DisplayName, FirstName, LastName, Role, ExternalID, CreatedBy, CreatedDate, IsActive) 
+    VALUES ('$EMAIL', '$USERNAME', '$DISPLAY_NAME', '$FIRST_NAME', '$LAST_NAME', '$ROLE', '$USER_OBJECT_ID', '$ASSIGNED_BY', GETUTCDATE(), 1)
     PRINT 'Added $ROLE role for $EMAIL'
 END
 
--- Show current roles for this user
-SELECT UserEmail, RoleName, AssignedBy, AssignedDate, IsActive 
-FROM UserRoles 
-WHERE UserEmail = '$EMAIL' OR UserObjectID = '$USER_OBJECT_ID'
-ORDER BY AssignedDate DESC
+-- Show current user info
+SELECT Email, DisplayName, Role, ExternalID, CreatedBy, CreatedDate, IsActive 
+FROM Users 
+WHERE Email = '$EMAIL'
 "
 
 # Execute SQL command

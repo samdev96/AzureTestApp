@@ -152,39 +152,53 @@ async function addUser() {
             success(`Using existing user with Object ID: ${userObjectId}`);
         }
 
-        // Add role to database
-        info('Adding role to database...');
+        // Add user to database (using consolidated Users table)
+        info('Adding user to database...');
         
         const assignedBy = await runCommand(
             `az account show --query 'user.name' --output tsv`,
             'Getting current user for audit trail'
         ).catch(() => 'script');
 
+        // Generate username from email
+        const username = email.split('@')[0];
+        const firstName = userDisplayName.split(' ')[0] || userDisplayName;
+        const lastName = userDisplayName.split(' ').slice(1).join(' ') || '';
+
         const sqlCommand = `
-IF EXISTS (SELECT 1 FROM UserRoles WHERE UserEmail = '${email}' AND RoleName = '${role}')
+IF EXISTS (SELECT 1 FROM Users WHERE Email = '${email}')
 BEGIN
-    PRINT 'User ${email} already has ${role} role'
+    -- Update existing user
+    UPDATE Users 
+    SET Role = '${role}', 
+        DisplayName = '${userDisplayName}',
+        ExternalID = '${userObjectId}',
+        ModifiedBy = '${assignedBy}',
+        ModifiedDate = GETUTCDATE(),
+        IsActive = 1
+    WHERE Email = '${email}'
+    PRINT 'Updated ${role} role for ${email}'
 END
 ELSE
 BEGIN
-    INSERT INTO UserRoles (UserEmail, UserObjectID, RoleName, AssignedBy) 
-    VALUES ('${email}', '${userObjectId}', '${role}', '${assignedBy}')
+    -- Insert new user
+    INSERT INTO Users (Email, Username, DisplayName, FirstName, LastName, Role, ExternalID, CreatedBy, CreatedDate, IsActive) 
+    VALUES ('${email}', '${username}', '${userDisplayName}', '${firstName}', '${lastName}', '${role}', '${userObjectId}', '${assignedBy}', GETUTCDATE(), 1)
     PRINT 'Added ${role} role for ${email}'
 END
 
--- Show current roles for this user
-SELECT UserEmail, RoleName, AssignedBy, AssignedDate, IsActive 
-FROM UserRoles 
-WHERE UserEmail = '${email}' OR UserObjectID = '${userObjectId}'
-ORDER BY AssignedDate DESC
+-- Show current user info
+SELECT Email, DisplayName, Role, ExternalID, CreatedBy, CreatedDate, IsActive 
+FROM Users 
+WHERE Email = '${email}'
         `.trim();
 
         await runCommand(
             `sqlcmd -S vibenow.database.windows.net -d "VibeNow-Test" -G -l 30 -Q "${sqlCommand}"`,
-            'Executing database role assignment'
+            'Executing database user assignment'
         );
 
-        success('Database role assignment completed!');
+        success('Database user assignment completed!');
 
         // Summary
         console.log();

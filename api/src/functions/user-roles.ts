@@ -10,7 +10,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
             status: 200,
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type'
             }
         };
@@ -85,8 +85,8 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
             const getAllUsers = url.searchParams.get('all') === 'true';
 
             if (getAllUsers) {
-                // Verify current user is admin
-                context.log('Checking admin access for getAllUsers request:', {
+                // Verify current user is admin or agent
+                context.log('Checking admin/agent access for getAllUsers request:', {
                     currentUserEmail,
                     currentUserObjectId,
                     isDevelopment
@@ -104,10 +104,10 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     
                     try {
                         const roleResult = await adminCheckRequest.query(`
-                            SELECT RoleName 
-                            FROM UserRoles 
-                            WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                                AND LOWER(RoleName) IN ('admin', 'agent') 
+                            SELECT Role 
+                            FROM Users 
+                            WHERE (Email = @userEmail OR ExternalID = @userObjectId) 
+                                AND LOWER(Role) IN ('admin', 'agent') 
                                 AND IsActive = 1
                         `);
                         
@@ -133,7 +133,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                                 })
                             };
                         }
-                    } catch (dbError) {
+                    } catch (dbError: any) {
                         context.log('Agent check error:', {
                             message: dbError.message,
                             code: dbError.code,
@@ -157,28 +157,36 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     context.log('Development mode: skipping agent check');
                 }
 
-                // Get all users with their roles
-                context.log('Attempting to query UserRoles table for all users');
+                // Get all users from Users table
+                context.log('Attempting to query Users table for all users');
                 const usersRequest = pool.request();
                 let usersResult;
                 
                 try {
                     usersResult = await usersRequest.query(`
                         SELECT 
-                            COALESCE(ur.UserEmail, '') as UserEmail,
-                            COALESCE(ur.UserObjectID, '') as UserObjectID,
-                            COALESCE(ur.DisplayName, '') as DisplayName,
-                            COALESCE(ur.RoleName, 'user') as RoleName,
-                            ur.AssignedDate,
-                            ur.AssignedBy,
-                            CASE WHEN LOWER(ur.RoleName) = 'agent' THEN 1 ELSE 0 END as IsAgent
-                        FROM UserRoles ur
-                        WHERE ur.IsActive = 1
-                        ORDER BY ur.UserEmail, ur.AssignedDate DESC
+                            UserID,
+                            Email,
+                            Username,
+                            DisplayName,
+                            FirstName,
+                            LastName,
+                            Role,
+                            ExternalID,
+                            Department,
+                            JobTitle,
+                            IsActive,
+                            CreatedDate,
+                            CreatedBy,
+                            CASE WHEN LOWER(Role) IN ('agent', 'admin') THEN 1 ELSE 0 END as IsAgent,
+                            CASE WHEN LOWER(Role) = 'admin' THEN 1 ELSE 0 END as IsAdmin
+                        FROM Users
+                        WHERE IsActive = 1
+                        ORDER BY Email
                     `);
                     
                     context.log('Database query successful, found', usersResult.recordset.length, 'users');
-                } catch (dbError) {
+                } catch (dbError: any) {
                     context.log('Database query error:', {
                         message: dbError.message,
                         code: dbError.code,
@@ -186,9 +194,9 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         state: dbError.state
                     });
                     
-                    // If UserRoles table doesn't exist and we're in development, return sample data
+                    // If Users table doesn't exist and we're in development, return sample data
                     if (isDevelopment && dbError.message?.includes('Invalid object name')) {
-                        context.log('UserRoles table not found, returning sample data for development');
+                        context.log('Users table not found, returning sample data for development');
                         return {
                             status: 200,
                             headers: {
@@ -199,20 +207,24 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                                 success: true,
                                 data: [
                                     {
+                                        userId: 1,
                                         userEmail: 'agent@test.com',
                                         userObjectId: 'test-agent-id',
+                                        displayName: 'Test Agent',
                                         role: 'agent',
                                         isAgent: true,
-                                        assignedDate: new Date().toISOString(),
-                                        assignedBy: 'system'
+                                        isAdmin: false,
+                                        createdDate: new Date().toISOString()
                                     },
                                     {
+                                        userId: 2,
                                         userEmail: 'user@test.com',
                                         userObjectId: 'test-user-id',
+                                        displayName: 'Test User',
                                         role: 'user',
                                         isAgent: false,
-                                        assignedDate: new Date().toISOString(),
-                                        assignedBy: 'system'
+                                        isAdmin: false,
+                                        createdDate: new Date().toISOString()
                                     }
                                 ],
                                 total: 2
@@ -239,24 +251,22 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     };
                 }
 
-                // Group users and get their primary role (most recent)
-                const userMap = new Map();
-                usersResult.recordset.forEach(row => {
-                    const key = row.UserEmail || row.UserObjectID;
-                    if (!userMap.has(key) || row.AssignedDate > userMap.get(key).AssignedDate) {
-                        userMap.set(key, {
-                            userEmail: row.UserEmail,
-                            userObjectId: row.UserObjectID,
-                            displayName: row.DisplayName || '',
-                            role: row.RoleName || 'user',
-                            isAgent: row.IsAgent === 1,
-                            assignedDate: row.AssignedDate,
-                            assignedBy: row.AssignedBy
-                        });
-                    }
-                });
-
-                const users = Array.from(userMap.values());
+                // Transform results
+                const users = usersResult.recordset.map(row => ({
+                    userId: row.UserID,
+                    userEmail: row.Email,
+                    userObjectId: row.ExternalID || '',
+                    displayName: row.DisplayName || '',
+                    firstName: row.FirstName || '',
+                    lastName: row.LastName || '',
+                    role: row.Role || 'user',
+                    isAgent: row.IsAgent === 1,
+                    isAdmin: row.IsAdmin === 1,
+                    department: row.Department || '',
+                    jobTitle: row.JobTitle || '',
+                    createdDate: row.CreatedDate,
+                    createdBy: row.CreatedBy
+                }));
                 
                 return {
                     status: 200,
@@ -271,26 +281,49 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     })
                 };
             } else {
-                // Get current user's roles (existing functionality)
+                // Get current user's role (existing functionality)
                 const rolesRequest = pool.request();
                 rolesRequest.input('userEmail', currentUserEmail);
                 rolesRequest.input('userObjectId', currentUserObjectId);
                 
                 const rolesResult = await rolesRequest.query(`
-                    SELECT RoleName, AssignedDate, AssignedBy 
-                    FROM UserRoles 
-                    WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
+                    SELECT UserID, Email, DisplayName, Role, ExternalID, CreatedDate
+                    FROM Users 
+                    WHERE (Email = @userEmail OR ExternalID = @userObjectId) 
                         AND IsActive = 1
-                    ORDER BY AssignedDate DESC
                 `);
                 
-                const roles = rolesResult.recordset.map(row => row.RoleName);
+                if (rolesResult.recordset.length === 0) {
+                    // User not found in database
+                    context.log('User not found in Users table:', { currentUserEmail });
+                    return {
+                        status: 200,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        body: JSON.stringify({
+                            success: true,
+                            userEmail: currentUserEmail,
+                            userObjectId: currentUserObjectId,
+                            roles: ['authenticated'],
+                            isAgent: false,
+                            isAdmin: false,
+                            roleDetails: []
+                        })
+                    };
+                }
+                
+                const user = rolesResult.recordset[0];
+                const role = user.Role || 'user';
+                const roles = [role];
+                
                 // Case-insensitive checks for roles
                 // Admin has all agent privileges, so isAgent is true for both admin and agent
-                const isAdmin = roles.some(role => role.toLowerCase() === 'admin');
-                const isAgent = isAdmin || roles.some(role => role.toLowerCase() === 'agent');
+                const isAdmin = role.toLowerCase() === 'admin';
+                const isAgent = isAdmin || role.toLowerCase() === 'agent';
                 
-                context.log('User roles found:', { currentUserEmail, roles, isAgent, isAdmin });
+                context.log('User role found:', { currentUserEmail, role, isAgent, isAdmin });
                 
                 return {
                     status: 200,
@@ -305,12 +338,16 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         roles,
                         isAgent,
                         isAdmin,
-                        roleDetails: rolesResult.recordset
+                        roleDetails: [{
+                            role: user.Role,
+                            userId: user.UserID,
+                            createdDate: user.CreatedDate
+                        }]
                     })
                 };
             }
         } else if (request.method === 'PUT') {
-            // Update user role - admin only (not agents)
+            // Update user role - admin only
             if (!isDevelopment) {
                 const adminCheckRequest = pool.request();
                 adminCheckRequest.input('userEmail', currentUserEmail);
@@ -318,10 +355,10 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                 
                 try {
                     const adminResult = await adminCheckRequest.query(`
-                        SELECT RoleName 
-                        FROM UserRoles 
-                        WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                            AND LOWER(RoleName) = 'admin' 
+                        SELECT Role 
+                        FROM Users 
+                        WHERE (Email = @userEmail OR ExternalID = @userObjectId) 
+                            AND LOWER(Role) = 'admin' 
                             AND IsActive = 1
                     `);
                     
@@ -338,7 +375,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                             })
                         };
                     }
-                } catch (dbError) {
+                } catch (dbError: any) {
                     context.log('Admin check error for PUT:', dbError);
                     // In development, if table doesn't exist, assume admin access
                     if (!dbError.message?.includes('Invalid object name')) {
@@ -351,7 +388,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
 
             // Parse request body
             const requestText = await request.text();
-            const { targetUserEmail, newRole, displayName } = JSON.parse(requestText);
+            const { targetUserEmail, newRole, displayName, firstName, lastName, department, jobTitle } = JSON.parse(requestText);
 
             if (!targetUserEmail) {
                 return {
@@ -383,92 +420,78 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
             }
 
             try {
-                // If displayName is provided, update it on existing records
-                if (displayName !== undefined) {
-                    const updateDisplayNameRequest = pool.request();
-                    updateDisplayNameRequest.input('targetUserEmail', targetUserEmail);
-                    updateDisplayNameRequest.input('displayName', displayName);
-                    
-                    await updateDisplayNameRequest.query(`
-                        UPDATE UserRoles 
-                        SET DisplayName = @displayName
-                        WHERE UserEmail = @targetUserEmail
-                    `);
-                    
-                    context.log('Display name updated:', { targetUserEmail, displayName });
+                // Check if user exists
+                const checkRequest = pool.request();
+                checkRequest.input('targetUserEmail', targetUserEmail);
+                
+                const existingUser = await checkRequest.query(`
+                    SELECT UserID FROM Users WHERE Email = @targetUserEmail
+                `);
+
+                if (existingUser.recordset.length === 0) {
+                    return {
+                        status: 404,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        body: JSON.stringify({
+                            success: false,
+                            error: 'User not found'
+                        })
+                    };
                 }
 
-                // If newRole is provided, update the role
+                // Build dynamic update query
+                const updateFields: string[] = [];
+                const updateRequest = pool.request();
+                updateRequest.input('targetUserEmail', targetUserEmail);
+                updateRequest.input('modifiedBy', currentUserEmail);
+
                 if (newRole) {
-                    // Check if the user already has this role
-                    const checkExistingRequest = pool.request();
-                    checkExistingRequest.input('targetUserEmail', targetUserEmail);
-                    checkExistingRequest.input('newRole', newRole);
+                    updateFields.push('Role = @newRole');
+                    updateRequest.input('newRole', newRole);
+                }
+                if (displayName !== undefined) {
+                    updateFields.push('DisplayName = @displayName');
+                    updateRequest.input('displayName', displayName);
+                }
+                if (firstName !== undefined) {
+                    updateFields.push('FirstName = @firstName');
+                    updateRequest.input('firstName', firstName);
+                }
+                if (lastName !== undefined) {
+                    updateFields.push('LastName = @lastName');
+                    updateRequest.input('lastName', lastName);
+                }
+                if (department !== undefined) {
+                    updateFields.push('Department = @department');
+                    updateRequest.input('department', department);
+                }
+                if (jobTitle !== undefined) {
+                    updateFields.push('JobTitle = @jobTitle');
+                    updateRequest.input('jobTitle', jobTitle);
+                }
+
+                if (updateFields.length > 0) {
+                    updateFields.push('ModifiedBy = @modifiedBy');
+                    updateFields.push('ModifiedDate = GETUTCDATE()');
                     
-                    const existingResult = await checkExistingRequest.query(`
-                        SELECT UserRoleID FROM UserRoles 
-                        WHERE UserEmail = @targetUserEmail AND RoleName = @newRole
+                    await updateRequest.query(`
+                        UPDATE Users 
+                        SET ${updateFields.join(', ')}
+                        WHERE Email = @targetUserEmail
                     `);
                     
-                    if (existingResult.recordset.length > 0) {
-                        // User already has this role - just update it (reactivate if needed, update display name)
-                        const updateRequest = pool.request();
-                        updateRequest.input('targetUserEmail', targetUserEmail);
-                        updateRequest.input('newRole', newRole);
-                        updateRequest.input('displayName', displayName || null);
-                        
-                        // First deactivate any OTHER roles
-                        await updateRequest.query(`
-                            UPDATE UserRoles 
-                            SET IsActive = 0 
-                            WHERE UserEmail = @targetUserEmail AND RoleName != @newRole
-                        `);
-                        
-                        // Then update/reactivate the target role
-                        const reactivateRequest = pool.request();
-                        reactivateRequest.input('targetUserEmail', targetUserEmail);
-                        reactivateRequest.input('newRole', newRole);
-                        reactivateRequest.input('displayName', displayName || null);
-                        
-                        await reactivateRequest.query(`
-                            UPDATE UserRoles 
-                            SET IsActive = 1, DisplayName = COALESCE(@displayName, DisplayName)
-                            WHERE UserEmail = @targetUserEmail AND RoleName = @newRole
-                        `);
-                        
-                        context.log('User role reactivated/updated:', { targetUserEmail, newRole, displayName });
-                    } else {
-                        // User doesn't have this role - deactivate existing and insert new
-                        const deactivateRequest = pool.request();
-                        deactivateRequest.input('targetUserEmail', targetUserEmail);
-                        
-                        await deactivateRequest.query(`
-                            UPDATE UserRoles 
-                            SET IsActive = 0 
-                            WHERE UserEmail = @targetUserEmail AND IsActive = 1
-                        `);
-
-                        // Insert new role with displayName if provided
-                        const insertRequest = pool.request();
-                        insertRequest.input('targetUserEmail', targetUserEmail);
-                        insertRequest.input('newRole', newRole);
-                        insertRequest.input('assignedBy', currentUserEmail);
-                        insertRequest.input('displayName', displayName || null);
-                        
-                        await insertRequest.query(`
-                            INSERT INTO UserRoles (UserEmail, RoleName, DisplayName, AssignedDate, AssignedBy, IsActive)
-                            VALUES (@targetUserEmail, @newRole, @displayName, GETDATE(), @assignedBy, 1)
-                        `);
-
-                        context.log('User role inserted:', { targetUserEmail, newRole, displayName, assignedBy: currentUserEmail });
-                    }
+                    context.log('User updated:', { targetUserEmail, updateFields });
                 }
-            } catch (dbError) {
-                context.log('Database error updating role:', dbError);
+
+            } catch (dbError: any) {
+                context.log('Database error updating user:', dbError);
                 
                 // In development mode, if table doesn't exist, simulate success
                 if (isDevelopment && dbError.message?.includes('Invalid object name')) {
-                    context.log('Development mode: simulating successful role update');
+                    context.log('Development mode: simulating successful user update');
                 } else {
                     throw dbError;
                 }
@@ -482,17 +505,17 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                 },
                 body: JSON.stringify({
                     success: true,
-                    message: `User role updated to ${newRole}`,
+                    message: `User updated successfully`,
                     data: {
                         targetUserEmail,
                         newRole,
-                        assignedBy: currentUserEmail,
-                        assignedDate: new Date().toISOString()
+                        modifiedBy: currentUserEmail,
+                        modifiedDate: new Date().toISOString()
                     }
                 })
             };
         } else if (request.method === 'POST') {
-            // Create new user - agent only
+            // Create new user - agent or admin only
             if (!isDevelopment) {
                 const agentCheckRequest = pool.request();
                 agentCheckRequest.input('userEmail', currentUserEmail);
@@ -500,10 +523,10 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                 
                 try {
                     const agentResult = await agentCheckRequest.query(`
-                        SELECT RoleName 
-                        FROM UserRoles 
-                        WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                            AND LOWER(RoleName) = 'agent' 
+                        SELECT Role 
+                        FROM Users 
+                        WHERE (Email = @userEmail OR ExternalID = @userObjectId) 
+                            AND LOWER(Role) IN ('admin', 'agent')
                             AND IsActive = 1
                     `);
                     
@@ -520,7 +543,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                             })
                         };
                     }
-                } catch (dbError) {
+                } catch (dbError: any) {
                     context.log('Agent check error for POST:', dbError);
                     if (!dbError.message?.includes('Invalid object name')) {
                         throw dbError;
@@ -532,7 +555,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
 
             // Parse request body
             const requestText = await request.text();
-            const { email, displayName, role, assignmentGroups } = JSON.parse(requestText);
+            const { email, displayName, firstName, lastName, role, department, jobTitle, assignmentGroups } = JSON.parse(requestText);
 
             if (!email || !displayName) {
                 return {
@@ -586,7 +609,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                 checkRequest.input('email', email);
                 
                 const existingUser = await checkRequest.query(`
-                    SELECT UserEmail FROM UserRoles WHERE UserEmail = @email AND IsActive = 1
+                    SELECT Email FROM Users WHERE Email = @email
                 `);
 
                 if (existingUser.recordset.length > 0) {
@@ -603,17 +626,30 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                     };
                 }
 
-                // Insert new user role
+                // Generate username from email
+                const username = email.split('@')[0];
+                const userFirstName = firstName || displayName.split(' ')[0] || displayName;
+                const userLastName = lastName || displayName.split(' ').slice(1).join(' ') || '';
+
+                // Insert new user
                 const insertRequest = pool.request();
                 insertRequest.input('email', email);
+                insertRequest.input('username', username);
                 insertRequest.input('displayName', displayName);
+                insertRequest.input('firstName', userFirstName);
+                insertRequest.input('lastName', userLastName);
                 insertRequest.input('role', userRole);
-                insertRequest.input('assignedBy', currentUserEmail);
+                insertRequest.input('department', department || null);
+                insertRequest.input('jobTitle', jobTitle || null);
+                insertRequest.input('createdBy', currentUserEmail);
                 
-                await insertRequest.query(`
-                    INSERT INTO UserRoles (UserEmail, DisplayName, RoleName, AssignedDate, AssignedBy, IsActive)
-                    VALUES (@email, @displayName, @role, GETDATE(), @assignedBy, 1)
+                const insertResult = await insertRequest.query(`
+                    INSERT INTO Users (Email, Username, DisplayName, FirstName, LastName, Role, Department, JobTitle, CreatedBy, CreatedDate, IsActive)
+                    OUTPUT INSERTED.UserID
+                    VALUES (@email, @username, @displayName, @firstName, @lastName, @role, @department, @jobTitle, @createdBy, GETUTCDATE(), 1)
                 `);
+
+                const newUserId = insertResult.recordset[0]?.UserID;
 
                 // If user is agent and has assignment groups, add them to those groups
                 if (userRole === 'agent' && assignmentGroups && assignmentGroups.length > 0) {
@@ -625,12 +661,12 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         
                         await groupRequest.query(`
                             INSERT INTO AssignmentGroupMembers (AssignmentGroupID, UserEmail, IsActive, CreatedDate, CreatedBy)
-                            VALUES (@groupId, @email, 1, GETDATE(), @assignedBy)
+                            VALUES (@groupId, @email, 1, GETUTCDATE(), @assignedBy)
                         `);
                     }
                 }
 
-                context.log('New user created:', { email, displayName, role: userRole, assignmentGroups });
+                context.log('New user created:', { email, displayName, role: userRole, userId: newUserId });
 
                 return {
                     status: 201,
@@ -642,16 +678,19 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                         success: true,
                         message: 'User created successfully',
                         data: {
+                            userId: newUserId,
                             email,
                             displayName,
+                            firstName: userFirstName,
+                            lastName: userLastName,
                             role: userRole,
                             assignmentGroups: assignmentGroups || [],
-                            assignedBy: currentUserEmail,
-                            assignedDate: new Date().toISOString()
+                            createdBy: currentUserEmail,
+                            createdDate: new Date().toISOString()
                         }
                     })
                 };
-            } catch (dbError) {
+            } catch (dbError: any) {
                 context.log('Database error creating user:', dbError);
                 
                 if (isDevelopment && dbError.message?.includes('Invalid object name')) {
@@ -670,13 +709,111 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
                                 displayName,
                                 role: userRole,
                                 assignmentGroups: assignmentGroups || [],
-                                assignedBy: currentUserEmail,
-                                assignedDate: new Date().toISOString()
+                                createdBy: currentUserEmail,
+                                createdDate: new Date().toISOString()
                             }
                         })
                     };
                 }
                 
+                throw dbError;
+            }
+        } else if (request.method === 'DELETE') {
+            // Deactivate user - admin only
+            if (!isDevelopment) {
+                const adminCheckRequest = pool.request();
+                adminCheckRequest.input('userEmail', currentUserEmail);
+                adminCheckRequest.input('userObjectId', currentUserObjectId);
+                
+                try {
+                    const adminResult = await adminCheckRequest.query(`
+                        SELECT Role 
+                        FROM Users 
+                        WHERE (Email = @userEmail OR ExternalID = @userObjectId) 
+                            AND LOWER(Role) = 'admin' 
+                            AND IsActive = 1
+                    `);
+                    
+                    if (adminResult.recordset.length === 0) {
+                        return {
+                            status: 403,
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            body: JSON.stringify({
+                                success: false,
+                                error: 'Admin access required'
+                            })
+                        };
+                    }
+                } catch (dbError: any) {
+                    context.log('Admin check error for DELETE:', dbError);
+                    if (!dbError.message?.includes('Invalid object name')) {
+                        throw dbError;
+                    }
+                }
+            }
+
+            const url = new URL(request.url);
+            const targetEmail = url.searchParams.get('email');
+
+            if (!targetEmail) {
+                return {
+                    status: 400,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'Email parameter is required'
+                    })
+                };
+            }
+
+            // Prevent self-deletion
+            if (targetEmail.toLowerCase() === currentUserEmail.toLowerCase()) {
+                return {
+                    status: 400,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: false,
+                        error: 'Cannot deactivate your own account'
+                    })
+                };
+            }
+
+            try {
+                const deactivateRequest = pool.request();
+                deactivateRequest.input('targetEmail', targetEmail);
+                deactivateRequest.input('modifiedBy', currentUserEmail);
+
+                await deactivateRequest.query(`
+                    UPDATE Users 
+                    SET IsActive = 0, ModifiedBy = @modifiedBy, ModifiedDate = GETUTCDATE()
+                    WHERE Email = @targetEmail
+                `);
+
+                context.log('User deactivated:', { targetEmail, deactivatedBy: currentUserEmail });
+
+                return {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({
+                        success: true,
+                        message: 'User deactivated successfully',
+                        data: { email: targetEmail }
+                    })
+                };
+            } catch (dbError: any) {
+                context.log('Database error deactivating user:', dbError);
                 throw dbError;
             }
         } else {
@@ -713,7 +850,7 @@ export async function userRoles(request: HttpRequest, context: InvocationContext
 
 // Register the function
 app.http('user-roles', {
-    methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     route: 'user-roles',
     authLevel: 'anonymous',
     handler: userRoles
@@ -775,10 +912,10 @@ export async function impersonateUser(request: HttpRequest, context: InvocationC
             adminCheckRequest.input('userObjectId', currentUserObjectId);
             
             const adminResult = await adminCheckRequest.query(`
-                SELECT RoleName 
-                FROM UserRoles 
-                WHERE (UserEmail = @userEmail OR UserObjectID = @userObjectId) 
-                    AND LOWER(RoleName) = 'admin' 
+                SELECT Role 
+                FROM Users 
+                WHERE (Email = @userEmail OR ExternalID = @userObjectId) 
+                    AND LOWER(Role) = 'admin' 
                     AND IsActive = 1
             `);
             
@@ -802,22 +939,21 @@ export async function impersonateUser(request: HttpRequest, context: InvocationC
             };
         }
 
-        // Get target user's roles
+        // Get target user's info
         const targetRequest = pool.request();
         targetRequest.input('targetEmail', decodeURIComponent(targetEmail));
         
         const targetResult = await targetRequest.query(`
             SELECT 
-                UserEmail,
-                UserObjectID,
+                UserID,
+                Email,
+                ExternalID,
                 DisplayName,
-                RoleName,
-                AssignedDate,
-                AssignedBy
-            FROM UserRoles 
-            WHERE LOWER(UserEmail) = LOWER(@targetEmail) 
+                Role,
+                CreatedDate
+            FROM Users 
+            WHERE LOWER(Email) = LOWER(@targetEmail) 
                 AND IsActive = 1
-            ORDER BY AssignedDate DESC
         `);
         
         if (targetResult.recordset.length === 0) {
@@ -829,9 +965,9 @@ export async function impersonateUser(request: HttpRequest, context: InvocationC
         }
 
         const targetUser = targetResult.recordset[0];
-        const roles = targetResult.recordset.map(row => row.RoleName);
-        const isAdmin = roles.some(role => role.toLowerCase() === 'admin');
-        const isAgent = isAdmin || roles.some(role => role.toLowerCase() === 'agent');
+        const role = targetUser.Role || 'user';
+        const isAdmin = role.toLowerCase() === 'admin';
+        const isAgent = isAdmin || role.toLowerCase() === 'agent';
 
         // Prevent impersonating other admins (optional security measure)
         if (isAdmin) {
@@ -851,13 +987,13 @@ export async function impersonateUser(request: HttpRequest, context: InvocationC
             body: JSON.stringify({
                 success: true,
                 impersonatedUser: {
-                    userEmail: targetUser.UserEmail,
-                    userObjectId: targetUser.UserObjectID,
+                    userEmail: targetUser.Email,
+                    userObjectId: targetUser.ExternalID || '',
                     displayName: targetUser.DisplayName || '',
-                    roles,
+                    roles: [role],
                     isAgent,
                     isAdmin,
-                    role: targetUser.RoleName
+                    role
                 },
                 adminUser: currentUserEmail,
                 timestamp: new Date().toISOString()

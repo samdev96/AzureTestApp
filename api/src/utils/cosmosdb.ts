@@ -86,7 +86,7 @@ export type WorkflowType = 'request' | 'incident' | 'change' | 'cmdb' | 'integra
 export type StageType = 'initial' | 'intermediate' | 'final';
 export type ActionType = 'status_change' | 'assignment' | 'notification' | 'field_update' | 'integration';
 export type ActionTrigger = 'on_enter' | 'on_exit' | 'manual';
-export type NotificationRecipient = 'requester' | 'assignee' | 'approver' | 'watchers' | 'specific_role';
+export type NotificationRecipient = 'requester' | 'assignee' | 'approver' | 'watchers' | 'manager' | 'specific_role';
 export type NotificationTrigger = 'on_enter' | 'on_exit' | 'sla_warning' | 'sla_breach';
 export type ConditionOperator = 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'in';
 
