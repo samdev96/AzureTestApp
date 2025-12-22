@@ -27,6 +27,9 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
     try {
         const pool = await getDbConnection();
         
+        // Check for impersonation header
+        const impersonatedUser = request.headers.get('X-Impersonated-User');
+        
         // Get user info from Static Web Apps authentication
         const userPrincipalHeader = request.headers.get('x-ms-client-principal');
         let userId = 'anonymous';
@@ -34,6 +37,7 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
         let userPrincipal: any = null;
         
         context.log('Raw auth header:', userPrincipalHeader);
+        context.log('Impersonated user:', impersonatedUser);
         
         if (userPrincipalHeader) {
             try {
@@ -43,6 +47,12 @@ async function getRequests(request: HttpRequest, context: InvocationContext): Pr
                 userPrincipal = JSON.parse(decodedHeader);
                 userId = userPrincipal.userDetails || userPrincipal.userId || 'anonymous';
                 userRoles = userPrincipal.userRoles || userPrincipal.roles || [];
+                
+                // Override with impersonated user if present
+                if (impersonatedUser) {
+                    userId = impersonatedUser;
+                    context.log('Using impersonated user:', impersonatedUser);
+                }
                 
                 context.log('Full user principal object:', JSON.stringify(userPrincipal, null, 2));
                 context.log('User ID:', userId);
@@ -190,6 +200,9 @@ async function createRequest(request: HttpRequest, context: InvocationContext): 
     try {
         const body = await request.json() as any;
         
+        // Check for impersonation header
+        const impersonatedUser = request.headers.get('X-Impersonated-User');
+        
         // Get user info from Static Web Apps authentication
         const userPrincipalHeader = request.headers.get('x-ms-client-principal');
         let userId = 'anonymous';
@@ -198,6 +211,14 @@ async function createRequest(request: HttpRequest, context: InvocationContext): 
             try {
                 const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
                 userId = userPrincipal.userDetails || userPrincipal.userId || 'anonymous';
+                
+                // Override with impersonated user if present
+                if (impersonatedUser) {
+                    userId = impersonatedUser;
+                    context.log('Creating request for impersonated user:', impersonatedUser);
+                } else {
+                    context.log('Creating request for user:', userId);
+                }
                 context.log('Creating request for user:', userId);
             } catch (e) {
                 context.log('Error parsing user principal:', e);
