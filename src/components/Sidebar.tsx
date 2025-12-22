@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userSettingsAPI, UserSetting, SavedFilter } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import './Sidebar.css';
 
 export type PageType = 'home' | 'my-tickets' | 'assignment-groups' | 'user-management' | 'workflows' | 'services' | 'config-items' | 'cmdb-graph' | 'integrations' | 'external-systems' | 'changes' | 'saved-filter';
@@ -17,6 +18,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onPageChange, isMobileOpen, isAdmin, onFilterSelect, activeFilterId, refreshFilters }) => {
+  const { effectiveUserEmail, isImpersonating } = useAuth();
   const [adminOpen, setAdminOpen] = useState(false);
   const [cmdbOpen, setCmdbOpen] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
@@ -25,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
   const [savedFilters, setSavedFilters] = useState<UserSetting[]>([]);
   const [loadingFilters, setLoadingFilters] = useState(false);
 
-  // Fetch saved filters on mount and when refreshFilters changes
+  // Fetch saved filters on mount, when refreshFilters changes, or when impersonation changes
   useEffect(() => {
     const fetchFilters = async () => {
       setLoadingFilters(true);
@@ -37,15 +39,19 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, currentPage, onP
             (setting) => (setting.settingValue as SavedFilter).showInSidebar
           );
           setSavedFilters(sidebarFilters);
+        } else {
+          // No filters or error - clear the list
+          setSavedFilters([]);
         }
       } catch (error) {
         console.error('Failed to fetch saved filters:', error);
+        setSavedFilters([]);
       } finally {
         setLoadingFilters(false);
       }
     };
     fetchFilters();
-  }, [refreshFilters]);
+  }, [refreshFilters, effectiveUserEmail, isImpersonating]);
 
   const getSidebarClass = () => {
     let classes = 'sidebar';
