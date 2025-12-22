@@ -2,24 +2,42 @@ import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/fu
 import { getUserSettingsContainer, UserSetting, SavedFilter, generateId } from "../utils/cosmosdb";
 
 // Helper to get current user from request headers
-function getCurrentUser(request: HttpRequest, context: InvocationContext): { email: string; objectId: string } | null {
+// Supports impersonation - if X-Impersonated-User header is present, use that email
+function getCurrentUser(request: HttpRequest, context: InvocationContext): { email: string; objectId: string; isImpersonating: boolean } | null {
     const userPrincipalHeader = request.headers.get('x-ms-client-principal');
+    const impersonatedUserEmail = request.headers.get('x-impersonated-user');
     
     context.log('getCurrentUser - checking headers:', {
         hasUserPrincipal: !!userPrincipalHeader,
+        hasImpersonatedUser: !!impersonatedUserEmail,
         url: request.url
     });
     
     if (userPrincipalHeader) {
         try {
             const userPrincipal = JSON.parse(Buffer.from(userPrincipalHeader, 'base64').toString());
+            const realEmail = userPrincipal.userDetails || '';
+            
             context.log('getCurrentUser - parsed principal:', {
-                userDetails: userPrincipal.userDetails,
-                userId: userPrincipal.userId
+                userDetails: realEmail,
+                userId: userPrincipal.userId,
+                impersonatedUserEmail
             });
+            
+            // If impersonating, use the impersonated user's email for user-specific data
+            if (impersonatedUserEmail) {
+                context.log('getCurrentUser - using impersonated user email:', impersonatedUserEmail);
+                return {
+                    email: impersonatedUserEmail,
+                    objectId: '', // We don't have the impersonated user's objectId
+                    isImpersonating: true
+                };
+            }
+            
             return {
-                email: userPrincipal.userDetails || '',
-                objectId: userPrincipal.userId || ''
+                email: realEmail,
+                objectId: userPrincipal.userId || '',
+                isImpersonating: false
             };
         } catch (e) {
             context.error('getCurrentUser - failed to parse principal:', e);
@@ -30,7 +48,7 @@ function getCurrentUser(request: HttpRequest, context: InvocationContext): { ema
     // Development mode
     if (request.url.includes('localhost')) {
         context.log('getCurrentUser - using dev mode user');
-        return { email: 'admin@test.com', objectId: 'test-admin-id' };
+        return { email: 'admin@test.com', objectId: 'test-admin-id', isImpersonating: false };
     }
     
     context.log('getCurrentUser - no user found');

@@ -126,18 +126,41 @@ export interface User {
   assignedBy: string;
 }
 
+// Helper function to get impersonated user from session storage
+function getImpersonatedUserEmail(): string | null {
+  try {
+    const stored = sessionStorage.getItem('impersonatedUser');
+    if (stored) {
+      const impersonatedUser = JSON.parse(stored);
+      return impersonatedUser.userEmail || null;
+    }
+  } catch (e) {
+    console.warn('Could not parse impersonated user:', e);
+  }
+  return null;
+}
+
 // Generic fetch function with error handling
 async function apiRequest<T>(
   endpoint: string, 
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
   try {
+    // Check if we're impersonating a user
+    const impersonatedEmail = getImpersonatedUserEmail();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string> || {}),
+    };
+    
+    // Add impersonation header if impersonating
+    if (impersonatedEmail) {
+      headers['X-Impersonated-User'] = impersonatedEmail;
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
       ...options,
+      headers,
     });
 
     const data = await response.json();
