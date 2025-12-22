@@ -304,6 +304,25 @@ async function createRequest(request: HttpRequest, context: InvocationContext): 
         
         const newRequest = insertResult.recordset[0];
         
+        // Create approval record if approver email is provided
+        if (body.approver) {
+            const approvalRequest = pool.request();
+            approvalRequest.input('requestId', newRequest.RequestID);
+            approvalRequest.input('approverEmail', body.approver);
+            approvalRequest.input('createdBy', userId);
+            
+            await approvalRequest.query(`
+                INSERT INTO Approvals (
+                    ApprovalType, RequestID, ApproverEmail, Status, RequestedDate, CreatedBy
+                )
+                VALUES (
+                    'Request', @requestId, @approverEmail, 'Pending', GETUTCDATE(), @createdBy
+                )
+            `);
+            
+            context.log(`Created approval record for request ${newRequest.RequestNumber} to be approved by ${body.approver}`);
+        }
+        
         // Get the full request details
         const detailRequest = pool.request();
         detailRequest.input('requestId', newRequest.RequestID);
