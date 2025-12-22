@@ -5,6 +5,11 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
+/* Impersonation mode - add padding for banner */
+.home-container.impersonation-active {
+  padding-top: 70px;
+}
+
 .home-header {
   margin-bottom: 40px;
   padding: 40px 20px;

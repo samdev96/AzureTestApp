@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import UserMenu from './UserMenu';
 import Settings from './Settings';
+import ImpersonationBanner from './ImpersonationBanner';
 import './Home.css';
 
 interface TicketStats {
@@ -14,7 +15,7 @@ interface TicketStats {
 const Home: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, isImpersonating } = useAuth();
   const [stats, setStats] = useState<TicketStats>({
     openIncidents: 0,
     pendingRequests: 0,
@@ -91,7 +92,8 @@ const Home: React.FC = () => {
   }, [user]);
 
   return (
-    <div className="home-container">
+    <div className={`home-container ${isImpersonating ? 'impersonation-active' : ''}`}>
+      <ImpersonationBanner />
       <header className="home-header">
         <div className="header-content">
           <div className="header-text">
