@@ -569,10 +569,10 @@ const UserManagement: React.FC = () => {
                       </span>
                     </td>
                     <td className="date-cell">
-                      {formatDate(user.assignedDate)}
+                      {formatDate(user.createdDate)}
                     </td>
                     <td>
-                      {user.assignedBy}
+                      {user.createdBy || 'System'}
                     </td>
                     <td className="actions-cell">
                       <div className="action-buttons">
