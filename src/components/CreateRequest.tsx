@@ -23,7 +23,7 @@ interface UserDetails {
 const CreateRequest: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, effectiveUserEmail } = useAuth();
+  const { effectiveUserEmail } = useAuth();
   // Check if we came from the user portal
   const cameFromPortal = location.state?.fromPortal === true;
   const [formData, setFormData] = useState<RequestFormData>({
